@@ -64,24 +64,25 @@ def build_images(prefix, images, tag=None, commit_range=None, push=False):
     value_modifications = {}
     for name, options in images.items():
         image_path = options.get('contextPath', os.path.join('images', name))
+        image_tag = tag
         paths = options.get('paths', []) + [image_path]
         last_commit = last_modified_commit(*paths)
         if tag is None:
-            tag = last_commit
+            image_tag = last_commit
         image_name = prefix + name
         image_spec = '{}:{}'.format(image_name, tag)
         value_modifications[options['valuesPath']] = {
             'name': image_name,
-            'tag': tag
+            'tag': image_tag,
         }
 
-        if commit_range and not path_touched(*paths, commit_range=commit_range):
+        if tag is None and commit_range and not path_touched(*paths, commit_range=commit_range):
             print(f"Skipping {name}, not touched in {commit_range}")
             continue
 
         template_namespace = {
             'LAST_COMMIT': last_commit,
-            'TAG': tag,
+            'TAG': image_tag,
         }
 
         build_args = render_build_args(options, template_namespace)
