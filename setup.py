@@ -45,6 +45,9 @@ setup(
     platforms="Linux, Mac OS X",
     keywords=['helm', 'kubernetes'],
     python_requires=">=3.4",
+    install_requires=[
+        'ruamel.yaml>=0.15',
+    ],
     classifiers=[
         'Intended Audience :: Developers',
         'Intended Audience :: System Administrators',
