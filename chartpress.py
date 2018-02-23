@@ -13,7 +13,7 @@ from tempfile import TemporaryDirectory
 
 from ruamel.yaml import YAML
 
-__version__ = '0.1.0'
+__version__ = '0.2.0.dev'
 
 # use safe roundtrip yaml loader
 yaml = YAML(typ='rt')
