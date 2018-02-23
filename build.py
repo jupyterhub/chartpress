@@ -43,8 +43,8 @@ def render_build_args(options, ns):
         build_args[key] = value.format(**ns)
     return build_args
 
-def build_image(image_path, image_spec, build_args):
-    cmd = ['docker', 'build', '-t', image_spec, image_path]
+def build_image(image_path, image_spec, build_args, dockerfile_path='Dockerfile'):
+    cmd = ['docker', 'build', '-t', image_spec, image_path, '-f', dockerfile_path]
 
     for k, v in build_args.items():
         cmd += ['--build-arg', '{}={}'.format(k, v)]
@@ -53,7 +53,7 @@ def build_image(image_path, image_spec, build_args):
 def build_images(prefix, images, tag=None, commit_range=None, push=False):
     value_modifications = {}
     for name, options in images.items():
-        image_path = os.path.join('images', name)
+        image_path = options.get('contextPath', os.path.join('images', name))
         paths = options.get('paths', []) + [image_path]
         last_commit = last_modified_commit(*paths)
         if tag is None:
@@ -75,7 +75,7 @@ def build_images(prefix, images, tag=None, commit_range=None, push=False):
         }
 
         build_args = render_build_args(options, template_namespace)
-        build_image(image_path, image_spec, build_args)
+        build_image(image_path, image_spec, build_args, options.get('dockerfilePath', 'Dockerfile'))
 
         if push:
             subprocess.check_call([
@@ -121,7 +121,7 @@ def build_chart(name, version=None, paths=None):
         yaml.dump(chart, f)
 
 
-def publish_pages(name, paths, git_repo, published_repo):
+def publish_pages(name, paths, git_repo, published_repo, extra_message=''):
     """publish helm chart index to github pages"""
     version = last_modified_commit(*paths)
     checkout_dir = '{}-{}'.format(name, version)
@@ -154,10 +154,14 @@ def publish_pages(name, paths, git_repo, published_repo):
                 os.path.join(checkout_dir, f)
             )
     subprocess.check_call(['git', 'add', '.'], cwd=checkout_dir)
+    if extra_message:
+        extra_message = '\n\n%s' % extra_message
+    else:
+        extra_message = ''
     subprocess.check_call([
         'git',
         'commit',
-        '-m', '[{}] Automatic update for commit {}'.format(name, version)
+        '-m', '[{}] Automatic update for commit {}{}'.format(name, version, extra_message)
     ], cwd=checkout_dir)
     subprocess.check_call(
         ['git', 'push', 'origin', 'gh-pages'],
@@ -175,6 +179,7 @@ def main():
     argparser.add_argument('--push', action='store_true')
     argparser.add_argument('--publish-chart', action='store_true')
     argparser.add_argument('--tag', default=None, help='Use this tag for images & charts')
+    argparser.add_argument('--extra-message', default='', help='extra message to add to the commit message')
 
     args = argparser.parse_args()
 
@@ -188,6 +193,7 @@ def main():
                 paths=chart_paths,
                 git_repo=chart['repo']['git'],
                 published_repo=chart['repo']['published'],
+                extra_message=args.extra_message
             )
 
 main()
