@@ -7,6 +7,8 @@ from tempfile import TemporaryDirectory
 
 from ruamel.yaml import YAML
 
+__version__ = '0.1.0'
+
 # use safe roundtrip yaml loader
 yaml = YAML(typ='rt')
 yaml.indent(mapping=2, offset=2, sequence=4)
@@ -196,4 +198,6 @@ def main():
                 extra_message=args.extra_message
             )
 
-main()
+
+if __name__ == '__main__':
+    main()
