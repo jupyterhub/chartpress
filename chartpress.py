@@ -179,11 +179,16 @@ def main():
 
     argparser = argparse.ArgumentParser()
 
-    argparser.add_argument('--commit-range', help='Range of commits to consider when building images')
-    argparser.add_argument('--push', action='store_true')
-    argparser.add_argument('--publish-chart', action='store_true')
-    argparser.add_argument('--tag', default=None, help='Use this tag for images & charts')
-    argparser.add_argument('--extra-message', default='', help='extra message to add to the commit message')
+    argparser.add_argument('--commit-range',
+        help='Range of commits to consider when building images')
+    argparser.add_argument('--push', action='store_true',
+        help='push built images to docker hub')
+    argparser.add_argument('--publish-chart', action='store_true',
+        help='publish updated chart to gh-pages')
+    argparser.add_argument('--tag', default=None,
+        help='Use this tag for images & charts')
+    argparser.add_argument('--extra-message', default='',
+        help='extra message to add to the commit message when publishing charts')
 
     args = argparser.parse_args()
 
