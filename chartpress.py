@@ -70,7 +70,7 @@ def build_images(prefix, images, tag=None, commit_range=None, push=False):
         if tag is None:
             image_tag = last_commit
         image_name = prefix + name
-        image_spec = '{}:{}'.format(image_name, tag)
+        image_spec = '{}:{}'.format(image_name, image_tag)
         value_modifications[options['valuesPath']] = {
             'name': image_name,
             'tag': image_tag,
