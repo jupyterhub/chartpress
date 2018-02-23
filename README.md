@@ -31,7 +31,7 @@ charts:
     paths:
       - ../setup.py
       - ../binderhub
-    # images to build
+    # images to build for this chart (optional)
     images:
       binderhub:
         # Context to send to docker build for use by the Dockerfile
@@ -47,4 +47,32 @@ charts:
         paths:
           - ../setup.py
           - ../binderhub
+```
+
+## Usage
+
+In a directory containing a `chartpress.yaml`, run:
+
+    chartpress
+
+to build your chart(s) and image(s). Add `--push` to publish images to docker hub and `--publish-chart` to publish the chart and index to gh-pages.
+
+```
+usage: chartpress [-h] [--commit-range COMMIT_RANGE] [--push]
+                  [--publish-chart] [--tag TAG]
+                  [--extra-message EXTRA_MESSAGE]
+
+Automate building and publishing helm charts and associated images. This is
+used as part of the JupyterHub and Binder projects.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --commit-range COMMIT_RANGE
+                        Range of commits to consider when building images
+  --push                push built images to docker hub
+  --publish-chart       publish updated chart to gh-pages
+  --tag TAG             Use this tag for images & charts
+  --extra-message EXTRA_MESSAGE
+                        extra message to add to the commit message when
+                        publishing charts
 ```
