@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+"""
+Automate building and publishing helm charts and associated images.
+
+This is used as part of the JupyterHub and Binder projects.
+"""
+
 import argparse
 import os
 import subprocess
@@ -174,7 +180,7 @@ def publish_pages(name, paths, git_repo, published_repo, extra_message=''):
 
 
 def main():
-    argparser = argparse.ArgumentParser()
+    argparser = argparse.ArgumentParser(description=__doc__)
 
     argparser.add_argument('--commit-range',
         help='Range of commits to consider when building images')
