@@ -174,9 +174,6 @@ def publish_pages(name, paths, git_repo, published_repo, extra_message=''):
 
 
 def main():
-    with open('chartpress.yaml') as f:
-        config = yaml.load(f)
-
     argparser = argparse.ArgumentParser()
 
     argparser.add_argument('--commit-range',
@@ -191,6 +188,9 @@ def main():
         help='extra message to add to the commit message when publishing charts')
 
     args = argparser.parse_args()
+
+    with open('chartpress.yaml') as f:
+        config = yaml.load(f)
 
     for chart in config['charts']:
         value_mods = build_images(chart['imagePrefix'], chart['images'], args.tag, args.commit_range, args.push)
