@@ -199,7 +199,13 @@ def main():
         config = yaml.load(f)
 
     for chart in config['charts']:
-        value_mods = build_images(chart['imagePrefix'], chart['images'], args.tag, args.commit_range, args.push)
+        value_mods = build_images(
+            prefix=chart['imagePrefix'],
+            images=chart['images'],
+            tag=args.tag,
+            commit_range=args.commit_range,
+            push=args.push,
+        )
         build_values(chart['name'], value_mods)
         chart_paths = ['.'] + chart.get('paths', [])
         build_chart(chart['name'], paths=chart_paths, version=args.tag)
@@ -208,7 +214,7 @@ def main():
                 paths=chart_paths,
                 git_repo=chart['repo']['git'],
                 published_repo=chart['repo']['published'],
-                extra_message=args.extra_message
+                extra_message=args.extra_message,
             )
 
 
