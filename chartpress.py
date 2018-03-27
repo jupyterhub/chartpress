@@ -200,14 +200,15 @@ def main():
         config = yaml.load(f)
 
     for chart in config['charts']:
-        value_mods = build_images(
-            prefix=chart['imagePrefix'],
-            images=chart['images'],
-            tag=args.tag,
-            commit_range=args.commit_range,
-            push=args.push,
-        )
-        build_values(chart['name'], value_mods)
+        if 'images' in chart:
+            value_mods = build_images(
+                prefix=chart['imagePrefix'],
+                images=chart['images'],
+                tag=args.tag,
+                commit_range=args.commit_range,
+                push=args.push,
+            )
+            build_values(chart['name'], value_mods)
         chart_paths = ['.'] + chart.get('paths', [])
         build_chart(chart['name'], paths=chart_paths, version=args.tag)
         if args.publish_chart:
