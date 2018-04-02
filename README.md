@@ -76,3 +76,18 @@ optional arguments:
                         extra message to add to the commit message when
                         publishing charts
 ```
+
+### Caveats
+
+#### Shallow clones
+
+Chartpress detects the latest commit which changed a directory or file when determining the tag to use for charts and images.
+This means that shallow clones should not be used because if the last commit that changed a relevant file is outside the shallow commit range, the wrong tag will be assigned.
+
+Travis uses a clone depth of 50 by default, which can result in incorrect image tagging.
+You can [disable this shallow clone behavior](https://docs.travis-ci.com/user/customizing-the-build/#Git-Clone-Depth) in your `.travis.yml`:
+
+```yaml
+git:
+  depth: false
+```
