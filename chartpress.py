@@ -71,8 +71,13 @@ def build_images(prefix, images, tag=None, commit_range=None, push=False):
             image_tag = last_commit
         image_name = prefix + name
         image_spec = '{}:{}'.format(image_name, image_tag)
+
+        # z2jh charts use 'name' to specify image repository, while
+        # kubernetes/charts use 'repository'. Support both.
+        # FIXME: Standardize on `repository` in the long term
         value_modifications[options['valuesPath']] = {
             'name': image_name,
+            'repository': image_name,
             'tag': image_tag,
         }
 
