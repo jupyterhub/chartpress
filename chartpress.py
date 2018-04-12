@@ -19,7 +19,9 @@ __version__ = '0.2.0.dev'
 yaml = YAML(typ='rt')
 yaml.indent(mapping=2, offset=2, sequence=4)
 
+
 def last_modified_commit(*paths, **kwargs):
+    """Get the last commit to modify the given paths"""
     return subprocess.check_output([
         'git',
         'log',
@@ -28,7 +30,9 @@ def last_modified_commit(*paths, **kwargs):
         *paths
     ], **kwargs).decode('utf-8')
 
+
 def last_modified_date(*paths, **kwargs):
+    """Return the last modified date (as a string) for the given paths"""
     return subprocess.check_output([
         'git',
         'log',
@@ -38,29 +42,76 @@ def last_modified_date(*paths, **kwargs):
         *paths
     ], **kwargs).decode('utf-8')
 
+
 def path_touched(*paths, commit_range):
+    """Return whether the given paths have been changed in the commit range
+
+    Used to determine if a build is necessary
+
+    Args:
+    *paths (str):
+        paths to check for changes
+    commit_range (str):
+        range of commits to check if paths have changed
+    """
     return subprocess.check_output([
         'git', 'diff', '--name-only', commit_range, *paths
     ]).decode('utf-8').strip() != ''
 
 
 def render_build_args(options, ns):
-    """Get docker build args dict, rendering any templated args."""
+    """Get docker build args dict, rendering any templated args.
+
+    Args:
+    options (dict):
+        The dictionary for a given image from chartpress.yaml.
+        Fields in `options['buildArgs']` will be rendered and returned,
+        if defined.
+    ns (dict): the namespace used when rendering templated arguments
+    """
     build_args = options.get('buildArgs', {})
     for key, value in build_args.items():
         build_args[key] = value.format(**ns)
     return build_args
 
-def build_image(image_path, image_spec, build_args, dockerfile_path=None):
-    cmd = ['docker', 'build', '-t', image_spec, image_path]
+
+def build_image(image_path, image_name, build_args=None, dockerfile_path=None):
+    """Build an image
+
+    Args:
+    image_path (str): the path to the image directory
+    image_name (str): image 'name:tag' to build
+    build_args (dict, optional): dict of docker build arguments
+    dockerfile_path (str, optional):
+        path to dockerfile relative to image_path
+        if not `image_path/Dockerfile`.
+    """
+    cmd = ['docker', 'build', '-t', image_name, image_path]
     if dockerfile_path:
         cmd.extend(['-f', dockerfile_path])
 
-    for k, v in build_args.items():
+    for k, v in (build_args or {}).items():
         cmd += ['--build-arg', '{}={}'.format(k, v)]
     subprocess.check_call(cmd)
 
+
 def build_images(prefix, images, tag=None, commit_range=None, push=False):
+    """Build a collection of docker images
+
+    Args:
+    prefix (str): the prefix to add to images
+    images (dict): dict of image-specs from chartpress.yml
+    tag (str):
+        Specific tag to use instead of the last modified commit.
+        If unspecified the tag for each image will be the hash of the last commit
+        to modify the image's files.
+    commit_range (str):
+        The range of commits to consider, e.g. for building in CI.
+        If an image hasn't changed in the given range,
+        it will not be rebuilt.
+    push (bool):
+        Whether to push the resulting images (default: False).
+    """
     value_modifications = {}
     for name, options in images.items():
         image_path = options.get('contextPath', os.path.join('images', name))
@@ -99,9 +150,9 @@ def build_images(prefix, images, tag=None, commit_range=None, push=False):
             ])
     return value_modifications
 
+
 def build_values(name, values_mods):
     """Update name/values.yaml with modifications"""
-
     values_file = os.path.join(name, 'values.yaml')
 
     with open(values_file) as f:
@@ -112,6 +163,7 @@ def build_values(name, values_mods):
         mod_obj = values
         for p in parts:
             mod_obj = mod_obj[p]
+        print(f"Updating {values_file}: {key}: {value}")
         mod_obj.update(value)
 
 
@@ -138,7 +190,7 @@ def build_chart(name, version=None, paths=None):
 
 
 def publish_pages(name, paths, git_repo, published_repo, extra_message=''):
-    """publish helm chart index to github pages"""
+    """Publish helm chart index to github pages"""
     version = last_modified_commit(*paths)
     checkout_dir = '{}-{}'.format(name, version)
     subprocess.check_call([
@@ -186,6 +238,7 @@ def publish_pages(name, paths, git_repo, published_repo, extra_message=''):
 
 
 def main():
+    """Run chartpress"""
     argparser = argparse.ArgumentParser(description=__doc__)
 
     argparser.add_argument('--commit-range',
