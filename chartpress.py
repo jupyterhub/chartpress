@@ -74,8 +74,8 @@ def render_build_args(options, ns):
         build_args[key] = value.format(**ns)
     return build_args
 
-def build_image(image_path, image_spec, build_args, dockerfile_path=None):
 
+def build_image(image_path, image_name, build_args=None, dockerfile_path=None):
     """Build an image
 
     Args:
@@ -90,7 +90,7 @@ def build_image(image_path, image_spec, build_args, dockerfile_path=None):
     if dockerfile_path:
         cmd.extend(['-f', dockerfile_path])
 
-    for k, v in build_args.items():
+    for k, v in (build_args or {}).items():
         cmd += ['--build-arg', '{}={}'.format(k, v)]
     subprocess.check_call(cmd)
 
