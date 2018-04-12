@@ -158,6 +158,7 @@ def build_values(name, values_mods):
         mod_obj = values
         for p in parts:
             mod_obj = mod_obj[p]
+        print(f"Updating {values_file}: {key}: {value}")
         mod_obj.update(value)
 
 
