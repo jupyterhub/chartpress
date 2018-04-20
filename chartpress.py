@@ -15,9 +15,24 @@ from ruamel.yaml import YAML
 
 __version__ = '0.2.0.dev'
 
+# name of the environment variable with GitHub token
+GITHUB_TOKEN_KEY = 'GITHUB_TOKEN'
+
 # use safe roundtrip yaml loader
 yaml = YAML(typ='rt')
 yaml.indent(mapping=2, offset=2, sequence=4)
+
+
+def git_remote(git_repo):
+    """Return the URL for remote git repository.
+
+    Depending on the system setup it returns ssh or https remote.
+    """
+    github_token = os.getenv(GITHUB_TOKEN_KEY)
+    if github_token:
+        return 'https://{0}@github.com/{1}'.format(
+            github_token, git_repo)
+    return 'git@github.com:{0}'.format(git_repo)
 
 
 def last_modified_commit(*paths, **kwargs):
@@ -195,7 +210,7 @@ def publish_pages(name, paths, git_repo, published_repo, extra_message=''):
     checkout_dir = '{}-{}'.format(name, version)
     subprocess.check_call([
         'git', 'clone', '--no-checkout',
-        'git@github.com:{}'.format(git_repo), checkout_dir],
+        git_remote(git_repo), checkout_dir],
     )
     subprocess.check_call(['git', 'checkout', 'gh-pages'], cwd=checkout_dir)
 
