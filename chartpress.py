@@ -27,6 +27,7 @@ def last_modified_commit(*paths, **kwargs):
         'log',
         '-n', '1',
         '--pretty=format:%h',
+        '--',
         *paths
     ], **kwargs).decode('utf-8')
 
@@ -39,6 +40,7 @@ def last_modified_date(*paths, **kwargs):
         '-n', '1',
         '--pretty=format:%cd',
         '--date=iso',
+        '--',
         *paths
     ], **kwargs).decode('utf-8')
 
@@ -55,7 +57,7 @@ def path_touched(*paths, commit_range):
         range of commits to check if paths have changed
     """
     return subprocess.check_output([
-        'git', 'diff', '--name-only', commit_range, *paths
+        'git', 'diff', '--name-only', commit_range, '--', *paths
     ]).decode('utf-8').strip() != ''
 
 
