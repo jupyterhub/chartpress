@@ -18,6 +18,9 @@ __version__ = '0.2.0.dev'
 # name of the environment variable with GitHub token
 GITHUB_TOKEN_KEY = 'GITHUB_TOKEN'
 
+# name of possible repository keys used in image value
+IMAGE_REPOSITORY_KEYS = {'name', 'repository'}
+
 # use safe roundtrip yaml loader
 yaml = YAML(typ='rt')
 yaml.indent(mapping=2, offset=2, sequence=4)
@@ -138,11 +141,7 @@ def build_images(prefix, images, tag=None, commit_range=None, push=False):
         image_name = prefix + name
         image_spec = '{}:{}'.format(image_name, image_tag)
 
-        # z2jh charts use 'name' to specify image repository, while
-        # kubernetes/charts use 'repository'. Support both.
-        # FIXME: Standardize on `repository` in the long term
         value_modifications[options['valuesPath']] = {
-            'name': image_name,
             'repository': image_name,
             'tag': image_tag,
         }
@@ -179,7 +178,23 @@ def build_values(name, values_mods):
         for p in parts:
             mod_obj = mod_obj[p]
         print(f"Updating {values_file}: {key}: {value}")
-        mod_obj.update(value)
+
+        if isinstance(mod_obj, dict):
+            keys = IMAGE_REPOSITORY_KEYS & mod_obj.keys()
+            if keys:
+                for key in keys:
+                    mod_obj[key] = value['repository']
+            else:
+                possible_keys = ' or '.join(IMAGE_REPOSITORY_KEYS)
+                raise KeyError(
+                    f'Could not find {possible_keys} in {values_file}:{key}'
+                )
+
+            mod_obj['tag'] = value['tag']
+        else:
+            raise TypeError(
+                f'The key {key} in {values_file} must be a mapping.'
+            )
 
 
     with open(values_file, 'w') as f:
