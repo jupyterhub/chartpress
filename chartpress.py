@@ -13,7 +13,7 @@ from tempfile import TemporaryDirectory
 
 from ruamel.yaml import YAML
 
-__version__ = '0.2.0'
+__version__ = '0.3.0.dev'
 
 # name of the environment variable with GitHub token
 GITHUB_TOKEN_KEY = 'GITHUB_TOKEN'
