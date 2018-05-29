@@ -266,6 +266,8 @@ def main():
         help='Use this tag for images & charts')
     argparser.add_argument('--extra-message', default='',
         help='extra message to add to the commit message when publishing charts')
+    argparser.add_argument('--set-prefix', default='',
+        help='override image prefix with this value')
 
     args = argparser.parse_args()
 
@@ -274,8 +276,9 @@ def main():
 
     for chart in config['charts']:
         if 'images' in chart:
+            image_prefix = args.set_prefix if args.set_prefix != '' else chart['imagePrefix']
             value_mods = build_images(
-                prefix=chart['imagePrefix'],
+                prefix=image_prefix,
                 images=chart['images'],
                 tag=args.tag,
                 commit_range=args.commit_range,
