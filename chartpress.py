@@ -12,6 +12,7 @@ import shutil
 from tempfile import TemporaryDirectory
 
 from ruamel.yaml import YAML
+from ruamel.yaml.scalarstring import SingleQuotedScalarString
 
 __version__ = '0.3.0.dev'
 
@@ -147,7 +148,7 @@ def build_images(prefix, images, tag=None, commit_range=None, push=False):
 
         value_modifications[options['valuesPath']] = {
             'repository': image_name,
-            'tag': image_tag,
+            'tag': SingleQuotedScalarString(image_tag),
         }
 
         if tag is None and commit_range and not path_touched(*paths, commit_range=commit_range):
