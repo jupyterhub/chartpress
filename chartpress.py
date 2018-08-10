@@ -9,6 +9,7 @@ import argparse
 import os
 import subprocess
 import shutil
+from collections.abc import Mapping
 from tempfile import TemporaryDirectory
 
 from ruamel.yaml import YAML
@@ -184,7 +185,7 @@ def build_values(name, values_mods):
             mod_obj = mod_obj[p]
         print(f"Updating {values_file}: {key}: {value}")
 
-        if isinstance(mod_obj, dict):
+        if isinstance(mod_obj, Mapping):
             keys = IMAGE_REPOSITORY_KEYS & mod_obj.keys()
             if keys:
                 for key in keys:
