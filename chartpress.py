@@ -306,7 +306,7 @@ def main():
                 push=args.push,
             )
             build_values(chart['name'], value_mods)
-        chart_paths = ['.'] + chart.get('paths', [])
+        chart_paths = ['.'] + list(chart.get('paths', []))
         build_chart(chart['name'], paths=chart_paths, version=args.tag)
         if args.publish_chart:
             publish_pages(chart['name'],
