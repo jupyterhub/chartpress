@@ -140,7 +140,7 @@ def build_images(prefix, images, tag=None, commit_range=None, push=False):
         image_tag = tag
         # include chartpress.yaml itself as it can contain build args and
         # similar that influence the image that would be built
-        paths = options.get('paths', []) + [image_path, 'chartpress.yaml']
+        paths = list(options.get('paths', [])) + [image_path, 'chartpress.yaml']
         last_commit = last_modified_commit(*paths)
         if tag is None:
             image_tag = last_commit
@@ -306,7 +306,7 @@ def main():
                 push=args.push,
             )
             build_values(chart['name'], value_mods)
-        chart_paths = ['.'] + chart.get('paths', [])
+        chart_paths = ['.'] + list(chart.get('paths', []))
         build_chart(chart['name'], paths=chart_paths, version=args.tag)
         if args.publish_chart:
             publish_pages(chart['name'],
