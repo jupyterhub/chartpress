@@ -140,7 +140,7 @@ def build_images(prefix, images, tag=None, commit_range=None, push=False):
         image_tag = tag
         # include chartpress.yaml itself as it can contain build args and
         # similar that influence the image that would be built
-        paths = options.get('paths', []) + [image_path, 'chartpress.yaml']
+        paths = list(options.get('paths', [])) + [image_path, 'chartpress.yaml']
         last_commit = last_modified_commit(*paths)
         if tag is None:
             image_tag = last_commit
