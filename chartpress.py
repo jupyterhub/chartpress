@@ -307,7 +307,12 @@ def main():
             )
             build_values(chart['name'], value_mods)
         chart_paths = ['.'] + list(chart.get('paths', []))
-        build_chart(chart['name'], paths=chart_paths, version=args.tag)
+        version = args.tag
+        if version:
+            # version of the chart shouldn't have leading 'v' prefix
+            # if tag is of the form 'v1.2.3'
+            version = version.lstrip('v')
+        build_chart(chart['name'], paths=chart_paths, version=version)
         if args.publish_chart:
             publish_pages(chart['name'],
                 paths=chart_paths,
