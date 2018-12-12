@@ -191,7 +191,7 @@ def image_needs_building(image):
     return image_needs_pushing(image)
 
 
-def build_images(prefix, images, tag=None, commit_range=None, push=False, chart_version=None):
+def build_images(prefix, images, tag=None, commit_range=None, push=False, chart_version=None, sanitize=False):
     """Build a collection of docker images
 
     Args:
@@ -227,10 +227,20 @@ def build_images(prefix, images, tag=None, commit_range=None, push=False, chart_
         image_name = prefix + name
         image_spec = '{}:{}'.format(image_name, image_tag)
 
+        if sanitize:
+            image_tag = 'latest'
+
         value_modifications[options['valuesPath']] = {
             'repository': image_name,
             'tag': SingleQuotedScalarString(image_tag),
         }
+
+        if sanitize:
+            continue
+
+        if tag is None and commit_range and not path_touched(*paths, commit_range=commit_range):
+            print(f"Skipping {name}, not touched in {commit_range}")
+            continue
 
         template_namespace = {
             'LAST_COMMIT': last_commit,
@@ -289,7 +299,7 @@ def build_values(name, values_mods):
         yaml.dump(values, f)
 
 
-def build_chart(name, version=None, paths=None):
+def build_chart(name, version=None, paths=None, sanitize=False):
     """Update chart with specified version or last-modified commit in path(s)"""
     chart_file = os.path.join(name, 'Chart.yaml')
     with open(chart_file) as f:
@@ -299,7 +309,11 @@ def build_chart(name, version=None, paths=None):
         if paths is None:
             paths = ['.']
         commit = last_modified_commit(*paths)
-        version = chart['version'].split('-')[0] + '-' + commit
+
+        if sanitize:
+            version = chart['version'].split('-')[0]
+        else:
+            version = chart['version'].split('-')[0] + '-' + commit
 
     chart['version'] = version
 
@@ -374,6 +388,8 @@ def main():
         help='extra message to add to the commit message when publishing charts')
     argparser.add_argument('--image-prefix', default=None,
         help='override image prefix with this value')
+    argparser.add_argument('--sanitize', action='store_true',
+        help='clean up image tags')
 
     args = argparser.parse_args()
 
@@ -388,7 +404,7 @@ def main():
             # version of the chart shouldn't have leading 'v' prefix
             # if tag is of the form 'v1.2.3'
             version = version.lstrip('v')
-        chart_version = build_chart(chart['name'], paths=chart_paths, version=version)
+        chart_version = build_chart(chart['name'], paths=chart_paths, version=version, sanitize=args.sanitize)
 
         if 'images' in chart:
             image_prefix = args.image_prefix if args.image_prefix is not None else chart['imagePrefix']
@@ -400,6 +416,7 @@ def main():
                 push=args.push,
                 # exclude `-<hash>` from chart_version prefix for images
                 chart_version=chart_version.split('-', 1)[0],
+                sanitize=args.sanitize,
             )
             build_values(chart['name'], value_mods)
 
