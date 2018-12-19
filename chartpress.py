@@ -117,7 +117,7 @@ def build_image(image_path, image_name, build_args=None, dockerfile_path=None):
     subprocess.check_call(cmd)
 
 
-def build_images(prefix, images, tag=None, commit_range=None, push=False):
+def build_images(prefix, images, tag=None, commit_range=None, push=False, chart_version=None):
     """Build a collection of docker images
 
     Args:
@@ -133,6 +133,9 @@ def build_images(prefix, images, tag=None, commit_range=None, push=False):
         it will not be rebuilt.
     push (bool):
         Whether to push the resulting images (default: False).
+    chart_version (str):
+        The chart version, included as a prefix on image tags
+        if `tag` is not specified.
     """
     value_modifications = {}
     for name, options in images.items():
@@ -143,7 +146,10 @@ def build_images(prefix, images, tag=None, commit_range=None, push=False):
         paths = list(options.get('paths', [])) + [image_path, 'chartpress.yaml']
         last_commit = last_modified_commit(*paths)
         if tag is None:
-            image_tag = last_commit
+            if chart_version:
+                image_tag = "{}-{}".format(chart_version, last_commit)
+            else:
+                image_tag = last_commit
         image_name = prefix + name
         image_spec = '{}:{}'.format(image_name, image_tag)
 
@@ -224,6 +230,8 @@ def build_chart(name, version=None, paths=None):
     with open(chart_file, 'w') as f:
         yaml.dump(chart, f)
 
+    return version
+
 
 def publish_pages(name, paths, git_repo, published_repo, extra_message=''):
     """Publish helm chart index to github pages"""
@@ -296,6 +304,15 @@ def main():
         config = yaml.load(f)
 
     for chart in config['charts']:
+        chart_paths = ['.'] + list(chart.get('paths', []))
+
+        version = args.tag
+        if version:
+            # version of the chart shouldn't have leading 'v' prefix
+            # if tag is of the form 'v1.2.3'
+            version = version.lstrip('v')
+        chart_version = build_chart(chart['name'], paths=chart_paths, version=version)
+
         if 'images' in chart:
             image_prefix = args.image_prefix if args.image_prefix is not None else chart['imagePrefix']
             value_mods = build_images(
@@ -304,15 +321,11 @@ def main():
                 tag=args.tag,
                 commit_range=args.commit_range,
                 push=args.push,
+                # exclude `-<hash>` from chart_version prefix for images
+                chart_version=chart_version.split('-', 1)[0],
             )
             build_values(chart['name'], value_mods)
-        chart_paths = ['.'] + list(chart.get('paths', []))
-        version = args.tag
-        if version:
-            # version of the chart shouldn't have leading 'v' prefix
-            # if tag is of the form 'v1.2.3'
-            version = version.lstrip('v')
-        build_chart(chart['name'], paths=chart_paths, version=version)
+
         if args.publish_chart:
             publish_pages(chart['name'],
                 paths=chart_paths,
