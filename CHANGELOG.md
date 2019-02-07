@@ -5,7 +5,7 @@
 ### 0.3.1
 
 - Fix conditionals for builds with new tagging scheme,
-  by checking if images exist (using `docker manifest inspect`)
+  by checking if images exist locally or on the registry
   rather than assuming the correct tag was pushed based on commit range.
 - Echo shell commands that are executed during the chartpress process
 

@@ -14,6 +14,7 @@ import shutil
 import subprocess
 from tempfile import TemporaryDirectory
 
+import docker
 from ruamel.yaml import YAML
 from ruamel.yaml.scalarstring import SingleQuotedScalarString
 
@@ -129,13 +130,15 @@ def build_image(image_path, image_name, build_args=None, dockerfile_path=None):
         cmd += ['--build-arg', '{}={}'.format(k, v)]
     check_call(cmd)
 
+@lru_cache()
+def docker_client():
+    """Cached getter for docker client"""
+    return docker.from_env()
+
 
 @lru_cache()
 def image_needs_pushing(image):
     """Return whether an image needs pushing
-
-    Check for manifest on registry with
-    `docker manifest inspect`
 
     Args:
 
@@ -146,18 +149,11 @@ def image_needs_pushing(image):
     True: if image needs to be pushed (not on registry)
     False: if not (already present on registry)
     """
-    # experimental api needed for `docker manifest inspect`
-    # used to check if image exists on the registry
-    env = os.environ.copy()
-    env['DOCKER_CLI_EXPERIMENTAL'] = 'enabled'
+    d = docker_client()
     try:
-        check_output(
-            ['docker', 'manifest', 'inspect', image],
-            env=env,
-            stderr=subprocess.STDOUT,
-        )
-    except subprocess.CalledProcessError:
-        # image not found remotely, needs building
+        d.images.get_registry_data(image)
+    except docker.errors.APIError:
+        # image not found on registry, needs pushing
         return True
     else:
         return False
@@ -179,21 +175,19 @@ def image_needs_building(image):
     True: if image needs to be built
     False: if not (image already exists)
     """
+    d = docker_client()
 
     # first, check for locally built image
     try:
-        check_output(
-            ['docker', 'image', 'inspect', image],
-            stderr=subprocess.STDOUT,
-        )
-    except subprocess.CalledProcessError:
-        # image not found, check remote
+        d.images.get(image)
+    except docker.errors.ImageNotFound:
+        # image not found, check registry
         pass
     else:
         # it exists locally, no need to check remote
         return False
 
-    # image may need building if it
+    # image may need building if it's not on the registry
     return image_needs_pushing(image)
 
 
