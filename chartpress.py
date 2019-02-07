@@ -6,12 +6,15 @@ This is used as part of the JupyterHub and Binder projects.
 """
 
 import argparse
+from collections.abc import MutableMapping
+from functools import lru_cache, partial
 import os
+import pipes
 import shutil
 import subprocess
-from collections.abc import MutableMapping
 from tempfile import TemporaryDirectory
 
+import docker
 from ruamel.yaml import YAML
 from ruamel.yaml.scalarstring import SingleQuotedScalarString
 
@@ -28,6 +31,17 @@ yaml = YAML(typ='rt')
 yaml.indent(mapping=2, offset=2, sequence=4)
 
 
+def run_cmd(call, cmd, *, echo=True, **kwargs):
+    """Run a command and echo it first"""
+    if echo:
+        print('$> ' + ' '.join(map(pipes.quote, cmd)))
+    return call(cmd, **kwargs)
+
+
+check_call = partial(run_cmd, subprocess.check_call)
+check_output = partial(run_cmd, subprocess.check_output)
+
+
 def git_remote(git_repo):
     """Return the URL for remote git repository.
 
@@ -42,7 +56,7 @@ def git_remote(git_repo):
 
 def last_modified_commit(*paths, **kwargs):
     """Get the last commit to modify the given paths"""
-    return subprocess.check_output([
+    return check_output([
         'git',
         'log',
         '-n', '1',
@@ -54,7 +68,7 @@ def last_modified_commit(*paths, **kwargs):
 
 def last_modified_date(*paths, **kwargs):
     """Return the last modified date (as a string) for the given paths"""
-    return subprocess.check_output([
+    return check_output([
         'git',
         'log',
         '-n', '1',
@@ -76,7 +90,7 @@ def path_touched(*paths, commit_range):
     commit_range (str):
         range of commits to check if paths have changed
     """
-    return subprocess.check_output([
+    return check_output([
         'git', 'diff', '--name-only', commit_range, '--', *paths
     ]).decode('utf-8').strip() != ''
 
@@ -114,7 +128,67 @@ def build_image(image_path, image_name, build_args=None, dockerfile_path=None):
 
     for k, v in (build_args or {}).items():
         cmd += ['--build-arg', '{}={}'.format(k, v)]
-    subprocess.check_call(cmd)
+    check_call(cmd)
+
+@lru_cache()
+def docker_client():
+    """Cached getter for docker client"""
+    return docker.from_env()
+
+
+@lru_cache()
+def image_needs_pushing(image):
+    """Return whether an image needs pushing
+
+    Args:
+
+    image (str): the `repository:tag` image to be build.
+
+    Returns:
+
+    True: if image needs to be pushed (not on registry)
+    False: if not (already present on registry)
+    """
+    d = docker_client()
+    try:
+        d.images.get_registry_data(image)
+    except docker.errors.APIError:
+        # image not found on registry, needs pushing
+        return True
+    else:
+        return False
+
+
+@lru_cache()
+def image_needs_building(image):
+    """Return whether an image needs building
+
+    Checks if the image exists (ignores commit range),
+    either locally or on the registry.
+
+    Args:
+
+    image (str): the `repository:tag` image to be build.
+
+    Returns:
+
+    True: if image needs to be built
+    False: if not (image already exists)
+    """
+    d = docker_client()
+
+    # first, check for locally built image
+    try:
+        d.images.get(image)
+    except docker.errors.ImageNotFound:
+        # image not found, check registry
+        pass
+    else:
+        # it exists locally, no need to check remote
+        return False
+
+    # image may need building if it's not on the registry
+    return image_needs_pushing(image)
 
 
 def build_images(prefix, images, tag=None, commit_range=None, push=False, chart_version=None):
@@ -158,22 +232,24 @@ def build_images(prefix, images, tag=None, commit_range=None, push=False, chart_
             'tag': SingleQuotedScalarString(image_tag),
         }
 
-        if tag is None and commit_range and not path_touched(*paths, commit_range=commit_range):
-            print(f"Skipping {name}, not touched in {commit_range}")
-            continue
-
         template_namespace = {
             'LAST_COMMIT': last_commit,
             'TAG': image_tag,
         }
 
-        build_args = render_build_args(options, template_namespace)
-        build_image(image_path, image_spec, build_args, options.get('dockerfilePath'))
+        if tag or image_needs_building(image_spec):
+            build_args = render_build_args(options, template_namespace)
+            build_image(image_path, image_spec, build_args, options.get('dockerfilePath'))
+        else:
+            print(f"Skipping build for {image_spec}, it already exists")
 
         if push:
-            subprocess.check_call([
-                'docker', 'push', image_spec
-            ])
+            if tag or image_needs_pushing(image_spec):
+                check_call([
+                    'docker', 'push', image_spec
+                ])
+            else:
+                print(f"Skipping push for {image_spec}, already on registry")
     return value_modifications
 
 
@@ -237,22 +313,23 @@ def publish_pages(name, paths, git_repo, published_repo, extra_message=''):
     """Publish helm chart index to github pages"""
     version = last_modified_commit(*paths)
     checkout_dir = '{}-{}'.format(name, version)
-    subprocess.check_call([
+    check_call([
         'git', 'clone', '--no-checkout',
         git_remote(git_repo), checkout_dir],
+        echo=False,
     )
-    subprocess.check_call(['git', 'checkout', 'gh-pages'], cwd=checkout_dir)
+    check_call(['git', 'checkout', 'gh-pages'], cwd=checkout_dir)
 
     # package the latest version into a temporary directory
     # and run helm repo index with --merge to update index.yaml
     # without refreshing all of the timestamps
     with TemporaryDirectory() as td:
-        subprocess.check_call([
+        check_call([
             'helm', 'package', name,
             '--destination', td + '/',
         ])
 
-        subprocess.check_call([
+        check_call([
             'helm', 'repo', 'index', td,
             '--url', published_repo,
             '--merge', os.path.join(checkout_dir, 'index.yaml'),
@@ -265,17 +342,17 @@ def publish_pages(name, paths, git_repo, published_repo, extra_message=''):
                 os.path.join(td, f),
                 os.path.join(checkout_dir, f)
             )
-    subprocess.check_call(['git', 'add', '.'], cwd=checkout_dir)
+    check_call(['git', 'add', '.'], cwd=checkout_dir)
     if extra_message:
         extra_message = '\n\n%s' % extra_message
     else:
         extra_message = ''
-    subprocess.check_call([
+    check_call([
         'git',
         'commit',
         '-m', '[{}] Automatic update for commit {}{}'.format(name, version, extra_message)
     ], cwd=checkout_dir)
-    subprocess.check_call(
+    check_call(
         ['git', 'push', 'origin', 'gh-pages'],
         cwd=checkout_dir,
     )

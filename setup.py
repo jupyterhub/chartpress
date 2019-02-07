@@ -52,6 +52,7 @@ setup(
     python_requires=">=3.6",
     install_requires=[
         'ruamel.yaml>=0.15',
+        'docker>=3.2.0',
     ],
     classifiers=[
         'Intended Audience :: Developers',
