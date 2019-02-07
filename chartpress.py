@@ -30,9 +30,10 @@ yaml = YAML(typ='rt')
 yaml.indent(mapping=2, offset=2, sequence=4)
 
 
-def run_cmd(call, cmd, **kwargs):
+def run_cmd(call, cmd, *, echo=True, **kwargs):
     """Run a command and echo it first"""
-    print('$> ' + ' '.join(map(pipes.quote, cmd)))
+    if echo:
+        print('$> ' + ' '.join(map(pipes.quote, cmd)))
     return call(cmd, **kwargs)
 
 
@@ -321,6 +322,7 @@ def publish_pages(name, paths, git_repo, published_repo, extra_message=''):
     check_call([
         'git', 'clone', '--no-checkout',
         git_remote(git_repo), checkout_dir],
+        echo=False,
     )
     check_call(['git', 'checkout', 'gh-pages'], cwd=checkout_dir)
 
