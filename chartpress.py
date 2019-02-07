@@ -6,10 +6,12 @@ This is used as part of the JupyterHub and Binder projects.
 """
 
 import argparse
+from collections.abc import MutableMapping
+from functools import partial
 import os
+import pipes
 import shutil
 import subprocess
-from collections.abc import MutableMapping
 from tempfile import TemporaryDirectory
 
 from ruamel.yaml import YAML
@@ -28,6 +30,16 @@ yaml = YAML(typ='rt')
 yaml.indent(mapping=2, offset=2, sequence=4)
 
 
+def run_cmd(call, cmd, **kwargs):
+    """Run a command and echo it first"""
+    print('$> ' + ' '.join(map(pipes.quote, cmd)))
+    return call(cmd, **kwargs)
+
+
+check_call = partial(run_cmd, subprocess.check_call)
+check_output = partial(run_cmd, subprocess.check_output)
+
+
 def git_remote(git_repo):
     """Return the URL for remote git repository.
 
@@ -42,7 +54,7 @@ def git_remote(git_repo):
 
 def last_modified_commit(*paths, **kwargs):
     """Get the last commit to modify the given paths"""
-    return subprocess.check_output([
+    return check_output([
         'git',
         'log',
         '-n', '1',
@@ -54,7 +66,7 @@ def last_modified_commit(*paths, **kwargs):
 
 def last_modified_date(*paths, **kwargs):
     """Return the last modified date (as a string) for the given paths"""
-    return subprocess.check_output([
+    return check_output([
         'git',
         'log',
         '-n', '1',
@@ -76,7 +88,7 @@ def path_touched(*paths, commit_range):
     commit_range (str):
         range of commits to check if paths have changed
     """
-    return subprocess.check_output([
+    return check_output([
         'git', 'diff', '--name-only', commit_range, '--', *paths
     ]).decode('utf-8').strip() != ''
 
@@ -114,7 +126,7 @@ def build_image(image_path, image_name, build_args=None, dockerfile_path=None):
 
     for k, v in (build_args or {}).items():
         cmd += ['--build-arg', '{}={}'.format(k, v)]
-    subprocess.check_call(cmd)
+    check_call(cmd)
 
 
 def build_images(prefix, images, tag=None, commit_range=None, push=False, chart_version=None):
@@ -171,7 +183,7 @@ def build_images(prefix, images, tag=None, commit_range=None, push=False, chart_
         build_image(image_path, image_spec, build_args, options.get('dockerfilePath'))
 
         if push:
-            subprocess.check_call([
+            check_call([
                 'docker', 'push', image_spec
             ])
     return value_modifications
@@ -237,22 +249,22 @@ def publish_pages(name, paths, git_repo, published_repo, extra_message=''):
     """Publish helm chart index to github pages"""
     version = last_modified_commit(*paths)
     checkout_dir = '{}-{}'.format(name, version)
-    subprocess.check_call([
+    check_call([
         'git', 'clone', '--no-checkout',
         git_remote(git_repo), checkout_dir],
     )
-    subprocess.check_call(['git', 'checkout', 'gh-pages'], cwd=checkout_dir)
+    check_call(['git', 'checkout', 'gh-pages'], cwd=checkout_dir)
 
     # package the latest version into a temporary directory
     # and run helm repo index with --merge to update index.yaml
     # without refreshing all of the timestamps
     with TemporaryDirectory() as td:
-        subprocess.check_call([
+        check_call([
             'helm', 'package', name,
             '--destination', td + '/',
         ])
 
-        subprocess.check_call([
+        check_call([
             'helm', 'repo', 'index', td,
             '--url', published_repo,
             '--merge', os.path.join(checkout_dir, 'index.yaml'),
@@ -265,17 +277,17 @@ def publish_pages(name, paths, git_repo, published_repo, extra_message=''):
                 os.path.join(td, f),
                 os.path.join(checkout_dir, f)
             )
-    subprocess.check_call(['git', 'add', '.'], cwd=checkout_dir)
+    check_call(['git', 'add', '.'], cwd=checkout_dir)
     if extra_message:
         extra_message = '\n\n%s' % extra_message
     else:
         extra_message = ''
-    subprocess.check_call([
+    check_call([
         'git',
         'commit',
         '-m', '[{}] Automatic update for commit {}{}'.format(name, version, extra_message)
     ], cwd=checkout_dir)
-    subprocess.check_call(
+    check_call(
         ['git', 'push', 'origin', 'gh-pages'],
         cwd=checkout_dir,
     )
