@@ -2,6 +2,13 @@
 
 ## 0.3
 
+### 0.3.1
+
+- Fix conditionals for builds with new tagging scheme,
+  by checking if images exist (using `docker manifest inspect`)
+  rather than assuming the correct tag was pushed based on commit range.
+- Echo shell commands that are executed during the chartpress process
+
 ### 0.3.0
 
 - Add chart version as prefix to image tags (e.g. 0.8-abc123)
