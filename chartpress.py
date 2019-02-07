@@ -7,7 +7,7 @@ This is used as part of the JupyterHub and Binder projects.
 
 import argparse
 from collections.abc import MutableMapping
-from functools import partial
+from functools import lru_cache, partial
 import os
 import pipes
 import shutil
@@ -129,6 +129,73 @@ def build_image(image_path, image_name, build_args=None, dockerfile_path=None):
     check_call(cmd)
 
 
+@lru_cache()
+def image_needs_pushing(image):
+    """Return whether an image needs pushing
+
+    Check for manifest on registry with
+    `docker manifest inspect`
+
+    Args:
+
+    image (str): the `repository:tag` image to be build.
+
+    Returns:
+
+    True: if image needs to be pushed (not on registry)
+    False: if not (already present on registry)
+    """
+    # experimental api needed for `docker manifest inspect`
+    # used to check if image exists on the registry
+    env = os.environ.copy()
+    env['DOCKER_CLI_EXPERIMENTAL'] = 'enabled'
+    try:
+        check_output(
+            ['docker', 'manifest', 'inspect', image],
+            env=env,
+            stderr=subprocess.STDOUT,
+        )
+    except subprocess.CalledProcessError:
+        # image not found remotely, needs building
+        return True
+    else:
+        return False
+
+
+@lru_cache()
+def image_needs_building(image):
+    """Return whether an image needs building
+
+    Checks if the image exists (ignores commit range),
+    either locally or on the registry.
+
+    Args:
+
+    image (str): the `repository:tag` image to be build.
+
+    Returns:
+
+    True: if image needs to be built
+    False: if not (image already exists)
+    """
+
+    # first, check for locally built image
+    try:
+        check_output(
+            ['docker', 'image', 'inspect', image],
+            stderr=subprocess.STDOUT,
+        )
+    except subprocess.CalledProcessError:
+        # image not found, check remote
+        pass
+    else:
+        # it exists locally, no need to check remote
+        return False
+
+    # image may need building if it
+    return image_needs_pushing(image)
+
+
 def build_images(prefix, images, tag=None, commit_range=None, push=False, chart_version=None):
     """Build a collection of docker images
 
@@ -170,22 +237,24 @@ def build_images(prefix, images, tag=None, commit_range=None, push=False, chart_
             'tag': SingleQuotedScalarString(image_tag),
         }
 
-        if tag is None and commit_range and not path_touched(*paths, commit_range=commit_range):
-            print(f"Skipping {name}, not touched in {commit_range}")
-            continue
-
         template_namespace = {
             'LAST_COMMIT': last_commit,
             'TAG': image_tag,
         }
 
-        build_args = render_build_args(options, template_namespace)
-        build_image(image_path, image_spec, build_args, options.get('dockerfilePath'))
+        if tag or image_needs_building(image_spec):
+            build_args = render_build_args(options, template_namespace)
+            build_image(image_path, image_spec, build_args, options.get('dockerfilePath'))
+        else:
+            print(f"Skipping build for {image_spec}, it already exists")
 
         if push:
-            check_call([
-                'docker', 'push', image_spec
-            ])
+            if tag or image_needs_pushing(image_spec):
+                check_call([
+                    'docker', 'push', image_spec
+                ])
+            else:
+                print(f"Skipping push for {image_spec}, already on registry")
     return value_modifications
 
 
