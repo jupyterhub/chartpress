@@ -8,3 +8,8 @@ install:
 script:
   - chartpress -h
   - pyflakes .
+  - |
+    # run chartpress on zero-to-jupyterhub
+    git clone https://github.com/jupyterhub/zero-to-jupyterhub
+    cd zero-to-jupyterhub
+    chartpress
