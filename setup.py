@@ -27,6 +27,9 @@ cmdclass = {
     'bdist_egg': bdist_egg if 'bdist_egg' in sys.argv else bdist_egg_disabled,
 }
 
+with open("README.md") as f:
+    readme = f.read()
+
 setup(
     name='chartpress',
     version=__version__,
@@ -38,6 +41,8 @@ setup(
         ],
     },
     description="ChartPress: render and publish helm charts and images",
+    long_description=readme,
+    long_description_content_type="text/markdown",
     author="Jupyter Development Team",
     author_email="jupyter@googlegroups.com",
     url="https://github.com/jupyterhub/chartpress",
