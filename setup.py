@@ -44,7 +44,7 @@ setup(
     license="BSD",
     platforms="Linux, Mac OS X",
     keywords=['helm', 'kubernetes'],
-    python_requires=">=3.4",
+    python_requires=">=3.6",
     install_requires=[
         'ruamel.yaml>=0.15',
     ],
