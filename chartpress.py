@@ -299,7 +299,19 @@ def build_chart(name, version=None, paths=None):
         if paths is None:
             paths = ['.']
         commit = last_modified_commit(*paths)
-        version = chart['version'].split('-')[0] + '-' + commit
+        # parse prerelease version, preserving only the first part
+        # which will be the prerelease category (alpha, beta, etc.)
+        # if nothing is found, use `0`, to sort before alpha
+        base_version, *rest = chart['version'].split('-', 1)
+        prerelease = 0
+        if rest:
+            prerelease = rest[0].split('.')[0]
+            if not prerelease:
+                prerelease = '0'
+
+        describe = check_output(['git', 'describe', '--tags', '--long', commit]).decode('utf8').strip()
+        _tag, n_commits, sha = describe.rsplit('-', 2)
+        version = "{base_version}-{prerelease}.{n_commits}.{sha}".format(**locals())
 
     chart['version'] = version
 
