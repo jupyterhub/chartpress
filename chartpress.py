@@ -237,10 +237,6 @@ def build_images(prefix, images, tag=None, commit_range=None, push=False, chart_
         if skip_build:
             continue
 
-        if tag is None and commit_range and not path_touched(*paths, commit_range=commit_range):
-            print(f"Skipping {name}, not touched in {commit_range}")
-            continue
-
         template_namespace = {
             'LAST_COMMIT': last_commit,
             'TAG': image_tag,
