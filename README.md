@@ -22,6 +22,9 @@ charts:
   - name: binderhub
     # the prefix to use for built images
     imagePrefix: jupyterhub/k8s-
+    # tag to use when resetting the chart values
+    # with --reset command-line option (defaults to "set-by-chartpress")
+    resetTag: latest
     # the git repo whose gh-pages contains the charts
     repo:
       git: jupyterhub/helm-chart
