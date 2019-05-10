@@ -191,7 +191,7 @@ def image_needs_building(image):
     return image_needs_pushing(image)
 
 
-def build_images(prefix, images, tag=None, commit_range=None, push=False, chart_version=None):
+def build_images(prefix, images, tag=None, commit_range=None, push=False, chart_version=None, skip_build=False):
     """Build a collection of docker images
 
     Args:
@@ -210,6 +210,8 @@ def build_images(prefix, images, tag=None, commit_range=None, push=False, chart_
     chart_version (str):
         The chart version, included as a prefix on image tags
         if `tag` is not specified.
+    skip_build (bool):
+        Whether to skip the actual image build (only updates tags).
     """
     value_modifications = {}
     for name, options in images.items():
@@ -231,6 +233,9 @@ def build_images(prefix, images, tag=None, commit_range=None, push=False, chart_
             'repository': image_name,
             'tag': SingleQuotedScalarString(image_tag),
         }
+
+        if skip_build:
+            continue
 
         template_namespace = {
             'LAST_COMMIT': last_commit,
@@ -289,7 +294,7 @@ def build_values(name, values_mods):
         yaml.dump(values, f)
 
 
-def build_chart(name, version=None, paths=None):
+def build_chart(name, version=None, paths=None, reset=False):
     """Update chart with specified version or last-modified commit in path(s)"""
     chart_file = os.path.join(name, 'Chart.yaml')
     with open(chart_file) as f:
@@ -311,7 +316,11 @@ def build_chart(name, version=None, paths=None):
 
         describe = check_output(['git', 'describe', '--tags', '--long', commit]).decode('utf8').strip()
         _tag, n_commits, sha = describe.rsplit('-', 2)
-        version = "{base_version}-{prerelease}.{n_commits}.{sha}".format(**locals())
+
+        if reset:
+            version = base_version
+        else:
+            version = "{base_version}-{prerelease}.{n_commits}.{sha}".format(**locals())
 
     chart['version'] = version
 
@@ -377,15 +386,19 @@ def main():
     argparser.add_argument('--commit-range',
         help='Range of commits to consider when building images')
     argparser.add_argument('--push', action='store_true',
-        help='push built images to docker hub')
+        help='Push built images to docker hub')
     argparser.add_argument('--publish-chart', action='store_true',
-        help='publish updated chart to gh-pages')
+        help='Publish updated chart to gh-pages')
     argparser.add_argument('--tag', default=None,
         help='Use this tag for images & charts')
     argparser.add_argument('--extra-message', default='',
-        help='extra message to add to the commit message when publishing charts')
+        help='Extra message to add to the commit message when publishing charts')
     argparser.add_argument('--image-prefix', default=None,
-        help='override image prefix with this value')
+        help='Override image prefix with this value')
+    argparser.add_argument('--reset', action='store_true',
+        help='Reset image tags')
+    argparser.add_argument('--skip-build', action='store_true',
+        help='Skip image build, only render the charts')
 
     args = argparser.parse_args()
 
@@ -400,18 +413,19 @@ def main():
             # version of the chart shouldn't have leading 'v' prefix
             # if tag is of the form 'v1.2.3'
             version = version.lstrip('v')
-        chart_version = build_chart(chart['name'], paths=chart_paths, version=version)
+        chart_version = build_chart(chart['name'], paths=chart_paths, version=version, reset=args.reset)
 
         if 'images' in chart:
             image_prefix = args.image_prefix if args.image_prefix is not None else chart['imagePrefix']
             value_mods = build_images(
                 prefix=image_prefix,
                 images=chart['images'],
-                tag=args.tag,
+                tag=args.tag if not args.reset else chart.get('resetTag', 'set-by-chartpress'),
                 commit_range=args.commit_range,
                 push=args.push,
                 # exclude `-<hash>` from chart_version prefix for images
                 chart_version=chart_version.split('-', 1)[0],
+                skip_build=args.skip_build or args.reset,
             )
             build_values(chart['name'], value_mods)
 
