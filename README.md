@@ -52,6 +52,14 @@ charts:
           - ../binderhub
 ```
 
+## Requirements
+
+The following binaries must be in your `PATH`:
+- git
+- helm
+
+If you are publishing a chart to GitHub Pages create a `gh-pages` branch in the destination repository.
+
 ## Usage
 
 In a directory containing a `chartpress.yaml`, run:
