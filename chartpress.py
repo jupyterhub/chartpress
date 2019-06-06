@@ -192,7 +192,7 @@ def image_needs_building(image):
     return image_needs_pushing(image)
 
 
-def build_images(prefix, images, tag=None, commit_range=None, push=False, chart_version=None, skip_build=False):
+def build_images(prefix, images, tag=None, commit_range=None, push=False, chart_version=None, skip_build=False, tag_prefix=""):
     """Build a collection of docker images
 
     Args:
@@ -213,6 +213,8 @@ def build_images(prefix, images, tag=None, commit_range=None, push=False, chart_
         if `tag` is not specified.
     skip_build (bool):
         Whether to skip the actual image build (only updates tags).
+    tag_prefix (str):
+        An optional prefix on all image tags (in front of chart_version or tag)
     """
     value_modifications = {}
     for name, options in images.items():
@@ -228,6 +230,7 @@ def build_images(prefix, images, tag=None, commit_range=None, push=False, chart_
             else:
                 image_tag = last_commit
         image_name = prefix + name
+        image_tag = tag_prefix + image_tag
         image_spec = '{}:{}'.format(image_name, image_tag)
 
         value_modifications[options['valuesPath']] = {
@@ -415,6 +418,7 @@ def main():
                 # exclude `-<hash>` from chart_version prefix for images
                 chart_version=chart_version.split('-', 1)[0],
                 skip_build=args.skip_build or args.reset,
+                tag_prefix=chart.get('tagPrefix', '')
             )
             build_values(chart['name'], value_mods)
 
