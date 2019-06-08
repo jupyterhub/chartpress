@@ -418,7 +418,7 @@ def main():
                 # exclude `-<hash>` from chart_version prefix for images
                 chart_version=chart_version.split('-', 1)[0],
                 skip_build=args.skip_build or args.reset,
-                tag_prefix=chart.get('tagPrefix', '')
+                tag_prefix=chart.get('imageTagPrefix', '')
             )
             build_values(chart['name'], value_mods)
 
