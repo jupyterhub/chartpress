@@ -2,6 +2,13 @@
 
 ## 0.3
 
+### 0.3.2
+
+- Update chartpress --help output in README.md [#42](https://github.com/jupyterhub/chartpress/pull/42) ([@consideRatio](https://github.com/consideRatio))
+- Add initial setup when starting from scratch [#36](https://github.com/jupyterhub/chartpress/pull/36) ([@manics](https://github.com/manics))
+- avoid mangling of quotes in rendered charts (#1) [#34](https://github.com/jupyterhub/chartpress/pull/34) ([@rokroskar](https://github.com/rokroskar))
+- Add --skip-build and add --reset to reset image tags as well as chart version [#28](https://github.com/jupyterhub/chartpress/pull/28) ([@rokroskar](https://github.com/rokroskar))
+
 ### 0.3.1
 
 - Fix conditionals for builds with new tagging scheme,
