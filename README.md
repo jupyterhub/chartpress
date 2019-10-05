@@ -72,6 +72,7 @@ to build your chart(s) and image(s). Add `--push` to publish images to docker hu
 usage: chartpress [-h] [--commit-range COMMIT_RANGE] [--push]
                   [--publish-chart] [--tag TAG]
                   [--extra-message EXTRA_MESSAGE]
+                  [--image-prefix IMAGE_PREFIX] [--reset] [--skip-build]
 
 Automate building and publishing helm charts and associated images. This is
 used as part of the JupyterHub and Binder projects.
@@ -80,12 +81,16 @@ optional arguments:
   -h, --help            show this help message and exit
   --commit-range COMMIT_RANGE
                         Range of commits to consider when building images
-  --push                push built images to docker hub
-  --publish-chart       publish updated chart to gh-pages
+  --push                Push built images to docker hub
+  --publish-chart       Publish updated chart to gh-pages
   --tag TAG             Use this tag for images & charts
   --extra-message EXTRA_MESSAGE
-                        extra message to add to the commit message when
+                        Extra message to add to the commit message when
                         publishing charts
+  --image-prefix IMAGE_PREFIX
+                        Override image prefix with this value
+  --reset               Reset image tags
+  --skip-build          Skip image build, only render the charts
 ```
 
 ### Caveats
