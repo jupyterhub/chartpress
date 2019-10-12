@@ -10,9 +10,8 @@ script:
   - chartpress --help
   - pyflakes .
   - |
-    # run chartpress on zero-to-jupyterhub
-    git clone https://github.com/jupyterhub/zero-to-jupyterhub
-    cd zero-to-jupyterhub
+    # run chartpress on zero-to-jupyterhub-k8s
+    git clone https://github.com/jupyterhub/zero-to-jupyterhub-k8s
+    cd zero-to-jupyterhub-k8s
     chartpress
   - chartpress --reset
-  
