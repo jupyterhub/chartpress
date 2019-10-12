@@ -14,3 +14,5 @@ script:
     git clone https://github.com/jupyterhub/zero-to-jupyterhub
     cd zero-to-jupyterhub
     chartpress
+  - chartpress --reset
+  
