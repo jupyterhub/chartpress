@@ -7,11 +7,11 @@ make a release on PyPI.
 For you to follow along according to these instructions, you need:
 - To be a maintainer of the [PyPI chartpress
   project](https://pypi.org/project/chartpress/).
-- To have push rights to the chartpress GitHub repository.
+- To have push rights to the [chartpress GitHub repository](https://github.com/jupyterhub/chartpress).
 
 ## Technical steps to make a release
 
-1. Checkout master and make sure your up to date.
+1. Checkout master and make sure it is up to date.
 
    ```
    git checkout master
@@ -48,5 +48,5 @@ For you to follow along according to these instructions, you need:
 1. Push your two commits and tag to master.
 
    ```
-   git push --tags <upstream>
+   git push --tags <upstream> master
    ```
