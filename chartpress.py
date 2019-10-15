@@ -388,8 +388,14 @@ def main():
         help='Reset image tags')
     argparser.add_argument('--skip-build', action='store_true',
         help='Skip image build, only render the charts')
+    argparser.add_argument('--version', action='store_true',
+        help='Print current chartpress version')
 
     args = argparser.parse_args()
+
+    if args.version:
+        print(f"chartpress version {__version__}")
+        return
 
     with open('chartpress.yaml') as f:
         config = yaml.load(f)

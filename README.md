@@ -91,6 +91,7 @@ optional arguments:
                         Override image prefix with this value
   --reset               Reset image tags
   --skip-build          Skip image build, only render the charts
+  --version             Print current chartpress version
 ```
 
 ### Caveats

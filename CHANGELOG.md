@@ -1,5 +1,9 @@
 # Changelog for chartpress
 
+## Unreleased
+
+Add --version flag [#45](https://github.com/jupyterhub/chartpress/pull/45) ([@consideRatio](https://github.com/consideRatio))
+
 ## 0.3
 
 ### 0.3.2
