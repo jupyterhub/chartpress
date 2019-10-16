@@ -308,10 +308,18 @@ def build_chart(name, version=None, paths=None):
     last_chart_commit = last_modified_commit(*paths)
 
     if version is None:
-        git_describe = check_output(['git', 'describe', '--tags', '--long', last_commit]).decode('utf8').strip()
-        latest_tag_in_branch, n_commits, sha = git_describe.rsplit('-', maxsplit=2)
-
-        version = f"{latest_tag_in_branch}+{n_commits}.{sha}"
+        try:
+            git_describe = check_output(['git', 'describe', '--tags', '--long', last_commit]).decode('utf8').strip()
+            latest_tag_in_branch, n_commits, sha = git_describe.rsplit('-', maxsplit=2)
+            version = f"{latest_tag_in_branch}+{int(n_commits):03d}.{sha}"
+        except CalledProcessError:
+            # no tags on branch: fallback to the SemVer 2 compliant version
+            # 0.0.1+<n_comits>.<last_chart_commit>
+            n_commits = check_output(
+                ['git', 'rev-list', '--count', 'HEAD'],
+                echo=False,
+            ).decode('utf-8')
+            version = f"0.0.1+{int(n_commits):03d}.{last_chart_commit}"
 
     chart['version'] = version
 
