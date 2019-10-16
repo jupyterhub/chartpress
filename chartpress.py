@@ -64,7 +64,7 @@ def last_modified_commit(*paths, **kwargs):
         '--pretty=format:%h',
         '--',
         *paths
-    ], **kwargs).decode('utf-8')
+    ], **kwargs).decode('utf-8').strip()
 
 
 def last_modified_date(*paths, **kwargs):
@@ -77,7 +77,7 @@ def last_modified_date(*paths, **kwargs):
         '--date=iso',
         '--',
         *paths
-    ], **kwargs).decode('utf-8')
+    ], **kwargs).decode('utf-8').strip()
 
 
 def path_touched(*paths, commit_range):
@@ -237,7 +237,7 @@ def build_images(prefix, images, tag=None, commit_range=None, push=False, chart_
                     f'{chart_tag + ".." if chart_tag != "0.0.1" else ""}{last_image_commit}',
                 ],
                 echo=False,
-            ).decode('utf-8')
+            ).decode('utf-8').strip()
             image_tag = f"{chart_tag}_{n_commits}-{last_image_commit}"
         image_name = prefix + name
         image_spec = '{}:{}'.format(image_name, image_tag)
@@ -327,7 +327,7 @@ def build_chart(name, version=None, paths=None):
             n_commits = check_output(
                 ['git', 'rev-list', '--count', last_chart_commit],
                 echo=False,
-            ).decode('utf-8')
+            ).decode('utf-8').strip()
             version = f"0.0.1+{int(n_commits):03d}.{last_chart_commit}"
 
     chart['version'] = version

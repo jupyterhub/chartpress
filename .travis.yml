@@ -24,9 +24,8 @@ script:
   - |-
     git clone https://github.com/jupyterhub/zero-to-jupyterhub-k8s &&
     cd zero-to-jupyterhub-k8s &&
-    chartpress &&
-    git --no-pager diff
+    chartpress
+  - git --no-pager diff
   
-  - |-
-    chartpress --reset &&
-    git --no-pager diff
+  - chartpress --reset
+  - git --no-pager diff
