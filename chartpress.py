@@ -226,10 +226,14 @@ def build_images(prefix, images, tag=None, commit_range=None, push=False, chart_
         paths = list(options.get('paths', [])) + [image_path, 'chartpress.yaml']
         last_image_commit = last_modified_commit(*paths)
         if tag is None:
-            if chart_tag:
-                image_tag = f"{chart_tag}-{last_image_commit}"
-            else:
-                image_tag = last_image_commit
+            n_commits = check_output(
+                [
+                    'git', 'rev-list', '--count',
+                    f'{chart_tag + ".." if chart_tag != "0.0.1" else ""}{last_chart_commit}',
+                ],
+                echo=False,
+            ).decode('utf-8')
+            image_tag = f"{chart_tag}_{n_commits}-{last_image_commit}"
         image_name = prefix + name
         image_spec = '{}:{}'.format(image_name, image_tag)
 
@@ -316,7 +320,7 @@ def build_chart(name, version=None, paths=None):
             # no tags on branch: fallback to the SemVer 2 compliant version
             # 0.0.1+<n_comits>.<last_chart_commit>
             n_commits = check_output(
-                ['git', 'rev-list', '--count', 'HEAD'],
+                ['git', 'rev-list', '--count', last_chart_commit],
                 echo=False,
             ).decode('utf-8')
             version = f"0.0.1+{int(n_commits):03d}.{last_chart_commit}"
