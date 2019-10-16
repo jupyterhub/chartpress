@@ -37,6 +37,12 @@ charts:
     # images to build for this chart (optional)
     images:
       binderhub:
+        # Template docker build arguments to be passed using docker's
+        # --build-arg flag as --build-arg <key>=<value>. Available dynamic
+        # values are TAG and LAST_COMMIT.
+        buildArgs:
+          MY_STATIC_BUILD_ARG: "hello world"
+          MY_DYNAMIC_BUILD_ARG: "{TAG}-{LAST_COMMIT}"
         # Context to send to docker build for use by the Dockerfile
         # (if different from the current directory)
         contextPath: ..
