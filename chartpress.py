@@ -425,7 +425,7 @@ def main():
             chart_version = chart_version.lstrip('v')
         if args.reset:
             chart_version = chart.get('resetTag', 'set-by-chartpress')
-        chart_version = build_chart(chart['name'], paths=chart_paths, version=chart_version, reset=args.reset)
+        chart_version = build_chart(chart['name'], paths=chart_paths, version=chart_version)
 
         if 'images' in chart:
             image_prefix = args.image_prefix if args.image_prefix is not None else chart['imagePrefix']
