@@ -45,8 +45,9 @@ For you to follow along according to these instructions, you need:
    appropriately with a `.dev` appendix and make a commit with the message `back
    to dev`.
 
-1. Push your two commits and tag to master.
+1. Push your two commits to master along with the annotated tags referencing
+   commits on master.
 
    ```
-   git push --tags <upstream> master
+   git push --follow-tags <upstream> master
    ```
