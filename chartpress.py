@@ -229,7 +229,12 @@ def build_images(prefix, images, tag=None, commit_range=None, push=False, chart_
             n_commits = check_output(
                 [
                     'git', 'rev-list', '--count',
-                    f'{chart_tag + ".." if chart_tag != "0.0.1" else ""}{last_chart_commit}',
+                    # Note that the 0.0.1 chart_tag may not exist as it was a
+                    # workaround to handle git histories with no tags in the
+                    # current branch. Also, if the chart_tag is a later git
+                    # reference than the last_image_commit, this command will
+                    # return 0.
+                    f'{chart_tag + ".." if chart_tag != "0.0.1" else ""}{last_image_commit}',
                 ],
                 echo=False,
             ).decode('utf-8')
@@ -313,10 +318,10 @@ def build_chart(name, version=None, paths=None):
 
     if version is None:
         try:
-            git_describe = check_output(['git', 'describe', '--tags', '--long', last_commit]).decode('utf8').strip()
+            git_describe = check_output(['git', 'describe', '--tags', '--long', last_chart_commit]).decode('utf8').strip()
             latest_tag_in_branch, n_commits, sha = git_describe.rsplit('-', maxsplit=2)
             version = f"{latest_tag_in_branch}+{int(n_commits):03d}.{sha}"
-        except CalledProcessError:
+        except subprocess.CalledProcessError:
             # no tags on branch: fallback to the SemVer 2 compliant version
             # 0.0.1+<n_comits>.<last_chart_commit>
             n_commits = check_output(
