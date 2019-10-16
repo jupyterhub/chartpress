@@ -96,17 +96,20 @@ def path_touched(*paths, commit_range):
     ]).decode('utf-8').strip() != ''
 
 
-def render_build_args(options, ns):
-    """Get docker build args dict, rendering any templated args.
+def render_build_args(image_options, ns):
+    """
+    Render buildArgs from chartpress.yaml that could be templates, using
+    provided namespace that contains keys with dynamic values such as
+    LAST_COMMIT or TAG.
 
     Args:
-    options (dict):
+    image_options (dict):
         The dictionary for a given image from chartpress.yaml.
-        Fields in `options['buildArgs']` will be rendered and returned,
-        if defined.
+        Fields in `image_options['buildArgs']` will be rendered
+        and returned, if defined.
     ns (dict): the namespace used when rendering templated arguments
     """
-    build_args = options.get('buildArgs', {})
+    build_args = image_options.get('buildArgs', {})
     for key, value in build_args.items():
         build_args[key] = value.format(**ns)
     return build_args
@@ -238,13 +241,15 @@ def build_images(prefix, images, tag=None, commit_range=None, push=False, chart_
         if skip_build:
             continue
 
-        template_namespace = {
-            'LAST_COMMIT': last_commit,
-            'TAG': image_tag,
-        }
 
         if tag or image_needs_building(image_spec):
-            build_args = render_build_args(options, template_namespace)
+            build_args = render_build_args(
+                options,
+                {
+                    'LAST_COMMIT': last_commit,
+                    'TAG': image_tag,
+                },
+            )
             build_image(image_path, image_spec, build_args, options.get('dockerfilePath'))
         else:
             print(f"Skipping build for {image_spec}, it already exists")
