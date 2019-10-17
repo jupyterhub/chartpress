@@ -2,9 +2,12 @@
 
 ## Unreleased
 
-Chart and image versioning, and Chart.yaml's --reset interaction [#52](https://github.com/jupyterhub/chartpress/pull/52) ([@consideRatio](https://github.com/consideRatio))
+## 0.4
 
-Add --version flag [#45](https://github.com/jupyterhub/chartpress/pull/45) ([@consideRatio](https://github.com/consideRatio))
+### 0.4.0
+
+- Chart and image versioning, and Chart.yaml's --reset interaction [#52](https://github.com/jupyterhub/chartpress/pull/52) ([@consideRatio](https://github.com/consideRatio))
+- Add --version flag [#45](https://github.com/jupyterhub/chartpress/pull/45) ([@consideRatio](https://github.com/consideRatio))
 
 ## 0.3
 
