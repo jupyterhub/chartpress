@@ -327,13 +327,17 @@ def build_chart(name, version=None, paths=None):
     return version
 
 
-def publish_pages(name, paths, git_repo, published_repo, extra_message=''):
-    """Publish helm chart index to github pages"""
-    version = last_modified_commit(*paths)
-    checkout_dir = '{}-{}'.format(name, version)
-    check_call([
-        'git', 'clone', '--no-checkout',
-        git_remote(git_repo), checkout_dir],
+def publish_pages(chart_name, chart_version, chart_repo_github_path, chart_repo_url, extra_message=''):
+    """Publish Helm chart index to github pages"""
+    # clone the Helm chart repo and checkout its gh-pages branch,
+    # note the use of cwd (current working directory)
+    checkout_dir = '{}-{}'.format(chart_name, chart_version)
+    check_call(
+        [
+            'git', 'clone', '--no-checkout',
+            git_remote(chart_repo_github_path),
+            checkout_dir,
+        ],
         echo=False,
     )
     check_call(['git', 'checkout', 'gh-pages'], cwd=checkout_dir)
@@ -343,13 +347,13 @@ def publish_pages(name, paths, git_repo, published_repo, extra_message=''):
     # without refreshing all of the timestamps
     with TemporaryDirectory() as td:
         check_call([
-            'helm', 'package', name,
+            'helm', 'package', chart_name,
             '--destination', td + '/',
         ])
 
         check_call([
             'helm', 'repo', 'index', td,
-            '--url', published_repo,
+            '--url', chart_repo_url,
             '--merge', os.path.join(checkout_dir, 'index.yaml'),
         ])
 
@@ -360,20 +364,14 @@ def publish_pages(name, paths, git_repo, published_repo, extra_message=''):
                 os.path.join(td, f),
                 os.path.join(checkout_dir, f)
             )
+
+    # git add, commit, and push
+    extra_message = f'\n\n{extra_message}' if extra_message else ''
+    message = f'[{chart_name}] Automatic update for commit {chart_version}{extra_message}'
+
     check_call(['git', 'add', '.'], cwd=checkout_dir)
-    if extra_message:
-        extra_message = '\n\n%s' % extra_message
-    else:
-        extra_message = ''
-    check_call([
-        'git',
-        'commit',
-        '-m', '[{}] Automatic update for commit {}{}'.format(name, version, extra_message)
-    ], cwd=checkout_dir)
-    check_call(
-        ['git', 'push', 'origin', 'gh-pages'],
-        cwd=checkout_dir,
-    )
+    check_call(['git', 'commit', '-m', message], cwd=checkout_dir)
+    check_call(['git', 'push', 'origin', 'gh-pages'], cwd=checkout_dir)
 
 
 
@@ -482,10 +480,11 @@ def main():
             build_values(chart['name'], value_mods)
 
         if args.publish_chart:
-            publish_pages(chart['name'],
-                paths=chart_paths,
-                git_repo=chart['repo']['git'],
-                published_repo=chart['repo']['published'],
+            publish_pages(
+                chart_name=chart['name'],
+                chart_version=chart_version,
+                chart_repo_github_path=chart['repo']['git'],
+                chart_repo_url=chart['repo']['published'],
                 extra_message=args.extra_message,
             )
 
