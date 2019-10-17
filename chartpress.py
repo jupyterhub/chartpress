@@ -226,7 +226,7 @@ def build_images(prefix, images, tag=None, commit_range=None, push=False, chart_
         paths = list(options.get('paths', [])) + [image_path, 'chartpress.yaml']
         last_image_commit = last_modified_commit(*paths)
         if tag is None:
-            n_commits = check_output(
+            n_commits = int(check_output(
                 [
                     'git', 'rev-list', '--count',
                     # Note that the 0.0.1 chart_tag may not exist as it was a
@@ -237,8 +237,12 @@ def build_images(prefix, images, tag=None, commit_range=None, push=False, chart_
                     f'{chart_tag + ".." if chart_tag != "0.0.1" else ""}{last_image_commit}',
                 ],
                 echo=False,
-            ).decode('utf-8').strip()
-            image_tag = f"{chart_tag}_{n_commits}-{last_image_commit}"
+            ).decode('utf-8').strip())
+
+            if n_commits > 0:
+                image_tag = f"{chart_tag}_{int(n_commits):03d}-{last_image_commit}"
+            else:
+                image_tag = f"{chart_tag}"
         image_name = prefix + name
         image_spec = '{}:{}'.format(image_name, image_tag)
 
@@ -320,15 +324,20 @@ def build_chart(name, version=None, paths=None):
         try:
             git_describe = check_output(['git', 'describe', '--tags', '--long', last_chart_commit]).decode('utf8').strip()
             latest_tag_in_branch, n_commits, sha = git_describe.rsplit('-', maxsplit=2)
-            version = f"{latest_tag_in_branch}+{int(n_commits):03d}.{sha}"
+
+            n_commits = int(n_commits)
+            if n_commits > 0:
+                version = f"{latest_tag_in_branch}+{n_commits:03d}.{sha}"
+            else:
+                version = f"{latest_tag_in_branch}"
         except subprocess.CalledProcessError:
             # no tags on branch: fallback to the SemVer 2 compliant version
             # 0.0.1+<n_comits>.<last_chart_commit>
-            n_commits = check_output(
+            n_commits = int(check_output(
                 ['git', 'rev-list', '--count', last_chart_commit],
                 echo=False,
-            ).decode('utf-8').strip()
-            version = f"0.0.1+{int(n_commits):03d}.{last_chart_commit}"
+            ).decode('utf-8').strip())
+            version = f"0.0.1+{n_commits:03d}.{last_chart_commit}"
 
     chart['version'] = version
 
