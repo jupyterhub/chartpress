@@ -23,8 +23,12 @@ charts:
     # the prefix to use for built images
     imagePrefix: jupyterhub/k8s-
     # tag to use when resetting the chart values
-    # with --reset command-line option (defaults to "set-by-chartpress")
+    # with the --reset flag. It defaults to "set-by-chartpress".
     resetTag: latest
+    # version to use when resetting the Chart.yaml's version field with the
+    # --reset flag. It defaults to "0.0.1-set.by.chartpress". This is a valid
+    # SemVer 2 version, which is required for a helm lint command to succeed.
+    resetVersion: 1.2.3
     # the git repo whose gh-pages contains the charts
     repo:
       git: jupyterhub/helm-chart
