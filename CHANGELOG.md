@@ -4,6 +4,12 @@
 
 ## 0.4
 
+### 0.4.1
+
+- Deprecate --commit-range [#55](https://github.com/jupyterhub/chartpress/pull/55) ([@consideRatio](https://github.com/consideRatio))
+- Reset Chart.yaml's version to a valid value [#54](https://github.com/jupyterhub/chartpress/pull/54) ([@consideRatio](https://github.com/consideRatio))
+- Don't append +build on tagged commits [#53](https://github.com/jupyterhub/chartpress/pull/53) ([@consideRatio](https://github.com/consideRatio))
+
 ### 0.4.0
 
 - Chart and image versioning, and Chart.yaml's --reset interaction [#52](https://github.com/jupyterhub/chartpress/pull/52) ([@consideRatio](https://github.com/consideRatio))
