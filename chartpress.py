@@ -80,22 +80,6 @@ def last_modified_date(*paths, **kwargs):
     ], **kwargs).decode('utf-8').strip()
 
 
-def path_touched(*paths, commit_range):
-    """Return whether the given paths have been changed in the commit range
-
-    Used to determine if a build is necessary
-
-    Args:
-    *paths (str):
-        paths to check for changes
-    commit_range (str):
-        range of commits to check if paths have changed
-    """
-    return check_output([
-        'git', 'diff', '--name-only', commit_range, '--', *paths
-    ]).decode('utf-8').strip() != ''
-
-
 def render_build_args(image_options, ns):
     """
     Render buildArgs from chartpress.yaml that could be templates, using
@@ -195,7 +179,7 @@ def image_needs_building(image):
     return image_needs_pushing(image)
 
 
-def build_images(prefix, images, tag=None, commit_range=None, push=False, chart_tag=None, skip_build=False):
+def build_images(prefix, images, tag=None, push=False, chart_tag=None, skip_build=False):
     """Build a collection of docker images
 
     Args:
@@ -205,10 +189,6 @@ def build_images(prefix, images, tag=None, commit_range=None, push=False, chart_
         Specific tag to use instead of the last modified commit.
         If unspecified the tag for each image will be the hash of the last commit
         to modify the image's files.
-    commit_range (str):
-        The range of commits to consider, e.g. for building in CI.
-        If an image hasn't changed in the given range,
-        it will not be rebuilt.
     push (bool):
         Whether to push the resulting images (default: False).
     chart_tag (str):
@@ -396,28 +376,73 @@ def publish_pages(name, paths, git_repo, published_repo, extra_message=''):
     )
 
 
+
+class ActionStoreDeprecated(argparse.Action):
+    """Used with argparse as a deprecation action."""
+    def __call__(self, parser, namespace, values, option_string=None):
+        print(f"Warning: use of {'|'.join(self.option_strings)} is deprecated.")
+        setattr(namespace, self.dest, values)
+
+
+class ActionAppendDeprecated(argparse.Action):
+    """Used with argparse as a deprecation action."""
+    def __call__(self, parser, namespace, values, option_string=None):
+        print(f"Warning: use of {'|'.join(self.option_strings)} is deprecated.")
+        if not getattr(namespace, self.dest):
+            setattr(namespace, self.dest, [])
+        getattr(namespace, self.dest).append(values)
+
+
+
 def main():
     """Run chartpress"""
     argparser = argparse.ArgumentParser(description=__doc__)
 
-    argparser.add_argument('--commit-range',
-        help='Range of commits to consider when building images')
-    argparser.add_argument('--push', action='store_true',
-        help='Push built images to docker hub')
-    argparser.add_argument('--publish-chart', action='store_true',
-        help='Publish updated chart to gh-pages')
-    argparser.add_argument('--tag', default=None,
-        help='Use this tag for images & charts')
-    argparser.add_argument('--extra-message', default='',
-        help='Extra message to add to the commit message when publishing charts')
-    argparser.add_argument('--image-prefix', default=None,
-        help='Override image prefix with this value')
-    argparser.add_argument('--reset', action='store_true',
-        help="Skip image build and reset Chart.yaml's version field and values.yaml's image tags")
-    argparser.add_argument('--skip-build', action='store_true',
-        help='Skip image build, only render the charts')
-    argparser.add_argument('--version', action='store_true',
-        help='Print current chartpress version')
+    argparser.add_argument(
+        '--commit-range',
+        action=ActionStoreDeprecated,
+        help='Deprecated: this flag will be ignored. The new logic to determine if an image needs to be rebuilt does not require this. It will find the time in git history where the image was last in need of a rebuild due to changes, and check if that build exists locally or remotely already.',
+    )
+    argparser.add_argument(
+        '--push',
+        action='store_true',
+        help='Push built images to docker hub',
+    )
+    argparser.add_argument(
+        '--publish-chart',
+        action='store_true',
+        help='Publish updated chart to gh-pages',
+    )
+    argparser.add_argument(
+        '--tag',
+        default=None,
+        help='Use this tag for images & charts',
+    )
+    argparser.add_argument(
+        '--extra-message',
+        default='',
+        help='Extra message to add to the commit message when publishing charts',
+    )
+    argparser.add_argument(
+        '--image-prefix',
+        default=None,
+        help='Override image prefix with this value',
+    )
+    argparser.add_argument(
+        '--reset',
+        action='store_true',
+        help="Skip image build and reset Chart.yaml's version field and values.yaml's image tags",
+    )
+    argparser.add_argument(
+        '--skip-build',
+        action='store_true',
+        help='Skip image build, only render the charts',
+    )
+    argparser.add_argument(
+        '--version',
+        action='store_true',
+        help='Print current chartpress version',
+    )
 
     args = argparser.parse_args()
 
@@ -447,7 +472,6 @@ def main():
                 prefix=image_prefix,
                 images=chart['images'],
                 tag=args.tag if not args.reset else chart.get('resetTag', 'set-by-chartpress'),
-                commit_range=args.commit_range,
                 push=args.push,
                 # chart_tag will act as a image tag prefix, we can get it from
                 # the chart_version by stripping away the build part of the
