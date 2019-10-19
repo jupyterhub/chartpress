@@ -79,29 +79,42 @@ In a directory containing a `chartpress.yaml`, run:
 to build your chart(s) and image(s). Add `--push` to publish images to docker hub and `--publish-chart` to publish the chart and index to gh-pages.
 
 ```
-usage: chartpress [-h] [--commit-range COMMIT_RANGE] [--push]
-                  [--publish-chart] [--tag TAG]
-                  [--extra-message EXTRA_MESSAGE]
+usage: chartpress [-h] [--push] [--publish-chart]
+                  [--extra-message EXTRA_MESSAGE] [--tag TAG | --long]
                   [--image-prefix IMAGE_PREFIX] [--reset] [--skip-build]
+                  [--version] [--commit-range COMMIT_RANGE]
 
 Automate building and publishing helm charts and associated images. This is
 used as part of the JupyterHub and Binder projects.
 
 optional arguments:
   -h, --help            show this help message and exit
-  --commit-range COMMIT_RANGE
-                        Range of commits to consider when building images
-  --push                Push built images to docker hub
-  --publish-chart       Publish updated chart to gh-pages
-  --tag TAG             Use this tag for images & charts
+  --push                Push built images to their docker image registry.
+  --publish-chart       Package a Helm chart and publish it to a Helm chart
+                        repository contructed with a GitHub git repository and
+                        GitHub pages.
   --extra-message EXTRA_MESSAGE
                         Extra message to add to the commit message when
-                        publishing charts
+                        publishing charts.
+  --tag TAG             Explicitly set the image tags and chart version.
+  --long                Use this to always get a build suffix for the
+                        generated tag and chart version, even when the
+                        specific commit has a tag.
   --image-prefix IMAGE_PREFIX
-                        Override image prefix with this value
-  --reset               Reset image tags
-  --skip-build          Skip image build, only render the charts
-  --version             Print current chartpress version
+                        Override the configured image prefix with this value.
+  --reset               Skip image build step and reset Chart.yaml's version
+                        field and values.yaml's image tags. What it resets to
+                        can be configured in chartpress.yaml with the resetTag
+                        and resetVersion configurations.
+  --skip-build          Skip the image build step.
+  --version             Print current chartpress version and exit.
+  --commit-range COMMIT_RANGE
+                        Deprecated: this flag will be ignored. The new logic
+                        to determine if an image needs to be rebuilt does not
+                        require this. It will find the time in git history
+                        where the image was last in need of a rebuild due to
+                        changes, and check if that build exists locally or
+                        remotely already.
 ```
 
 ### Caveats
