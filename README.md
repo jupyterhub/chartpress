@@ -1,17 +1,19 @@
 # chartpress
 
-Automate building and publishing helm charts and associated images.
+Automate building and publishing Helm charts and associated images.
 
 This is used as part of the JupyterHub and Binder projects.
 
-Chartpress will:
+Chartpress can:
 
-- build docker images and tag them with the latest git commit
-- publish those images to DockerHub
-- rerender a chart to include the tagged images
-- publish the chart and index to gh-pages
+- build docker images and tag them appropriately
+- push those images to a docker iamge repository
+- update Chart.yaml and values.yaml to reference the built images
+- publish the chart to a GitHub pages based Helm chart repository
+- reset Chart.yaml and values.yaml
 
-A `chartpress.yaml` file contains a specification of charts and images to build.
+A `chartpress.yaml` file contains a specification of charts and images to build
+for each chart.
 
 For example:
 
@@ -65,10 +67,12 @@ charts:
 ## Requirements
 
 The following binaries must be in your `PATH`:
-- git
-- helm
+- [git](https://www.git-scm.com/downloads)
+- [docker](https://docs.docker.com/install/#supported-platforms)
+- [helm](https://helm.sh/docs/using_helm/#installing-helm)
 
-If you are publishing a chart to GitHub Pages create a `gh-pages` branch in the destination repository.
+If you are publishing a chart to GitHub Pages create a `gh-pages` branch in the
+destination repository.
 
 ## Usage
 
@@ -76,7 +80,8 @@ In a directory containing a `chartpress.yaml`, run:
 
     chartpress
 
-to build your chart(s) and image(s). Add `--push` to publish images to docker hub and `--publish-chart` to publish the chart and index to gh-pages.
+to build your chart(s) and image(s). Add `--push` to publish images to docker
+hub and `--publish-chart` to publish the chart and index to gh-pages.
 
 ```
 usage: chartpress [-h] [--push] [--publish-chart]
@@ -121,11 +126,15 @@ optional arguments:
 
 #### Shallow clones
 
-Chartpress detects the latest commit which changed a directory or file when determining the tag to use for charts and images.
-This means that shallow clones should not be used because if the last commit that changed a relevant file is outside the shallow commit range, the wrong tag will be assigned.
+Chartpress detects the latest commit which changed a directory or file when
+determining the tag to use for charts and images. This means that shallow clones
+should not be used because if the last commit that changed a relevant file is
+outside the shallow commit range, the wrong tag will be assigned.
 
-Travis uses a clone depth of 50 by default, which can result in incorrect image tagging.
-You can [disable this shallow clone behavior](https://docs.travis-ci.com/user/customizing-the-build/#Git-Clone-Depth) in your `.travis.yml`:
+Travis uses a clone depth of 50 by default, which can result in incorrect image
+tagging. You can [disable this shallow clone
+behavior](https://docs.travis-ci.com/user/customizing-the-build/#Git-Clone-Depth)
+in your `.travis.yml`:
 
 ```yaml
 git:
