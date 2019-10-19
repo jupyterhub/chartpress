@@ -4,6 +4,11 @@
 
 ## 0.4
 
+### 0.4.2
+
+- --long flag to always output build information in image tags and chart version [#57](https://github.com/jupyterhub/chartpress/pull/57) ([@consideRatio](https://github.com/consideRatio))
+- Refactor publish_pages for comprehensibility [#56](https://github.com/jupyterhub/chartpress/pull/56) ([@consideRatio](https://github.com/consideRatio))
+
 ### 0.4.1
 
 - Deprecate --commit-range [#55](https://github.com/jupyterhub/chartpress/pull/55) ([@consideRatio](https://github.com/consideRatio))
