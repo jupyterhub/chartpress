@@ -1,4 +1,4 @@
-# chartpress
+# [chartpress](https://github.com/jupyterhub/chartpress)
 
 [![PyPI](https://img.shields.io/pypi/v/chartpress.svg)](https://pypi.python.org/pypi/chartpress)
 [![Build Status](https://travis-ci.org/jupyterhub/chartpress.svg?branch=master)](https://travis-ci.org/jupyterhub/chartpress)
