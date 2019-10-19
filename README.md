@@ -1,17 +1,19 @@
 # chartpress
 
-Automate building and publishing helm charts and associated images.
+Automate building and publishing Helm charts and associated images.
 
 This is used as part of the JupyterHub and Binder projects.
 
-Chartpress will:
+Chartpress can:
 
-- build docker images and tag them with the latest git commit
-- publish those images to DockerHub
-- rerender a chart to include the tagged images
-- publish the chart and index to gh-pages
+- build docker images and tag them appropriately
+- push those images to a docker iamge repository
+- update Chart.yaml and values.yaml to reference the built images
+- publish the chart to a GitHub pages based Helm chart repository
+- reset Chart.yaml and values.yaml
 
-A `chartpress.yaml` file contains a specification of charts and images to build.
+A `chartpress.yaml` file contains a specification of charts and images to build
+for each chart.
 
 For example:
 
@@ -65,10 +67,12 @@ charts:
 ## Requirements
 
 The following binaries must be in your `PATH`:
-- git
-- helm
+- [git](https://www.git-scm.com/downloads)
+- [docker](https://docs.docker.com/install/#supported-platforms)
+- [helm](https://helm.sh/docs/using_helm/#installing-helm)
 
-If you are publishing a chart to GitHub Pages create a `gh-pages` branch in the destination repository.
+If you are publishing a chart to GitHub Pages create a `gh-pages` branch in the
+destination repository.
 
 ## Usage
 
@@ -76,43 +80,61 @@ In a directory containing a `chartpress.yaml`, run:
 
     chartpress
 
-to build your chart(s) and image(s). Add `--push` to publish images to docker hub and `--publish-chart` to publish the chart and index to gh-pages.
+to build your chart(s) and image(s). Add `--push` to publish images to docker
+hub and `--publish-chart` to publish the chart and index to gh-pages.
 
 ```
-usage: chartpress [-h] [--commit-range COMMIT_RANGE] [--push]
-                  [--publish-chart] [--tag TAG]
-                  [--extra-message EXTRA_MESSAGE]
+usage: chartpress [-h] [--push] [--publish-chart]
+                  [--extra-message EXTRA_MESSAGE] [--tag TAG | --long]
                   [--image-prefix IMAGE_PREFIX] [--reset] [--skip-build]
+                  [--version] [--commit-range COMMIT_RANGE]
 
 Automate building and publishing helm charts and associated images. This is
 used as part of the JupyterHub and Binder projects.
 
 optional arguments:
   -h, --help            show this help message and exit
-  --commit-range COMMIT_RANGE
-                        Range of commits to consider when building images
-  --push                Push built images to docker hub
-  --publish-chart       Publish updated chart to gh-pages
-  --tag TAG             Use this tag for images & charts
+  --push                Push built images to their docker image registry.
+  --publish-chart       Package a Helm chart and publish it to a Helm chart
+                        repository contructed with a GitHub git repository and
+                        GitHub pages.
   --extra-message EXTRA_MESSAGE
                         Extra message to add to the commit message when
-                        publishing charts
+                        publishing charts.
+  --tag TAG             Explicitly set the image tags and chart version.
+  --long                Use this to always get a build suffix for the
+                        generated tag and chart version, even when the
+                        specific commit has a tag.
   --image-prefix IMAGE_PREFIX
-                        Override image prefix with this value
-  --reset               Reset image tags
-  --skip-build          Skip image build, only render the charts
-  --version             Print current chartpress version
+                        Override the configured image prefix with this value.
+  --reset               Skip image build step and reset Chart.yaml's version
+                        field and values.yaml's image tags. What it resets to
+                        can be configured in chartpress.yaml with the resetTag
+                        and resetVersion configurations.
+  --skip-build          Skip the image build step.
+  --version             Print current chartpress version and exit.
+  --commit-range COMMIT_RANGE
+                        Deprecated: this flag will be ignored. The new logic
+                        to determine if an image needs to be rebuilt does not
+                        require this. It will find the time in git history
+                        where the image was last in need of a rebuild due to
+                        changes, and check if that build exists locally or
+                        remotely already.
 ```
 
 ### Caveats
 
 #### Shallow clones
 
-Chartpress detects the latest commit which changed a directory or file when determining the tag to use for charts and images.
-This means that shallow clones should not be used because if the last commit that changed a relevant file is outside the shallow commit range, the wrong tag will be assigned.
+Chartpress detects the latest commit which changed a directory or file when
+determining the tag to use for charts and images. This means that shallow clones
+should not be used because if the last commit that changed a relevant file is
+outside the shallow commit range, the wrong tag will be assigned.
 
-Travis uses a clone depth of 50 by default, which can result in incorrect image tagging.
-You can [disable this shallow clone behavior](https://docs.travis-ci.com/user/customizing-the-build/#Git-Clone-Depth) in your `.travis.yml`:
+Travis uses a clone depth of 50 by default, which can result in incorrect image
+tagging. You can [disable this shallow clone
+behavior](https://docs.travis-ci.com/user/customizing-the-build/#Git-Clone-Depth)
+in your `.travis.yml`:
 
 ```yaml
 git:

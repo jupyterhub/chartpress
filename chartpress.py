@@ -179,7 +179,7 @@ def image_needs_building(image):
     return image_needs_pushing(image)
 
 
-def build_images(prefix, images, tag=None, push=False, chart_tag=None, skip_build=False):
+def build_images(prefix, images, tag=None, push=False, chart_tag=None, skip_build=False, long=False):
     """Build a collection of docker images
 
     Args:
@@ -196,6 +196,19 @@ def build_images(prefix, images, tag=None, push=False, chart_tag=None, skip_buil
         if `tag` is not specified.
     skip_build (bool):
         Whether to skip the actual image build (only updates tags).
+    long (bool):
+        Whether to include the generated tag's build suffix even when the commit
+        has a tag. Setting long to true could be useful if you have two build
+        pipelines, one for commits and one for tags, and want to avoid
+        generating conflicting build artifacts.
+
+        Example 1:
+        - long=False: 0.9.0
+        - long=True:  0.9.0_000.asdf1234
+
+        Example 2:
+        - long=False: 0.9.0_004.sdfg2345
+        - long=True:  0.9.0_004.sdfg2345
     """
     value_modifications = {}
     for name, options in images.items():
@@ -219,7 +232,7 @@ def build_images(prefix, images, tag=None, push=False, chart_tag=None, skip_buil
                 echo=False,
             ).decode('utf-8').strip())
 
-            if n_commits > 0:
+            if n_commits > 0 or long:
                 image_tag = f"{chart_tag}_{int(n_commits):03d}-{last_image_commit}"
             else:
                 image_tag = f"{chart_tag}"
@@ -292,8 +305,20 @@ def build_values(name, values_mods):
         yaml.dump(values, f)
 
 
-def build_chart(name, version=None, paths=None):
-    """Update Chart.yaml with specified version or last-modified commit in path(s)"""
+def build_chart(name, version=None, paths=None, long=False):
+    """
+    Update Chart.yaml's version, using specified version or by constructing one.
+    
+    Chart versions are constructed using:
+        a) the latest commit that is tagged,
+        b) the latest commit that modified provided paths
+
+    Example versions constructed:
+        - 0.9.0-alpha.1
+        - 0.9.0-alpha.1+000.asdf1234 (--long)
+        - 0.9.0-alpha.1+005.sdfg2345
+        - 0.9.0-alpha.1+005.sdfg2345 (--long)
+    """
     chart_file = os.path.join(name, 'Chart.yaml')
     with open(chart_file) as f:
         chart = yaml.load(f)
@@ -306,7 +331,7 @@ def build_chart(name, version=None, paths=None):
             latest_tag_in_branch, n_commits, sha = git_describe.rsplit('-', maxsplit=2)
 
             n_commits = int(n_commits)
-            if n_commits > 0:
+            if n_commits > 0 or long:
                 version = f"{latest_tag_in_branch}+{n_commits:03d}.{sha}"
             else:
                 version = f"{latest_tag_in_branch}"
@@ -397,49 +422,56 @@ def main():
     argparser = argparse.ArgumentParser(description=__doc__)
 
     argparser.add_argument(
-        '--commit-range',
-        action=ActionStoreDeprecated,
-        help='Deprecated: this flag will be ignored. The new logic to determine if an image needs to be rebuilt does not require this. It will find the time in git history where the image was last in need of a rebuild due to changes, and check if that build exists locally or remotely already.',
-    )
-    argparser.add_argument(
         '--push',
         action='store_true',
-        help='Push built images to docker hub',
+        help='Push built images to their docker image registry.',
     )
     argparser.add_argument(
         '--publish-chart',
         action='store_true',
-        help='Publish updated chart to gh-pages',
-    )
-    argparser.add_argument(
-        '--tag',
-        default=None,
-        help='Use this tag for images & charts',
+        help='Package a Helm chart and publish it to a Helm chart repository contructed with a GitHub git repository and GitHub pages.',
     )
     argparser.add_argument(
         '--extra-message',
         default='',
-        help='Extra message to add to the commit message when publishing charts',
+        help='Extra message to add to the commit message when publishing charts.',
+    )
+    tag_or_long_group = argparser.add_mutually_exclusive_group()
+    tag_or_long_group.add_argument(
+        '--tag',
+        default=None,
+        help="Explicitly set the image tags and chart version.",
+    )
+    tag_or_long_group.add_argument(
+        '--long',
+        action='store_true',
+        help='Use this to always get a build suffix for the generated tag and chart version, even when the specific commit has a tag.',
     )
     argparser.add_argument(
         '--image-prefix',
         default=None,
-        help='Override image prefix with this value',
+        help='Override the configured image prefix with this value.',
     )
     argparser.add_argument(
         '--reset',
         action='store_true',
-        help="Skip image build and reset Chart.yaml's version field and values.yaml's image tags",
+        help="Skip image build step and reset Chart.yaml's version field and values.yaml's image tags. What it resets to can be configured in chartpress.yaml with the resetTag and resetVersion configurations.",
     )
     argparser.add_argument(
         '--skip-build',
         action='store_true',
-        help='Skip image build, only render the charts',
+        help='Skip the image build step.',
     )
     argparser.add_argument(
         '--version',
         action='store_true',
-        help='Print current chartpress version',
+        help='Print current chartpress version and exit.',
+    )
+
+    argparser.add_argument(
+        '--commit-range',
+        action=ActionStoreDeprecated,
+        help='Deprecated: this flag will be ignored. The new logic to determine if an image needs to be rebuilt does not require this. It will find the time in git history where the image was last in need of a rebuild due to changes, and check if that build exists locally or remotely already.',
     )
 
     args = argparser.parse_args()
@@ -451,6 +483,13 @@ def main():
     with open('chartpress.yaml') as f:
         config = yaml.load(f)
 
+    # main logic
+    # - loop through each chart listed in chartpress.yaml
+    #   - build chart.yaml (--reset)
+    #   - build images (--skip-build | --reset)
+    #     - push images (--push)
+    #   - build values.yaml (--reset)
+    #   - push chart (--publish-chart, --extra-message)
     for chart in config['charts']:
         chart_paths = ['.'] + list(chart.get('paths', []))
 
@@ -462,7 +501,7 @@ def main():
             chart_version = chart_version.lstrip('v')
         if args.reset:
             chart_version = chart.get('resetVersion', '0.0.1-set.by.chartpress')
-        chart_version = build_chart(chart['name'], paths=chart_paths, version=chart_version)
+        chart_version = build_chart(chart['name'], paths=chart_paths, version=chart_version, long=args.long)
 
         if 'images' in chart:
             image_prefix = args.image_prefix if args.image_prefix is not None else chart['imagePrefix']
@@ -476,6 +515,7 @@ def main():
                 # SemVer 2 compliant chart_version.
                 chart_tag=chart_version.split('+')[0],
                 skip_build=args.skip_build or args.reset,
+                long=args.long,
             )
             build_values(chart['name'], value_mods)
 

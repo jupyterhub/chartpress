@@ -3,6 +3,7 @@ python:
   - 3.6
 cache: pip
 install:
+  - set -e
   - pip install --upgrade pip
   - pip install pyflakes .
 script:
@@ -10,22 +11,41 @@ script:
   - chartpress --help
   - pyflakes .
 
-  # This is a workaround to an issue caused by the existence of a docker registry
-  # mirror in our CI environment. Without this fix that removes the mirror,
-  # chartpress fails to realize the existence of already built images and rebuilds
-  # them.
+  # This is a workaround to an issue caused by the existence of a docker
+  # registrymirror in our CI environment. Without this fix that removes the
+  # mirror, chartpress fails to realize the existence of already built images
+  # and rebuilds them.
   #
   # ref: https://github.com/moby/moby/issues/39120
   - |-
-    echo '{"mtu": 1460}' | sudo dd of=/etc/docker/daemon.json &&
-    sudo systemctl restart docker
+      echo '{"mtu": 1460}' | sudo dd of=/etc/docker/daemon.json &&
+      sudo systemctl restart docker &&
+      echo "Travis docker registry mirroring disabled.\n\n"
 
-  # run chartpress on zero-to-jupyterhub-k8s
   - |-
-    git clone https://github.com/jupyterhub/zero-to-jupyterhub-k8s &&
-    cd zero-to-jupyterhub-k8s &&
-    chartpress
-  - git --no-pager diff
+      git clone https://github.com/jupyterhub/zero-to-jupyterhub-k8s &&
+      cd zero-to-jupyterhub-k8s &&
+      chartpress &&
+      echo -e "\n\n### realistic run: expecting no rebuilds" &&
+      git --no-pager diff --unified=1
+
+  - |-
+      chartpress --skip-build --tag 1.2.3-test.tag &&
+      echo -e "\n\n### --tag --skip-build: expecting no rebuilds and version 1.2.3-test.tag" &&
+      git --no-pager diff --unified=1
+
+  - |-
+      git tag -a 1.2.3-test.tag -m 1.2.3-test.tag HEAD &&
+      chartpress --skip-build &&
+      echo -e "\n\n### git tag: expecting version 1.2.3-test.tag" &&
+      git --no-pager diff --unified=1
+
+  - |-
+      chartpress --skip-build --long &&
+      echo -e "\n\n### --long: expecting version 1.2.3-test.tag+000.asdf1234" &&
+      git --no-pager diff --unified=1
   
-  - chartpress --reset
-  - git --no-pager diff
+  - |-
+      chartpress --reset &&
+      echo -e '\n\n### --reset: expecting version "0.0.1+set.by.chartpress"' &&
+      git --no-pager diff --unified=1
