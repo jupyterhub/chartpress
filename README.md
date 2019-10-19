@@ -124,6 +124,12 @@ optional arguments:
 
 ### Caveats
 
+#### TravisCI mirror image registry
+
+If you run chartpress on TravisCI, its logic can be fooled by a mirror image
+registry to rebuild something that didn't need rebuilding. A workaround for this
+can be found in this repo's [.travis.yml](.travis.yml).
+
 #### Shallow clones
 
 Chartpress detects the latest commit which changed a directory or file when
