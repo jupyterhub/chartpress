@@ -1,5 +1,8 @@
 # chartpress
 
+[![PyPI](https://img.shields.io/pypi/v/chartpress.svg)](https://pypi.python.org/pypi/chartpress)
+[![Build Status](https://travis-ci.org/jupyterhub/chartpress.svg?branch=master)](https://travis-ci.org/jupyterhub/chartpress)
+
 Automate building and publishing Helm charts and associated images.
 
 This is used as part of the JupyterHub and Binder projects.
