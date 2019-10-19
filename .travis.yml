@@ -26,6 +26,12 @@ script:
     cd zero-to-jupyterhub-k8s &&
     chartpress
   - git --no-pager diff
+
+  - chartpress --skip-build --tag 1.2.3-test.tag
+  - git --no-pager diff
+
+  - chartpress --long
+  - git --no-pager diff
   
   - chartpress --reset
   - git --no-pager diff
