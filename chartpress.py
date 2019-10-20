@@ -278,8 +278,12 @@ def build_values(name, values_mods):
 
     for key, value in values_mods.items():
         parts = key.split('.')
-        mod_obj = values
+        mod_obj = parent = values
         for p in parts:
+            if p.isdigit():
+                # integers are indices in lists
+                p = int(p)
+            parent = mod_obj
             mod_obj = mod_obj[p]
         print(f"Updating {values_file}: {key}: {value}")
 
@@ -295,9 +299,12 @@ def build_values(name, values_mods):
                 )
 
             mod_obj['tag'] = value['tag']
+        elif isinstance(mod_obj, str) and set(value.keys()) == {'repository', 'tag'}:
+            # scalar image string, not dict with separate repository, tag keys
+            parent[parts[-1]] = "{repository}:{tag}".format(**value)
         else:
             raise TypeError(
-                f'The key {key} in {values_file} must be a mapping.'
+                f'The key {key} in {values_file} must be a mapping or string, not {type(mod_obj)}.'
             )
 
 
