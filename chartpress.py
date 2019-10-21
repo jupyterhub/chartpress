@@ -336,6 +336,9 @@ def build_chart(name, version=None, paths=None, long=False):
         try:
             git_describe = check_output(['git', 'describe', '--tags', '--long', last_chart_commit]).decode('utf8').strip()
             latest_tag_in_branch, n_commits, sha = git_describe.rsplit('-', maxsplit=2)
+            # remove the "g" prefix that is part of the git describe command
+            # ref: https://git-scm.com/docs/git-describe#_examples
+            sha = sha[1:]
 
             n_commits = int(n_commits)
             if n_commits > 0 or long:
