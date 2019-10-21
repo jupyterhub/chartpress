@@ -56,29 +56,39 @@ def git_remote(git_repo):
     return 'git@github.com:{0}'.format(git_repo)
 
 
-def last_modified_commit(*paths, **kwargs):
+def latest_tag_or_mod_commit(*paths, **kwargs):
     """Get the last commit to modify the given paths"""
-    return check_output([
-        'git',
-        'log',
-        '-n', '1',
-        '--pretty=format:%h',
-        '--',
-        *paths
-    ], **kwargs).decode('utf-8').strip()
+    latest_modification_commit = check_output(
+        [
+            'git', 'log',
+            '--max-count=1',
+            '--pretty=format:%h',
+            '--',
+            *paths,
+        ],
+        **kwargs,
+    ).decode('utf-8').strip()
 
+    git_describe_head = check_output(
+        [
+            'git', 'describe', '--tags', '--long'
+        ],
+        **kwargs,
+    ).decode('utf-8').strip().rsplit("-", maxsplit=2)
+    latest_tagged_commit = git_describe_head[2][1:]
 
-def last_modified_date(*paths, **kwargs):
-    """Return the last modified date (as a string) for the given paths"""
-    return check_output([
-        'git',
-        'log',
-        '-n', '1',
-        '--pretty=format:%cd',
-        '--date=iso',
-        '--',
-        *paths
-    ], **kwargs).decode('utf-8').strip()
+    try:
+        check_call(
+            [
+                'git', 'merge-base', '--is-ancestor', latest_tagged_commit, latest_modification_commit,
+            ],
+            **kwargs,
+        )
+    except subprocess.CalledProcessError:
+        # latest_tagged_commit was newer than latest_modification_commit
+        return latest_tagged_commit
+    else:
+        return latest_modification_commit
 
 
 def render_build_args(image_options, ns):
@@ -244,7 +254,7 @@ def build_images(prefix, images, tag=None, push=False, chart_version=None, skip_
         # include chartpress.yaml itself as it can contain build args and
         # similar that influence the image that would be built
         paths = list(options.get('paths', [])) + [image_path, 'chartpress.yaml']
-        latest_image_modification_commit = last_modified_commit(*paths)
+        image_commit = latest_tag_or_mod_commit(*paths, echo=False)
         if image_tag is None:
             n_commits = check_output(
                 [
@@ -252,13 +262,13 @@ def build_images(prefix, images, tag=None, push=False, chart_version=None, skip_
                     # Note that the 0.0.1 chart_version may not exist as it was a
                     # workaround to handle git histories with no tags in the
                     # current branch. Also, if the chart_version is a later git
-                    # reference than the latest_image_modification_commit, this
+                    # reference than the image_commit, this
                     # command will return 0.
-                    f'{"" if chart_version == "0.0.1" else chart_version + ".."}{latest_image_modification_commit}',
+                    f'{"" if chart_version == "0.0.1" else chart_version + ".."}{image_commit}',
                 ],
                 echo=False,
             ).decode('utf-8').strip()
-            image_tag = _get_identifier(chart_version, n_commits, latest_image_modification_commit, long)
+            image_tag = _get_identifier(chart_version, n_commits, image_commit, long)
         image_name = prefix + name
         image_spec = '{}:{}'.format(image_name, image_tag)
 
@@ -274,7 +284,7 @@ def build_images(prefix, images, tag=None, push=False, chart_version=None, skip_
             build_args = render_build_args(
                 options,
                 {
-                    'LAST_COMMIT': latest_image_modification_commit,
+                    'LAST_COMMIT': image_commit,
                     'TAG': image_tag,
                 },
             )
@@ -349,11 +359,15 @@ def build_chart(name, version=None, paths=None, long=False):
         chart = yaml.load(f)
 
     if version is None:
-        last_chart_commit = last_modified_commit(*paths)
+        chart_commit = latest_tag_or_mod_commit(*paths, echo=False)
 
         try:
-            print(last_chart_commit)
-            git_describe = check_output(['git', 'describe', '--tags', '--long', last_chart_commit]).decode('utf8').strip()
+            git_describe = check_output(
+                [
+                    'git', 'describe', '--tags', '--long', chart_commit
+                ],
+                echo=False,
+            ).decode('utf8').strip()
             latest_tag_in_branch, n_commits, sha = git_describe.rsplit('-', maxsplit=2)
             # remove "g" prefix output by the git describe command
             # ref: https://git-scm.com/docs/git-describe#_examples
@@ -361,13 +375,16 @@ def build_chart(name, version=None, paths=None, long=False):
             version = _get_identifier(latest_tag_in_branch, n_commits, sha, long)
         except subprocess.CalledProcessError:
             # no tags on branch: fallback to the SemVer 2 compliant version
-            # 0.0.1-<n_commits>.<last_chart_commit>
+            # 0.0.1-<n_commits>.<chart_commit>
             latest_tag_in_branch = "0.0.1"
-            n_commits = int(check_output(
-                ['git', 'rev-list', '--count', last_chart_commit],
-            ).decode('utf-8').strip())
+            n_commits = check_output(
+                [
+                    'git', 'rev-list', '--count', chart_commit
+                ],
+                echo=False,
+            ).decode('utf-8').strip()
 
-            version = _get_identifier(latest_tag_in_branch, n_commits, last_chart_commit, long)
+            version = _get_identifier(latest_tag_in_branch, n_commits, chart_commit, long)
 
     chart['version'] = version
 
