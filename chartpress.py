@@ -277,6 +277,8 @@ def build_values(name, values_mods):
         values = yaml.load(f)
 
     for key, value in values_mods.items():
+        if not isinstance(value, dict) or set(value.keys()) != {'repository', 'tag'}:
+            raise ValueError(f"I only understand image updates with 'repository', 'tag', not: {value!r}")
         parts = key.split('.')
         mod_obj = parent = values
         for p in parts:
@@ -299,7 +301,7 @@ def build_values(name, values_mods):
                 )
 
             mod_obj['tag'] = value['tag']
-        elif isinstance(mod_obj, str) and set(value.keys()) == {'repository', 'tag'}:
+        elif isinstance(mod_obj, str):
             # scalar image string, not dict with separate repository, tag keys
             parent[parts[-1]] = "{repository}:{tag}".format(**value)
         else:
