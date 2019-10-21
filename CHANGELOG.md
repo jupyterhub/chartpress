@@ -14,10 +14,10 @@
   ```yaml
   section:
     list:
-        - first: item
-          image: "not set"
-        - second: item
-          image: "image:tag"  #  <--sets this here
+      - first: item
+        image: "not set"
+      - second: item
+        image: "image:tag"  #  <--sets this here
   ```
 
 
