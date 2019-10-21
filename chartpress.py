@@ -57,7 +57,10 @@ def git_remote(git_repo):
 
 
 def latest_tag_or_mod_commit(*paths, **kwargs):
-    """Get the last commit to modify the given paths"""
+    """
+    Get the latest of a) the latest tagged commit, or b) the latest modification
+    commit to provided path.
+    """
     latest_modification_commit = check_output(
         [
             'git', 'log',
@@ -191,20 +194,43 @@ def image_needs_building(image):
 
 
 def _get_identifier(tag, n_commits, commit, long):
+    """
+    Returns a chartpress formatted chart version or image tag (identifier) with
+    a build suffix.
+    
+    This function should provide valid Helm chart versions, which means they
+    need to be valid SemVer 2 version strings. It also needs to return valid
+    image tags, which means they need to not contain `+` signs either.
+
+    Example:
+        tag="0.1.2", n_commits="5", commit="asdf1234", long=True,
+        should return "0.1.2-005.asdf1234".
+    """
     n_commits = int(n_commits)
 
     if n_commits > 0 or long:
         if "-" in tag:
-            # append a pre-release
+            # append a pre-release tag, with a . separator
+            # 0.1.2-alpha.1 -> 0.1.2-alpha.1.n.sha
             return f"{tag}.{n_commits:03d}.{commit}"
         else:
-            # append a release
+            # append a release tag, with a - separator
+            # 0.1.2 -> 0.1.2-n.sha
             return f"{tag}-{n_commits:03d}.{commit}"
     else:
         return f"{tag}"
 
 
 def _strip_identifiers_build_suffix(identifier):
+    """
+    Return a stripped chart version or image tag (identifier) without its build
+    suffix (.005.asdf1234), leaving it to represent a Semver 2 release or
+    pre-release.
+
+    Example:
+        identifier: "0.1.2-005.asdf1234"            returns: "0.1.2"
+        identifier: "0.1.2-alpha.1.005.asdf1234"    returns: "0.1.2-alpha.1"
+    """
     # split away official SemVer 2 build specifications if used
     if "+" in identifier:
         return identifier.split("+", maxsplit=1)[0]
