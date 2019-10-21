@@ -5,11 +5,12 @@ cache: pip
 install:
   - set -e
   - pip install --upgrade pip
-  - pip install pyflakes .
+  - pip install pyflakes pytest .
 script:
   - chartpress --version
   - chartpress --help
   - pyflakes .
+  - pytest -v ./tests
 
   # This is a workaround to an issue caused by the existence of a docker
   # registrymirror in our CI environment. Without this fix that removes the
