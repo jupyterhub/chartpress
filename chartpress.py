@@ -235,10 +235,10 @@ def build_images(prefix, images, tag=None, push=False, chart_tag=None, skip_buil
             if n_commits > 0 or long:
                 if "-" in chart_tag:
                     # append a pre-release
-                    image_tag = f"{chart_tag}.{n_commits:03d}-{last_image_commit}"
+                    image_tag = f"{chart_tag}.{n_commits:03d}.{last_image_commit}"
                 else:
                     # append a release
-                    image_tag = f"{chart_tag}-{n_commits:03d}-{last_image_commit}"
+                    image_tag = f"{chart_tag}-{n_commits:03d}.{last_image_commit}"
             else:
                 image_tag = f"{chart_tag}"
         image_name = prefix + name
