@@ -204,11 +204,11 @@ def build_images(prefix, images, tag=None, push=False, chart_tag=None, skip_buil
 
         Example 1:
         - long=False: 0.9.0
-        - long=True:  0.9.0_000.asdf1234
+        - long=True:  0.9.0-000.asdf1234
 
         Example 2:
-        - long=False: 0.9.0_004.sdfg2345
-        - long=True:  0.9.0_004.sdfg2345
+        - long=False: 0.9.0-004.sdfg2345
+        - long=True:  0.9.0-004.sdfg2345
     """
     value_modifications = {}
     for name, options in images.items():
@@ -218,7 +218,7 @@ def build_images(prefix, images, tag=None, push=False, chart_tag=None, skip_buil
         # similar that influence the image that would be built
         paths = list(options.get('paths', [])) + [image_path, 'chartpress.yaml']
         last_image_commit = last_modified_commit(*paths)
-        if tag is None:
+        if image_tag is None:
             n_commits = int(check_output(
                 [
                     'git', 'rev-list', '--count',
@@ -233,7 +233,12 @@ def build_images(prefix, images, tag=None, push=False, chart_tag=None, skip_buil
             ).decode('utf-8').strip())
 
             if n_commits > 0 or long:
-                image_tag = f"{chart_tag}_{int(n_commits):03d}-{last_image_commit}"
+                if "-" in chart_tag:
+                    # append a pre-release
+                    image_tag = f"{chart_tag}.{n_commits:03d}-{last_image_commit}"
+                else:
+                    # append a release
+                    image_tag = f"{chart_tag}-{n_commits:03d}-{last_image_commit}"
             else:
                 image_tag = f"{chart_tag}"
         image_name = prefix + name
@@ -315,9 +320,11 @@ def build_chart(name, version=None, paths=None, long=False):
 
     Example versions constructed:
         - 0.9.0-alpha.1
-        - 0.9.0-alpha.1+000.asdf1234 (--long)
-        - 0.9.0-alpha.1+005.sdfg2345
-        - 0.9.0-alpha.1+005.sdfg2345 (--long)
+        - 0.9.0-alpha.1.000.asdf123 (--long)
+        - 0.9.0-alpha.1.005.sdfg234
+        - 0.9.0-alpha.1.005.sdfg234 (--long)
+        - 0.9.0
+        - 0.9.0-002.dfgh345
     """
     chart_file = os.path.join(name, 'Chart.yaml')
     with open(chart_file) as f:
@@ -332,24 +339,30 @@ def build_chart(name, version=None, paths=None, long=False):
 
             n_commits = int(n_commits)
             if n_commits > 0 or long:
-                version = f"{latest_tag_in_branch}+{n_commits:03d}.{sha}"
+                if "-" in latest_tag_in_branch:
+                    # append a pre-release
+                    version = f"{latest_tag_in_branch}.{n_commits:03d}.{sha}"
+                else:
+                    # append a release
+                    version = f"{latest_tag_in_branch}-{n_commits:03d}.{sha}"
             else:
                 version = f"{latest_tag_in_branch}"
         except subprocess.CalledProcessError:
             # no tags on branch: fallback to the SemVer 2 compliant version
-            # 0.0.1+<n_comits>.<last_chart_commit>
+            # 0.0.1-<n_commits>.<last_chart_commit>
+            latest_tag_in_branch = "0.0.1"
             n_commits = int(check_output(
                 ['git', 'rev-list', '--count', last_chart_commit],
                 echo=False,
             ).decode('utf-8').strip())
-            version = f"0.0.1+{n_commits:03d}.{last_chart_commit}"
+            version = f"{latest_tag_in_branch}-{n_commits:03d}.{last_chart_commit}"
 
     chart['version'] = version
 
     with open(chart_file, 'w') as f:
         yaml.dump(chart, f)
 
-    return version
+    return latest_tag_in_branch, version
 
 
 def publish_pages(chart_name, chart_version, chart_repo_github_path, chart_repo_url, extra_message=''):
@@ -501,7 +514,7 @@ def main():
             chart_version = chart_version.lstrip('v')
         if args.reset:
             chart_version = chart.get('resetVersion', '0.0.1-set.by.chartpress')
-        chart_version = build_chart(chart['name'], paths=chart_paths, version=chart_version, long=args.long)
+        chart_tag, chart_version = build_chart(chart['name'], paths=chart_paths, version=chart_version, long=args.long)
 
         if 'images' in chart:
             image_prefix = args.image_prefix if args.image_prefix is not None else chart['imagePrefix']
@@ -510,10 +523,7 @@ def main():
                 images=chart['images'],
                 tag=args.tag if not args.reset else chart.get('resetTag', 'set-by-chartpress'),
                 push=args.push,
-                # chart_tag will act as a image tag prefix, we can get it from
-                # the chart_version by stripping away the build part of the
-                # SemVer 2 compliant chart_version.
-                chart_tag=chart_version.split('+')[0],
+                chart_tag=chart_tag,
                 skip_build=args.skip_build or args.reset,
                 long=args.long,
             )
