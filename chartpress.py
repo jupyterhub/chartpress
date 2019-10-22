@@ -74,11 +74,17 @@ def latest_tag_or_mod_commit(*paths, **kwargs):
 
     git_describe_head = check_output(
         [
-            'git', 'describe', '--tags', '--long'
+            'git', 'describe', '--tags', '--long',
         ],
         **kwargs,
     ).decode('utf-8').strip().rsplit("-", maxsplit=2)
-    latest_tagged_commit = git_describe_head[2][1:]
+    latest_tag = git_describe_head[0]
+    latest_tagged_commit = check_output(
+        [
+            'git', 'rev-list', '--abbrev-commit', '-n', '1', latest_tag,
+        ],
+        **kwargs,
+    ).decode('utf-8').strip()
 
     try:
         check_call(
