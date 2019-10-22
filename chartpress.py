@@ -72,12 +72,17 @@ def latest_tag_or_mod_commit(*paths, **kwargs):
         **kwargs,
     ).decode('utf-8').strip()
 
-    git_describe_head = check_output(
-        [
-            'git', 'describe', '--tags', '--long',
-        ],
-        **kwargs,
-    ).decode('utf-8').strip().rsplit("-", maxsplit=2)
+    try:
+        git_describe_head = check_output(
+            [
+                'git', 'describe', '--tags', '--long',
+            ],
+            **kwargs,
+        ).decode('utf-8').strip().rsplit("-", maxsplit=2)
+    except subprocess.CalledProcessError:
+        # no tags on branch
+        return latest_modification_commit
+
     latest_tag = git_describe_head[0]
     latest_tagged_commit = check_output(
         [
