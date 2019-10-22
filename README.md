@@ -123,8 +123,10 @@ charts:
         # Dockerfile path, if different from the default
         # (may be needed if contextPath is set)
         dockerfilePath: images/binderhub/Dockerfile
-        # path in values.yaml to be updated with image name and tag
-        valuesPath: image
+        # path(s) in values.yaml to be updated with image name and tag
+        valuesPath:
+          - singleuser.image
+          - singleuser.profileList.0.kubespawner_override.image
         # additional paths (if any) relevant to the image
         # outside the image directory itself
         paths:

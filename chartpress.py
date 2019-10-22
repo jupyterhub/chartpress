@@ -298,10 +298,16 @@ def build_images(prefix, images, tag=None, push=False, chart_version=None, skip_
         image_name = prefix + name
         image_spec = '{}:{}'.format(image_name, image_tag)
 
-        value_modifications[options['valuesPath']] = {
-            'repository': image_name,
-            'tag': SingleQuotedScalarString(image_tag),
-        }
+        values_path_list = options['valuesPath']
+        if isinstance(values_path_list, str):
+            # single path, wrap it in a list
+            values_path_list = [values_path_list]
+
+        for values_path in values_path_list:
+            value_modifications[values_path] = {
+                'repository': image_name,
+                'tag': SingleQuotedScalarString(image_tag),
+            }
 
         if skip_build:
             continue
