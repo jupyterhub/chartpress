@@ -10,6 +10,7 @@ from collections.abc import MutableMapping
 from functools import lru_cache, partial
 import os
 import pipes
+import re
 import shutil
 import subprocess
 from tempfile import TemporaryDirectory
@@ -55,29 +56,42 @@ def git_remote(git_repo):
     return 'git@github.com:{0}'.format(git_repo)
 
 
-def last_modified_commit(*paths, **kwargs):
-    """Get the last commit to modify the given paths"""
-    return check_output([
-        'git',
-        'log',
-        '-n', '1',
-        '--pretty=format:%h',
-        '--',
-        *paths
-    ], **kwargs).decode('utf-8').strip()
+def latest_tag_or_mod_commit(*paths, **kwargs):
+    """
+    Get the latest of a) the latest tagged commit, or b) the latest modification
+    commit to provided path.
+    """
+    latest_modification_commit = check_output(
+        [
+            'git', 'log',
+            '--max-count=1',
+            '--pretty=format:%h',
+            '--',
+            *paths,
+        ],
+        **kwargs,
+    ).decode('utf-8').strip()
 
+    git_describe_head = check_output(
+        [
+            'git', 'describe', '--tags', '--long'
+        ],
+        **kwargs,
+    ).decode('utf-8').strip().rsplit("-", maxsplit=2)
+    latest_tagged_commit = git_describe_head[2][1:]
 
-def last_modified_date(*paths, **kwargs):
-    """Return the last modified date (as a string) for the given paths"""
-    return check_output([
-        'git',
-        'log',
-        '-n', '1',
-        '--pretty=format:%cd',
-        '--date=iso',
-        '--',
-        *paths
-    ], **kwargs).decode('utf-8').strip()
+    try:
+        check_call(
+            [
+                'git', 'merge-base', '--is-ancestor', latest_tagged_commit, latest_modification_commit,
+            ],
+            **kwargs,
+        )
+    except subprocess.CalledProcessError:
+        # latest_tagged_commit was newer than latest_modification_commit
+        return latest_tagged_commit
+    else:
+        return latest_modification_commit
 
 
 def render_build_args(image_options, ns):
@@ -179,7 +193,55 @@ def image_needs_building(image):
     return image_needs_pushing(image)
 
 
-def build_images(prefix, images, tag=None, push=False, chart_tag=None, skip_build=False, long=False):
+def _get_identifier(tag, n_commits, commit, long):
+    """
+    Returns a chartpress formatted chart version or image tag (identifier) with
+    a build suffix.
+    
+    This function should provide valid Helm chart versions, which means they
+    need to be valid SemVer 2 version strings. It also needs to return valid
+    image tags, which means they need to not contain `+` signs either.
+
+    Example:
+        tag="0.1.2", n_commits="5", commit="asdf1234", long=True,
+        should return "0.1.2-005.asdf1234".
+    """
+    n_commits = int(n_commits)
+
+    if n_commits > 0 or long:
+        if "-" in tag:
+            # append a pre-release tag, with a . separator
+            # 0.1.2-alpha.1 -> 0.1.2-alpha.1.n.sha
+            return f"{tag}.{n_commits:03d}.{commit}"
+        else:
+            # append a release tag, with a - separator
+            # 0.1.2 -> 0.1.2-n.sha
+            return f"{tag}-{n_commits:03d}.{commit}"
+    else:
+        return f"{tag}"
+
+
+def _strip_identifiers_build_suffix(identifier):
+    """
+    Return a stripped chart version or image tag (identifier) without its build
+    suffix (.005.asdf1234), leaving it to represent a Semver 2 release or
+    pre-release.
+
+    Example:
+        identifier: "0.1.2-005.asdf1234"            returns: "0.1.2"
+        identifier: "0.1.2-alpha.1.005.asdf1234"    returns: "0.1.2-alpha.1"
+    """
+    # split away official SemVer 2 build specifications if used
+    if "+" in identifier:
+        return identifier.split("+", maxsplit=1)[0]
+
+    # split away our custom build specification: something ending in either
+    # . or - followed by three or more digits, a dot, an commit sha of four
+    # or more alphanumeric characters.
+    return re.sub(r'[-\.]\d{3,}\.\w{4,}\Z', "", identifier)
+
+
+def build_images(prefix, images, tag=None, push=False, chart_version=None, skip_build=False, long=False):
     """Build a collection of docker images
 
     Args:
@@ -191,9 +253,9 @@ def build_images(prefix, images, tag=None, push=False, chart_tag=None, skip_buil
         to modify the image's files.
     push (bool):
         Whether to push the resulting images (default: False).
-    chart_tag (str):
-        The latest chart tag, included as a prefix on image tags
-        if `tag` is not specified.
+    chart_version (str):
+        The latest chart version, trimmed from its build suffix, will be included
+        as a prefix on image tags if `tag` is not specified.
     skip_build (bool):
         Whether to skip the actual image build (only updates tags).
     long (bool):
@@ -204,38 +266,35 @@ def build_images(prefix, images, tag=None, push=False, chart_tag=None, skip_buil
 
         Example 1:
         - long=False: 0.9.0
-        - long=True:  0.9.0_000.asdf1234
+        - long=True:  0.9.0-000.asdf1234
 
         Example 2:
-        - long=False: 0.9.0_004.sdfg2345
-        - long=True:  0.9.0_004.sdfg2345
+        - long=False: 0.9.0-004.sdfg2345
+        - long=True:  0.9.0-004.sdfg2345
     """
     value_modifications = {}
     for name, options in images.items():
         image_path = options.get('contextPath', os.path.join('images', name))
         image_tag = tag
+        chart_version = _strip_identifiers_build_suffix(chart_version)
         # include chartpress.yaml itself as it can contain build args and
         # similar that influence the image that would be built
         paths = list(options.get('paths', [])) + [image_path, 'chartpress.yaml']
-        last_image_commit = last_modified_commit(*paths)
-        if tag is None:
-            n_commits = int(check_output(
+        image_commit = latest_tag_or_mod_commit(*paths, echo=False)
+        if image_tag is None:
+            n_commits = check_output(
                 [
                     'git', 'rev-list', '--count',
-                    # Note that the 0.0.1 chart_tag may not exist as it was a
+                    # Note that the 0.0.1 chart_version may not exist as it was a
                     # workaround to handle git histories with no tags in the
-                    # current branch. Also, if the chart_tag is a later git
-                    # reference than the last_image_commit, this command will
-                    # return 0.
-                    f'{chart_tag + ".." if chart_tag != "0.0.1" else ""}{last_image_commit}',
+                    # current branch. Also, if the chart_version is a later git
+                    # reference than the image_commit, this
+                    # command will return 0.
+                    f'{"" if chart_version == "0.0.1" else chart_version + ".."}{image_commit}',
                 ],
                 echo=False,
-            ).decode('utf-8').strip())
-
-            if n_commits > 0 or long:
-                image_tag = f"{chart_tag}_{int(n_commits):03d}-{last_image_commit}"
-            else:
-                image_tag = f"{chart_tag}"
+            ).decode('utf-8').strip()
+            image_tag = _get_identifier(chart_version, n_commits, image_commit, long)
         image_name = prefix + name
         image_spec = '{}:{}'.format(image_name, image_tag)
 
@@ -251,7 +310,7 @@ def build_images(prefix, images, tag=None, push=False, chart_tag=None, skip_buil
             build_args = render_build_args(
                 options,
                 {
-                    'LAST_COMMIT': last_image_commit,
+                    'LAST_COMMIT': image_commit,
                     'TAG': image_tag,
                 },
             )
@@ -315,34 +374,43 @@ def build_chart(name, version=None, paths=None, long=False):
 
     Example versions constructed:
         - 0.9.0-alpha.1
-        - 0.9.0-alpha.1+000.asdf1234 (--long)
-        - 0.9.0-alpha.1+005.sdfg2345
-        - 0.9.0-alpha.1+005.sdfg2345 (--long)
+        - 0.9.0-alpha.1.000.asdf1234 (--long)
+        - 0.9.0-alpha.1.005.sdfg2345
+        - 0.9.0-alpha.1.005.sdfg2345 (--long)
+        - 0.9.0
+        - 0.9.0-002.dfgh3456
     """
     chart_file = os.path.join(name, 'Chart.yaml')
     with open(chart_file) as f:
         chart = yaml.load(f)
 
-    last_chart_commit = last_modified_commit(*paths)
-
     if version is None:
-        try:
-            git_describe = check_output(['git', 'describe', '--tags', '--long', last_chart_commit]).decode('utf8').strip()
-            latest_tag_in_branch, n_commits, sha = git_describe.rsplit('-', maxsplit=2)
+        chart_commit = latest_tag_or_mod_commit(*paths, echo=False)
 
-            n_commits = int(n_commits)
-            if n_commits > 0 or long:
-                version = f"{latest_tag_in_branch}+{n_commits:03d}.{sha}"
-            else:
-                version = f"{latest_tag_in_branch}"
+        try:
+            git_describe = check_output(
+                [
+                    'git', 'describe', '--tags', '--long', chart_commit
+                ],
+                echo=False,
+            ).decode('utf8').strip()
+            latest_tag_in_branch, n_commits, sha = git_describe.rsplit('-', maxsplit=2)
+            # remove "g" prefix output by the git describe command
+            # ref: https://git-scm.com/docs/git-describe#_examples
+            sha = sha[1:]
+            version = _get_identifier(latest_tag_in_branch, n_commits, sha, long)
         except subprocess.CalledProcessError:
             # no tags on branch: fallback to the SemVer 2 compliant version
-            # 0.0.1+<n_comits>.<last_chart_commit>
-            n_commits = int(check_output(
-                ['git', 'rev-list', '--count', last_chart_commit],
+            # 0.0.1-<n_commits>.<chart_commit>
+            latest_tag_in_branch = "0.0.1"
+            n_commits = check_output(
+                [
+                    'git', 'rev-list', '--count', chart_commit
+                ],
                 echo=False,
-            ).decode('utf-8').strip())
-            version = f"0.0.1+{n_commits:03d}.{last_chart_commit}"
+            ).decode('utf-8').strip()
+
+            version = _get_identifier(latest_tag_in_branch, n_commits, chart_commit, long)
 
     chart['version'] = version
 
@@ -510,10 +578,7 @@ def main():
                 images=chart['images'],
                 tag=args.tag if not args.reset else chart.get('resetTag', 'set-by-chartpress'),
                 push=args.push,
-                # chart_tag will act as a image tag prefix, we can get it from
-                # the chart_version by stripping away the build part of the
-                # SemVer 2 compliant chart_version.
-                chart_tag=chart_version.split('+')[0],
+                chart_version=chart_version,
                 skip_build=args.skip_build or args.reset,
                 long=args.long,
             )

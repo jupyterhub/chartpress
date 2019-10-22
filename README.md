@@ -157,3 +157,19 @@ in your `.travis.yml`:
 git:
   depth: false
 ```
+
+## Development
+
+Testing of this python package can be done using [`pyflakes`](https://github.com/PyCQA/pyflakes) and [`pytest`](https://github.com/pytest-dev/pytest). There is also some additional testing that is only run as part of TravisCI, as declared in [`.travis.yml`](.travis.yml).
+
+```
+# install chartpress locally
+pip install  -e .
+
+# install dev dependencies
+pip install pyflakes pytest
+
+# run tests
+pyflakes .
+pytest -v
+```
