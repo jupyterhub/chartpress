@@ -162,7 +162,10 @@ git:
 
 ## Development
 
-Testing of this python package can be done using [`pyflakes`](https://github.com/PyCQA/pyflakes) and [`pytest`](https://github.com/pytest-dev/pytest). There is also some additional testing that is only run as part of TravisCI, as declared in [`.travis.yml`](.travis.yml).
+Testing of this python package can be done using
+[`pytest`](https://github.com/pytest-dev/pytest). There is also some additional
+testing that is only run as part of TravisCI, as declared in
+[`.travis.yml`](.travis.yml).
 
 ```
 # install chartpress locally
@@ -172,6 +175,5 @@ pip install  -e .
 pip install -r dev-requirements.txt
 
 # run tests
-pyflakes .
-pytest -v
+pytest --verbose --flakes --exitfirst
 ```
