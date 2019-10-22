@@ -10,4 +10,4 @@ def test_git_repo_fixture(git_repo):
 
 
 def test_chartpress_run(git_repo):
-    chartpress.main()
+    chartpress.main([])

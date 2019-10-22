@@ -519,7 +519,7 @@ class ActionAppendDeprecated(argparse.Action):
 
 
 
-def main():
+def main(args=None):
     """Run chartpress"""
     argparser = argparse.ArgumentParser(description=__doc__)
 
@@ -576,7 +576,7 @@ def main():
         help='Deprecated: this flag will be ignored. The new logic to determine if an image needs to be rebuilt does not require this. It will find the time in git history where the image was last in need of a rebuild due to changes, and check if that build exists locally or remotely already.',
     )
 
-    args = argparser.parse_args()
+    args = argparser.parse_args(args)
 
     if args.version:
         print(f"chartpress version {__version__}")
