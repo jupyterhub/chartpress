@@ -1,0 +1,23 @@
+charts:
+  - name: testchart
+    imagePrefix: testchart/
+    resetTag: test-reset-tag
+    resetVersion: 0.0.1-test.reset.version
+    repo:
+      git: jupyterhub/we-are-not-ready-for-this-yet
+      published: https://test.local
+    paths:
+      - extra-path.txt
+    images:
+      testimage:
+        buildArgs:
+          TEST_STATIC_BUILD_ARG: "test"
+          TEST_DYNAMIC_BUILD_ARG: "{TAG}-{LAST_COMMIT}"
+        contextPath: .
+        dockerfilePath: image/Dockerfile
+        valuesPath:
+          - image
+          - list.0
+          - list.1.image
+        paths:
+          - extra-path.txt

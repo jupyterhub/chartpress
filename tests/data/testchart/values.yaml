@@ -1,0 +1,4 @@
+image: testchart/testimage:test-reset-tag
+list:
+  - "testchart/testimage:test-reset-tag"
+  - image: "testchart/testimage:test-reset-tag"
