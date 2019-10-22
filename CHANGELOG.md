@@ -4,6 +4,23 @@
 
 ## 0.4
 
+### 0.4.3
+
+- Support `valuesPath` pointing to a single `image:tag` string in
+  addition to a dict with separate `repository` and `tag` keys.
+- Support lists in `valuesPath` by using integer indices,
+  e.g. `section.list.1.image` for the yaml:
+
+  ```yaml
+  section:
+    list:
+      - first: item
+        image: "not set"
+      - second: item
+        image: "image:tag"  #  <--sets this here
+  ```
+
+
 ### 0.4.2
 
 - --long flag to always output build information in image tags and chart version [#57](https://github.com/jupyterhub/chartpress/pull/57) ([@consideRatio](https://github.com/consideRatio))
