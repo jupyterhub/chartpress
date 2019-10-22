@@ -5,7 +5,8 @@ cache: pip
 install:
   - set -e
   - pip install --upgrade pip
-  - pip install pyflakes pytest .
+  - pip install .
+  - pip install -r dev-requirements.txt
 script:
   - chartpress --version
   - chartpress --help

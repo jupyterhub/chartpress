@@ -169,7 +169,7 @@ Testing of this python package can be done using [`pyflakes`](https://github.com
 pip install  -e .
 
 # install dev dependencies
-pip install pyflakes pytest
+pip install -r dev-requirements.txt
 
 # run tests
 pyflakes .
