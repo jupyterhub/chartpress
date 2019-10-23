@@ -470,6 +470,7 @@ def publish_pages(chart_name, chart_version, chart_repo_github_path, chart_repo_
             git_remote(chart_repo_github_path),
             checkout_dir,
         ],
+        # warning: if echoed, this call could reveal the github token
         echo=False,
     )
     check_call(['git', 'checkout', 'gh-pages'], cwd=checkout_dir)
