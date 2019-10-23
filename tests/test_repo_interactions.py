@@ -108,3 +108,17 @@ def test_chartpress_run(git_repo, capfd):
     assert f"Updating testchart/values.yaml: image: testchart/testimage:1.2.3-test.tag.000.{sha}" in out
     assert f"Updating testchart/values.yaml: list.0: testchart/testimage:1.2.3-test.tag.000.{sha}" in out
     assert f"Updating testchart/values.yaml: list.1.image: testchart/testimage:1.2.3-test.tag.000.{sha}" in out
+
+    _, _ = capfd.readouterr()
+    chartpress.main(["--skip-build", "--image-prefix", "test-prefix/"])
+    out, err = capfd.readouterr()
+    print()
+    print('--- chartpress --skip-build --image-prefix test-prefix ---')
+    print(out)
+    print("----------------------------------------------------------")
+
+    # verify usage of --image-prefix
+    assert f"Updating testchart/Chart.yaml: version: 1.2.3-test.tag" in out
+    assert f"Updating testchart/values.yaml: image: test-prefix/testimage:1.2.3-test.tag" in out
+    assert f"Updating testchart/values.yaml: list.0: test-prefix/testimage:1.2.3-test.tag" in out
+    assert f"Updating testchart/values.yaml: list.1.image: test-prefix/testimage:1.2.3-test.tag" in out

@@ -2,6 +2,11 @@
 
 These tests are [pytest](https://docs.pytest.org) tests.
 
+## Not yet tested
+- `--push`
+- `--publish-chart`
+- `--extra-message`
+
 ## References
 - [pytest](https://docs.pytest.org)
   - Fixture: [capfd](https://docs.pytest.org/en/latest/reference.html#_pytest.capture.capfd)
