@@ -172,7 +172,6 @@ def image_needs_pushing(image):
         return False
 
 
-@lru_cache()
 def image_needs_building(image):
     """Return whether an image needs building
 
@@ -192,9 +191,11 @@ def image_needs_building(image):
 
     # first, check for locally built image
     try:
+        print(image)
         d.images.get(image)
     except docker.errors.ImageNotFound:
         # image not found, check registry
+        print("not found")
         pass
     else:
         # it exists locally, no need to check remote
@@ -451,7 +452,9 @@ def build_chart(name, version=None, paths=None, long=False):
 
             version = _get_identifier(latest_tag_in_branch, n_commits, chart_commit, long)
 
-    chart['version'] = version
+    if chart['version'] != version:
+        print(f"Updating {chart_file}: version: {version}")
+        chart['version'] = version
 
     with open(chart_file, 'w') as f:
         yaml.dump(chart, f)

@@ -163,11 +163,10 @@ git:
 ## Development
 
 Testing of this python package can be done using
-[`pytest`](https://github.com/pytest-dev/pytest). There is also some additional
-testing that is only run as part of TravisCI, as declared in
-[`.travis.yml`](.travis.yml).
+[`pytest`](https://github.com/pytest-dev/pytest). For more details on the
+testing, see [tests/README.md](tests/README.md).
 
-```
+```bash
 # install chartpress locally
 pip install  -e .
 

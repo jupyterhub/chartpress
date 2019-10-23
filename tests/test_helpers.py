@@ -34,6 +34,6 @@ def test_latest_tag_or_mod_commit(git_repo):
     git_repo.index.add("post-tag-mod.txt")
     post_tag_commit = git_repo.index.commit("post tag commit")
 
-    assert tag_commit.hexsha.startswith(latest_tag_or_mod_commit("chartpress.yaml"))
-    assert tag_commit.hexsha.startswith(latest_tag_or_mod_commit("tag-mod.txt"))
-    assert post_tag_commit.hexsha.startswith(latest_tag_or_mod_commit("post-tag-mod.txt"))
+    assert latest_tag_or_mod_commit("chartpress.yaml")  == tag_commit.hexsha[:7]
+    assert latest_tag_or_mod_commit("tag-mod.txt")      == tag_commit.hexsha[:7]
+    assert latest_tag_or_mod_commit("post-tag-mod.txt") == post_tag_commit.hexsha[:7]
