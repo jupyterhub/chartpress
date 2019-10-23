@@ -1,6 +1,7 @@
 from chartpress import GITHUB_TOKEN_KEY
 
 from chartpress import git_remote
+from chartpress import latest_tag_or_mod_commit
 from chartpress import _strip_identifiers_build_suffix
 from chartpress import _get_identifier
 
@@ -22,3 +23,17 @@ def test_git_remote(monkeypatch):
 
     monkeypatch.delenv(GITHUB_TOKEN_KEY)
     assert git_remote("jupyterhub/helm-chart") == "git@github.com:jupyterhub/helm-chart"
+
+def test_latest_tag_or_mod_commit(git_repo):
+    open('tag-mod.txt', "w").close()
+    git_repo.index.add("tag-mod.txt")
+    tag_commit = git_repo.index.commit("tag commit")
+    git_repo.create_tag("1.0.0", message="1.0.0")
+
+    open('post-tag-mod.txt', "w").close()
+    git_repo.index.add("post-tag-mod.txt")
+    post_tag_commit = git_repo.index.commit("post tag commit")
+
+    assert tag_commit.hexsha.startswith(latest_tag_or_mod_commit("chartpress.yaml"))
+    assert tag_commit.hexsha.startswith(latest_tag_or_mod_commit("tag-mod.txt"))
+    assert post_tag_commit.hexsha.startswith(latest_tag_or_mod_commit("post-tag-mod.txt"))

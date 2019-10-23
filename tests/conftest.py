@@ -16,8 +16,8 @@ def git_repo(monkeypatch):
         monkeypatch.chdir(temp_dir)
 
         # initialize the repo and make one initial commit
-        repo = git.Repo.init(temp_dir)
-        repo.index.add(".")
-        repo.index.commit("initial commit")
+        r = git.Repo.init(temp_dir)
+        r.git.add(all=True)
+        r.index.commit("initial commit")
 
-        yield repo
+        yield r
