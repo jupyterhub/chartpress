@@ -26,7 +26,7 @@ def test_chartpress_run(git_repo, capfd):
     
     # verify image was built
     # verify the fallback tag of "0.0.1" when a tag is missing
-    assert f"Successfully tagged testchart/testimage:{tag}"
+    assert f"Successfully tagged testchart/testimage:{tag}" in out
 
     # verify the passing of static and dynamic --build-args
     assert f"--build-arg TEST_STATIC_BUILD_ARG=test" in out
