@@ -56,6 +56,7 @@ def git_remote(git_repo):
     return 'git@github.com:{0}'.format(git_repo)
 
 
+@lru_cache()
 def latest_tag_or_mod_commit(*paths, **kwargs):
     """
     Get the latest of a) the latest tagged commit, or b) the latest modification
@@ -171,7 +172,7 @@ def image_needs_pushing(image):
     else:
         return False
 
-
+@lru_cache()
 def image_needs_building(image):
     """Return whether an image needs building
 

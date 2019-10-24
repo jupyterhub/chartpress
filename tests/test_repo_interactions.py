@@ -52,6 +52,11 @@ def test_chartpress_run(git_repo, capfd):
     assert f"Updating testchart/values.yaml: list.0: testchart/testimage:test-reset-tag" in out
     assert f"Updating testchart/values.yaml: list.1.image: testchart/testimage:test-reset-tag" in out
 
+    # clear cache of image_needs_building
+    chartpress.image_needs_building.cache_clear()
+    # The cache_clear function was provided by the lru_cache decorator
+    # ref: https://docs.python.org/3/library/functools.html#functools.lru_cache
+
     _, _ = capfd.readouterr()
     chartpress.main([])
     out, err = capfd.readouterr()
