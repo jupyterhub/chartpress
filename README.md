@@ -42,17 +42,21 @@ to build your chart(s) and image(s). Add `--push` to publish images to docker
 hub and `--publish-chart` to publish the chart and index to gh-pages.
 
 ```
-usage: chartpress [-h] [--push] [--publish-chart]
+usage: chartpress [-h] [--push] [--force-push] [--publish-chart]
                   [--extra-message EXTRA_MESSAGE] [--tag TAG | --long]
-                  [--image-prefix IMAGE_PREFIX] [--reset] [--skip-build]
-                  [--version] [--commit-range COMMIT_RANGE]
+                  [--image-prefix IMAGE_PREFIX] [--reset]
+                  [--skip-build | --force-build] [--version]
+                  [--commit-range COMMIT_RANGE]
 
 Automate building and publishing helm charts and associated images. This is
 used as part of the JupyterHub and Binder projects.
 
 optional arguments:
   -h, --help            show this help message and exit
-  --push                Push built images to their docker image registry.
+  --push                Push built images to their image registries, but not
+                        if it would replace an existing image.
+  --force-push          Push built images to their image registries,
+                        regardless if it would replace an existing image.
   --publish-chart       Package a Helm chart and publish it to a Helm chart
                         repository contructed with a GitHub git repository and
                         GitHub pages.
@@ -70,6 +74,8 @@ optional arguments:
                         can be configured in chartpress.yaml with the resetTag
                         and resetVersion configurations.
   --skip-build          Skip the image build step.
+  --force-build         Enforce the image build step, regardless of if the
+                        image already is available either locally or remotely.
   --version             Print current chartpress version and exit.
   --commit-range COMMIT_RANGE
                         Deprecated: this flag will be ignored. The new logic
