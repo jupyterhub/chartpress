@@ -369,7 +369,7 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, chart_v
         if skip_build:
             continue
 
-        if force_build or tag or image_needs_building(image_spec):
+        if force_build or image_needs_building(image_spec):
             build_args = render_build_args(
                 options,
                 {
@@ -382,7 +382,7 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, chart_v
             print(f"Skipping build for {image_spec}, it already exists")
 
         if push or force_push:
-            if force_push or tag or image_needs_pushing(image_spec):
+            if force_push or image_needs_pushing(image_spec):
                 check_call([
                     'docker', 'push', image_spec
                 ])
