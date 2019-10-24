@@ -475,6 +475,7 @@ def publish_pages(chart_name, chart_version, chart_repo_github_path, chart_repo_
     with TemporaryDirectory() as td:
         check_call([
             'helm', 'package', chart_name,
+            '--dependency-update',
             '--destination', td + '/',
         ])
 
