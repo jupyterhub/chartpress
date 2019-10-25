@@ -12,17 +12,12 @@ def test_git_repo_fixture(git_repo):
 def test_chartpress_run(git_repo, capfd):
     """Run chartpress and inspect the output."""
 
-    # run chartpress on initial commit
-    _, _ = capfd.readouterr()
-    chartpress.main([])
-    out, err = capfd.readouterr()
-    print()
-    print("--- chartpress ---")
-    print(out)
-    print("------------------")
-
+    # summarize information from git_repo
     sha = git_repo.commit("HEAD").hexsha[:7]
     tag = f"0.0.1-001.{sha}"
+
+    # run chartpress
+    out = _capture_output([], capfd)
     
     # verify image was built
     # verify the fallback tag of "0.0.1" when a tag is missing
@@ -38,13 +33,7 @@ def test_chartpress_run(git_repo, capfd):
     assert f"Updating testchart/values.yaml: list.0: testchart/testimage:{tag}" in out
     assert f"Updating testchart/values.yaml: list.1.image: testchart/testimage:{tag}" in out
 
-    _, _ = capfd.readouterr()
-    chartpress.main(["--reset"])
-    out, err = capfd.readouterr()
-    print()
-    print('--- chartpress --reset ---')
-    print(out)
-    print("--------------------------")
+    out = _capture_output(["--reset"], capfd)
 
     # verify usage of chartpress.yaml's resetVersion and resetTag
     assert f"Updating testchart/Chart.yaml: version: 0.0.1-test.reset.version" in out
@@ -53,77 +42,53 @@ def test_chartpress_run(git_repo, capfd):
     assert f"Updating testchart/values.yaml: list.1.image: testchart/testimage:test-reset-tag" in out
 
     # clear cache of image_needs_building
-    chartpress.image_needs_building.cache_clear()
-    # The cache_clear function was provided by the lru_cache decorator
     # ref: https://docs.python.org/3/library/functools.html#functools.lru_cache
-
-    _, _ = capfd.readouterr()
-    chartpress.main([])
-    out, err = capfd.readouterr()
-    print()
-    print('--- chartpress ---')
-    print(out)
-    print("------------------")
+    chartpress.image_needs_building.cache_clear()
 
     # verify that we don't need to rebuild the image
+    out = _capture_output([], capfd)
     assert f"Skipping build" in out
 
-    _, _ = capfd.readouterr()
-    chartpress.main(["--skip-build", "--tag", "1.2.3-test.tag"])
-    out, err = capfd.readouterr()
-    print()
-    print('--- chartpress --skip-build --tag 1.2.3-test.tag ---')
-    print(out)
-    print("----------------------------------------------------")
-
-    # verify usage --skip-build (this string from docker's output)
+    # verify usage --skip-build and --tag
+    tag = "1.2.3-test.tag"
+    out = _capture_output(["--skip-build", "--tag", tag], capfd)
     assert f"Successfully tagged" not in out
+    assert f"Updating testchart/Chart.yaml: version: {tag}" in out
+    assert f"Updating testchart/values.yaml: image: testchart/testimage:{tag}" in out
+    assert f"Updating testchart/values.yaml: list.0: testchart/testimage:{tag}" in out
+    assert f"Updating testchart/values.yaml: list.1.image: testchart/testimage:{tag}" in out
 
-    # verify usage of --tag
-    assert f"Updating testchart/Chart.yaml: version: 1.2.3-test.tag" in out
-    assert f"Updating testchart/values.yaml: image: testchart/testimage:1.2.3-test.tag" in out
-    assert f"Updating testchart/values.yaml: list.0: testchart/testimage:1.2.3-test.tag" in out
-    assert f"Updating testchart/values.yaml: list.1.image: testchart/testimage:1.2.3-test.tag" in out
-
-    # make a git tag and verify it is detected
-    git_repo.create_tag("1.2.3-test.tag", message="1.2.3-test.tag")
-
-    _, _ = capfd.readouterr()
-    chartpress.main(["--skip-build"])
-    out, err = capfd.readouterr()
-    print()
-    print('--- chartpress --skip-build ---')
-    print(out)
-    print("-------------------------------")
-
-    # verify detection of git tag by the fact that nothing required updating as
-    # the previous write to --tag updated Chart.yaml and values.yaml already
+    # verify a real git tag is detected
+    git_repo.create_tag(tag, message=tag)
+    out = _capture_output(["--skip-build"], capfd)
+    # This assertion verifies chartpress has considered the git tag by the fact
+    # that no values required to be updated. No values should be updated as the
+    # previous call with a provided --tag updated Chart.yaml and values.yaml
+    # already.
     assert f"Updating" not in out
 
-    _, _ = capfd.readouterr()
-    chartpress.main(["--skip-build", "--long"])
-    out, err = capfd.readouterr()
-    print()
-    print('--- chartpress --skip-build --long ---')
-    print(out)
-    print("--------------------------------------")
-
     # verify usage of --long
-    assert f"Updating testchart/Chart.yaml: version: 1.2.3-test.tag.000.{sha}" in out
-    assert f"Updating testchart/values.yaml: image: testchart/testimage:1.2.3-test.tag.000.{sha}" in out
-    assert f"Updating testchart/values.yaml: list.0: testchart/testimage:1.2.3-test.tag.000.{sha}" in out
-    assert f"Updating testchart/values.yaml: list.1.image: testchart/testimage:1.2.3-test.tag.000.{sha}" in out
-
-    _, _ = capfd.readouterr()
-    chartpress.main(["--skip-build", "--image-prefix", "test-prefix/"])
-    out, err = capfd.readouterr()
-    print()
-    print('--- chartpress --skip-build --image-prefix test-prefix ---')
-    print(out)
-    print("----------------------------------------------------------")
+    out = _capture_output(["--skip-build", "--long"], capfd)
+    assert f"Updating testchart/Chart.yaml: version: {tag}.000.{sha}" in out
+    assert f"Updating testchart/values.yaml: image: testchart/testimage:{tag}.000.{sha}" in out
+    assert f"Updating testchart/values.yaml: list.0: testchart/testimage:{tag}.000.{sha}" in out
+    assert f"Updating testchart/values.yaml: list.1.image: testchart/testimage:{tag}.000.{sha}" in out
 
     # verify usage of --image-prefix
-    assert f"Updating testchart/Chart.yaml: version: 1.2.3-test.tag" in out
-    assert f"Updating testchart/values.yaml: image: test-prefix/testimage:1.2.3-test.tag" in out
-    assert f"Updating testchart/values.yaml: list.0: test-prefix/testimage:1.2.3-test.tag" in out
-    assert f"Updating testchart/values.yaml: list.1.image: test-prefix/testimage:1.2.3-test.tag" in out
+    out = _capture_output(["--skip-build", "--image-prefix", "test-prefix/"], capfd)
+    assert f"Updating testchart/Chart.yaml: version: {tag}" in out
+    assert f"Updating testchart/values.yaml: image: test-prefix/testimage:{tag}" in out
+    assert f"Updating testchart/values.yaml: list.0: test-prefix/testimage:{tag}" in out
+    assert f"Updating testchart/values.yaml: list.1.image: test-prefix/testimage:{tag}" in out
+
+def _capture_output(args, capfd):
+    _, _ = capfd.readouterr()
+    chartpress.main(args)
+    out, err = capfd.readouterr()
+    header = f'--- chartpress {" ".join(args)} ---'
+    footer = "-" * len(header)
+    print()
+    print(header)
+    print(out)
+    print(footer)
+    return out
