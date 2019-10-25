@@ -3,10 +3,17 @@ import os
 import chartpress
 
 def test_git_repo_fixture(git_repo):
+    # assert we use the git repo as our current working directory
     assert git_repo.working_dir == os.getcwd()
+
+    # assert we have copied files
     assert os.path.isfile("chartpress.yaml")
     assert os.path.isfile("testchart/Chart.yaml")
     assert os.path.isfile("testchart/values.yaml")
+
+    # assert there is another branch to contain published content as well
+    git_repo.git.checkout("gh-pages")
+    assert os.path.isfile("index.yaml")
 
 
 def test_chartpress_run(git_repo, capfd):
@@ -80,6 +87,7 @@ def test_chartpress_run(git_repo, capfd):
     assert f"Updating testchart/values.yaml: image: test-prefix/testimage:{tag}" in out
     assert f"Updating testchart/values.yaml: list.0: test-prefix/testimage:{tag}" in out
     assert f"Updating testchart/values.yaml: list.1.image: test-prefix/testimage:{tag}" in out
+
 
 def _capture_output(args, capfd):
     _, _ = capfd.readouterr()
