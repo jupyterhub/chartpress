@@ -7,10 +7,10 @@ install:
   - pip install --upgrade pip
   - pip install .
   - pip install -r dev-requirements.txt
-script:
-  - chartpress --version
-  - chartpress --help
+  - curl -L https://git.io/get_helm.sh | bash
+  - helm init --client-only
 
+script:
   # This is a workaround to an issue caused by the existence of a docker
   # registrymirror in our CI environment. Without this fix that removes the
   # mirror, chartpress fails to realize the existence of already built images
@@ -21,5 +21,6 @@ script:
       echo '{"mtu": 1460}' | sudo dd of=/etc/docker/daemon.json &&
       sudo systemctl restart docker &&
       echo "Travis docker registry mirroring disabled.\n\n"
-
+  - chartpress --version
+  - chartpress --help
   - pytest --verbose --flakes
