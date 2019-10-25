@@ -7,16 +7,33 @@ import pytest
 
 @pytest.fixture(scope="function")
 def git_repo(monkeypatch):
-    """A temporary git repo with """
+    """
+    This fixture provides a temporary git repo with two branches initialized.
+    master contains a test helm chart copied from tests/test_helm_chart, and
+    gh-pages that contains the content of tests/test_helm_chart_repo.
+    """
     with tempfile.TemporaryDirectory() as temp_dir:
-        # copy content of tests/data folder to the temp dir
-        copy_tree("tests/data", os.path.join(temp_dir))
+        chartpress_dir = os.getcwd()
+        test_helm_chart_dir = os.path.join(chartpress_dir, "tests/test_helm_chart")
+        test_helm_chart_repo_dir = os.path.join(chartpress_dir, "tests/test_helm_chart_repo")
 
         # enter the directory
         monkeypatch.chdir(temp_dir)
 
-        # initialize the repo and make one initial commit
+        # initialize the repo
         r = git.Repo.init(temp_dir)
+
+        # enter blank branch gh-pages
+        # copy content of tests/test_helm_chart_repo and commit it
+        r.git.checkout("--orphan", "gh-pages")
+        copy_tree(test_helm_chart_repo_dir, temp_dir)
+        r.git.add(all=True)
+        r.index.commit("initial commit")
+
+        # enter blank branch master
+        # copy content of tests/test_helm_chart and commit it
+        r.git.checkout("--orphan", "master")
+        copy_tree(test_helm_chart_dir, temp_dir)
         r.git.add(all=True)
         r.index.commit("initial commit")
 
