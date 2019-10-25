@@ -4,7 +4,7 @@ charts:
     resetTag: test-reset-tag
     resetVersion: 0.0.1-test.reset.version
     repo:
-      git: jupyterhub/we-are-not-ready-for-this-yet
+      git: "."
       published: https://test.local
     paths:
       - testchart/

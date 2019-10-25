@@ -4,8 +4,6 @@ These tests are [pytest](https://docs.pytest.org) tests.
 
 ## Not yet tested
 - `--push`
-- `--publish-chart`
-- `--extra-message`
 
 ## References
 - [pytest](https://docs.pytest.org)

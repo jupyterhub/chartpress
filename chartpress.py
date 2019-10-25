@@ -49,6 +49,12 @@ def git_remote(git_repo):
 
     Depending on the system setup it returns ssh or https remote.
     """
+    # if not matching something/something
+    # such as a local directory ".", then
+    # simply return this unmodified.
+    if not re.match(r'^[^/]+/[^/]+$', git_repo):
+        return git_repo
+
     github_token = os.getenv(GITHUB_TOKEN_KEY)
     if github_token:
         return 'https://{0}@github.com/{1}'.format(
@@ -475,9 +481,9 @@ def publish_pages(chart_name, chart_version, chart_repo_github_path, chart_repo_
             checkout_dir,
         ],
         # warning: if echoed, this call could reveal the github token
-        echo=False,
+        echo=True,
     )
-    check_call(['git', 'checkout', 'gh-pages'], cwd=checkout_dir)
+    check_call(['git', 'checkout', 'gh-pages'], cwd=checkout_dir, echo=True)
 
     # package the latest version into a temporary directory
     # and run helm repo index with --merge to update index.yaml
