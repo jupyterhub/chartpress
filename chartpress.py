@@ -198,11 +198,9 @@ def image_needs_building(image):
 
     # first, check for locally built image
     try:
-        print(image)
         d.images.get(image)
     except docker.errors.ImageNotFound:
         # image not found, check registry
-        print("not found")
         pass
     else:
         # it exists locally, no need to check remote
