@@ -130,9 +130,9 @@ def test_chartpress_run(git_repo, capfd):
 
     # verify we don't overwrite the previous version when we make dev commits
     # and use --publish-chart
-    open("extra-path.txt", "w").close()
+    open("extra-chart-path.txt", "w").close()
     git_repo.git.add(all=True)
-    sha = git_repo.index.commit("Added extra-path.txt").hexsha[:7]
+    sha = git_repo.index.commit("Added extra-chart-path.txt").hexsha[:7]
     chartpress.latest_tag_or_mod_commit.cache_clear()
     out = _capture_output(
         [
@@ -160,6 +160,58 @@ def test_chartpress_run(git_repo, capfd):
 
     git_repo.git.checkout("master")
     git_repo.git.stash("pop")
+
+
+def test_chartpress_paths_configuration(git_repo, capfd):
+    """
+    Background:
+    - A helm chart resides in a directory with the name of the chart. This kind
+      of directory will contain Chart.yaml, values.yaml, and the templates
+      folder for example.
+    - chartpress.yaml is meant to reside in a parent directory to helm chart
+      directories.
+
+    By default, the Chart.yaml's version field should only be updated if
+    anything within its folder has changed, but also if any of the chart's
+    images are being updated when running chartpress.
+
+    This default can be augmented by paths configuration in chartpress.yaml.
+    These additional paths are relative to the chartpress.yaml location, which
+    must be in the parent folder of the charts.
+
+    This test verifies the statements above.
+    """
+
+    # Add a file outside the chart repo and verify chartpress didn't update the
+    # Chart.yaml version or the image tags in values.yaml.
+    open("not-in-paths.txt", "w").close()
+    git_repo.git.add(all=True)
+    sha = git_repo.index.commit("Added not-in-paths.txt").hexsha[:7]
+    tag = f"0.0.1-002.{sha}"
+    out = _capture_output(["--skip-build"], capfd)
+    assert f"Updating testchart/Chart.yaml: version: {tag}" not in out
+    assert f"Updating testchart/values.yaml: image: testchart/testimage: {tag}" not in out
+
+    # Add a file specified in the chart's paths configuration and verify
+    # chartpress updated the Chart.yaml version, but not the image tags in
+    # values.yaml.
+    open("extra-chart-path.txt", "w").close()
+    git_repo.git.add(all=True)
+    sha = git_repo.index.commit("Added extra-chart-path.txt").hexsha[:7]
+    tag = f"0.0.1-003.{sha}"
+    out = _capture_output(["--skip-build"], capfd)
+    assert f"Updating testchart/Chart.yaml: version: {tag}" in out
+    assert f"Updating testchart/values.yaml: image: testchart/testimage: {tag}" not in out
+
+    # Add a file specified in a chart image's paths configuration and verify
+    # updates to Chart.yaml version as well as the image tags in values.yaml.
+    open("extra-image-path.txt", "w").close()
+    git_repo.git.add(all=True)
+    sha = git_repo.index.commit("Added extra-image-path.txt").hexsha[:7]
+    tag = f"0.0.1-004.{sha}"
+    out = _capture_output(["--skip-build"], capfd)
+    assert f"Updating testchart/Chart.yaml: version: {tag}" in out
+    assert f"Updating testchart/values.yaml: image: testchart/testimage: {tag}" in out
 
 
 def _capture_output(args, capfd):

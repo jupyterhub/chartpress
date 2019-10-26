@@ -607,6 +607,8 @@ def main(args=None):
     #   - build values.yaml (--reset)
     #   - push chart (--publish-chart, --extra-message)
     for chart in config['charts']:
+        # FIXME: Ensure that '.' means the chart path itself. I think it referrs to anything.
+        # FIXME: Ensure that a changed image leads to a changed chart
         chart_paths = ['.'] + list(chart.get('paths', []))
 
         chart_version = args.tag

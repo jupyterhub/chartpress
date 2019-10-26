@@ -7,8 +7,7 @@ charts:
       git: "."
       published: https://test.local
     paths:
-      - testchart/
-      - extra-path.txt
+      - extra-chart-path.txt
     images:
       testimage:
         buildArgs:
@@ -21,4 +20,4 @@ charts:
           - list.0
           - list.1.image
         paths:
-          - extra-path.txt
+          - extra-image-path.txt
