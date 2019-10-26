@@ -99,12 +99,16 @@ charts:
     # --reset flag. It defaults to "0.0.1-set.by.chartpress". This is a valid
     # SemVer 2 version, which is required for a helm lint command to succeed.
     resetVersion: 1.2.3
-    # the git repo whose gh-pages contains the charts
+    # The git repo whose gh-pages contains the charts. This can be a local
+    # path such as "." as well but if matching <organization>/<repo> will be
+    # assumed to be a separate GitHub repository.
     repo:
       git: jupyterhub/helm-chart
       published: https://jupyterhub.github.io/helm-chart
-    # additional paths (if any) relevant to the chart version
-    # outside the chart directory itself
+    # Additional paths that when modified should lead to an updated Chart.yaml
+    # version, other than the chart directory in <chart name> or any path that
+    # influence the images of the chart. These paths should be set relative to
+    # chartpress.yaml's directory.
     paths:
       - ../setup.py
       - ../binderhub
@@ -117,21 +121,24 @@ charts:
         buildArgs:
           MY_STATIC_BUILD_ARG: "hello world"
           MY_DYNAMIC_BUILD_ARG: "{TAG}-{LAST_COMMIT}"
-        # Context to send to docker build for use by the Dockerfile
-        # (if different from the current directory)
+        # contextPath is the path to the directory that is to be considered the
+        # current working directory during the build process of the Dockerfile.
+        # This is by default the folder of the Dockerfile. This path should be
+        # set relative to chartpress.yaml.
         contextPath: ..
-        # Dockerfile path, if different from the default
-        # (may be needed if contextPath is set)
+        # Path to the Dockerfile, relative to chartpress.yaml. Defaults to
+        # "images/<image name>/Dockerfile".
         dockerfilePath: images/binderhub/Dockerfile
-        # path(s) in values.yaml to be updated with image name and tag
+        # Path(s) in <chart name>/values.yaml to be updated with image name and
+        # tag.
         valuesPath:
           - singleuser.image
           - singleuser.profileList.0.kubespawner_override.image
-        # additional paths (if any) relevant to the image
-        # outside the image directory itself
+        # Additional paths, relative to chartpress.yaml's directory, that should
+        # be used to indicate that a new tag of the image is required, aside
+        # from the contextPath and dockerfilePath for building the image itself.
         paths:
-          - ../setup.py
-          - ../binderhub
+          - assets
 ```
 
 ## Caveats

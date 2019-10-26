@@ -131,18 +131,23 @@ def render_build_args(image_options, ns):
     return build_args
 
 
-def build_image(image_path, image_name, build_args=None, dockerfile_path=None):
+def build_image(image_name, context_path, dockerfile_path=None, build_args=None):
     """Build an image
 
     Args:
-    image_path (str): the path to the image directory
-    image_name (str): image 'name:tag' to build
-    build_args (dict, optional): dict of docker build arguments
+    image_name (str):
+        The image name formatted as 'name:tag'.
+    context_path (str):
+        The path to the directory that is to be considered the current working
+        directory during the build process of the Dockerfile. This is typically
+        the same folder as the Dockerfile resides in.
     dockerfile_path (str, optional):
-        path to dockerfile relative to image_path
-        if not `image_path/Dockerfile`.
+        Path to dockerfile relative to context_path if not
+        `context_path/Dockerfile`.
+    build_args (dict, optional):
+        Dictionary of docker build arguments.
     """
-    cmd = ['docker', 'build', '-t', image_name, image_path]
+    cmd = ['docker', 'build', '-t', image_name, context_path]
     if dockerfile_path:
         cmd.extend(['-f', dockerfile_path])
 
@@ -291,12 +296,12 @@ def build_images(prefix, images, tag=None, push=False, chart_version=None, skip_
     """
     value_modifications = {}
     for name, options in images.items():
-        image_path = options.get('contextPath', os.path.join('images', name))
+        context_path = options.get('contextPath', os.path.join('images', name))
         image_tag = tag
         chart_version = _strip_identifiers_build_suffix(chart_version)
         # include chartpress.yaml itself as it can contain build args and
         # similar that influence the image that would be built
-        paths = list(options.get('paths', [])) + [image_path, 'chartpress.yaml']
+        paths = list(options.get('paths', [])) + [context_path, 'chartpress.yaml']
         image_commit = latest_tag_or_mod_commit(*paths, echo=False)
         if image_tag is None:
             n_commits = check_output(
@@ -337,7 +342,7 @@ def build_images(prefix, images, tag=None, push=False, chart_version=None, skip_
                     'TAG': image_tag,
                 },
             )
-            build_image(image_path, image_spec, build_args, options.get('dockerfilePath'))
+            build_image(context_path, image_spec, build_args, options.get('dockerfilePath'))
         else:
             print(f"Skipping build for {image_spec}, it already exists")
 
