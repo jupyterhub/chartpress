@@ -24,6 +24,7 @@ def test_chartpress_run(git_repo, capfd):
     tag = f"0.0.1-001.{sha}"
 
     # run chartpress
+    chartpress.image_needs_building.cache_clear()
     out = _capture_output([], capfd)
     
     # verify image was built
@@ -48,13 +49,8 @@ def test_chartpress_run(git_repo, capfd):
     assert f"Updating testchart/values.yaml: list.0: testchart/testimage:test-reset-tag" in out
     assert f"Updating testchart/values.yaml: list.1.image: testchart/testimage:test-reset-tag" in out
 
-
-    # clear cache of image_needs_building
-    # ref: https://docs.python.org/3/library/functools.html#functools.lru_cache
-    chartpress.image_needs_building.cache_clear()
-
-
     # verify that we don't need to rebuild the image
+    chartpress.image_needs_building.cache_clear()
     out = _capture_output([], capfd)
     assert f"Skipping build" in out
 
@@ -152,7 +148,9 @@ def test_chartpress_run(git_repo, capfd):
     # verify result of --publish-chart
     with open("index.yaml", "r") as f:
         index_yaml = f.read()
+    print("index_yaml follows:")
     print(index_yaml)
+    print("-------------------")
     assert f"version: 1.2.1" in index_yaml
     assert f"version: 1.2.2" in index_yaml
     assert f"version: {tag}" in index_yaml
@@ -184,34 +182,38 @@ def test_chartpress_paths_configuration(git_repo, capfd):
 
     # Add a file outside the chart repo and verify chartpress didn't update the
     # Chart.yaml version or the image tags in values.yaml.
+    chartpress.latest_tag_or_mod_commit.cache_clear()
     open("not-in-paths.txt", "w").close()
     git_repo.git.add(all=True)
     sha = git_repo.index.commit("Added not-in-paths.txt").hexsha[:7]
     tag = f"0.0.1-002.{sha}"
     out = _capture_output(["--skip-build"], capfd)
     assert f"Updating testchart/Chart.yaml: version: {tag}" not in out
-    assert f"Updating testchart/values.yaml: image: testchart/testimage: {tag}" not in out
+    assert f"Updating testchart/values.yaml: image: testchart/testimage:{tag}" not in out
+
 
     # Add a file specified in the chart's paths configuration and verify
     # chartpress updated the Chart.yaml version, but not the image tags in
     # values.yaml.
+    chartpress.latest_tag_or_mod_commit.cache_clear()
     open("extra-chart-path.txt", "w").close()
     git_repo.git.add(all=True)
     sha = git_repo.index.commit("Added extra-chart-path.txt").hexsha[:7]
     tag = f"0.0.1-003.{sha}"
     out = _capture_output(["--skip-build"], capfd)
     assert f"Updating testchart/Chart.yaml: version: {tag}" in out
-    assert f"Updating testchart/values.yaml: image: testchart/testimage: {tag}" not in out
+    assert f"Updating testchart/values.yaml: image: testchart/testimage:{tag}" not in out
 
     # Add a file specified in a chart image's paths configuration and verify
     # updates to Chart.yaml version as well as the image tags in values.yaml.
+    chartpress.latest_tag_or_mod_commit.cache_clear()
     open("extra-image-path.txt", "w").close()
     git_repo.git.add(all=True)
     sha = git_repo.index.commit("Added extra-image-path.txt").hexsha[:7]
     tag = f"0.0.1-004.{sha}"
     out = _capture_output(["--skip-build"], capfd)
     assert f"Updating testchart/Chart.yaml: version: {tag}" in out
-    assert f"Updating testchart/values.yaml: image: testchart/testimage: {tag}" in out
+    assert f"Updating testchart/values.yaml: image: testchart/testimage:{tag}" in out
 
 
 def _capture_output(args, capfd):

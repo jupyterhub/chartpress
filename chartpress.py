@@ -131,26 +131,52 @@ def render_build_args(image_options, ns):
     return build_args
 
 
-def build_image(image_name, context_path, dockerfile_path=None, build_args=None):
+def get_image_paths(name, options):
+    """
+    Returns the paths that when changed should trigger a rebuild of a chart's
+    image. This includes the Dockerfile itself and the context of the Dockerfile
+    during the build process.
+
+    The first element will always be the context path, the second always the
+    Dockerfile path, and the optional others for extra paths.
+    """
+    r = []
+    if options.get("contextPath"):
+        r.append(options["contextPath"])
+    else:
+        r.append(os.path.join("images", name))
+    if options.get("dockerfilePath"):
+        r.append(options["dockerfilePath"])
+    else:
+        r.append(os.path.join(r[0], "Dockerfile"))
+    r.extend(options.get("paths", []))
+    return r
+
+def build_image(image_spec, context_path, dockerfile_path=None, build_args=None):
     """Build an image
 
     Args:
-    image_name (str):
-        The image name formatted as 'name:tag'.
+    image_spec (str):
+        The image name, including tag, and optionally a registry prefix for
+        other image registries than DockerHub.
+
+        Examples:
+        - jupyterhub/k8s-hub:0.9.0
+        - index.docker.io/library/ubuntu:latest
+        - eu.gcr.io/my-gcp-project/my-image:0.1.0
     context_path (str):
         The path to the directory that is to be considered the current working
         directory during the build process of the Dockerfile. This is typically
         the same folder as the Dockerfile resides in.
     dockerfile_path (str, optional):
-        Path to dockerfile relative to context_path if not
-        `context_path/Dockerfile`.
+        Path to Dockerfile relative to chartpress.yaml's directory if not
+        "<context_path>/Dockerfile".
     build_args (dict, optional):
         Dictionary of docker build arguments.
     """
-    cmd = ['docker', 'build', '-t', image_name, context_path]
+    cmd = ['docker', 'build', '-t', image_spec, context_path]
     if dockerfile_path:
         cmd.extend(['-f', dockerfile_path])
-
     for k, v in (build_args or {}).items():
         cmd += ['--build-arg', '{}={}'.format(k, v)]
     check_call(cmd)
@@ -163,16 +189,19 @@ def docker_client():
 
 @lru_cache()
 def image_needs_pushing(image):
-    """Return whether an image needs pushing
+    """
+    Returns a boolean whether an image needs pushing by checking if the image
+    exists on the image registry.
 
     Args:
 
-    image (str): the `repository:tag` image to be build.
+    image (str):
+        The name of an image to be passed to the docker push command.
 
-    Returns:
-
-    True: if image needs to be pushed (not on registry)
-    False: if not (already present on registry)
+        Examples:
+        - jupyterhub/k8s-hub:0.9.0
+        - index.docker.io/library/ubuntu:latest
+        - eu.gcr.io/my-gcp-project/my-image:0.1.0
     """
     d = docker_client()
     try:
@@ -185,19 +214,19 @@ def image_needs_pushing(image):
 
 @lru_cache()
 def image_needs_building(image):
-    """Return whether an image needs building
-
-    Checks if the image exists (ignores commit range),
-    either locally or on the registry.
+    """
+    Returns a boolean whether an image needs building by checking if the image
+    exists either locally or on the registry.
 
     Args:
 
-    image (str): the `repository:tag` image to be build.
+    image (str):
+        The name of an image to be passed to the docker build command.
 
-    Returns:
-
-    True: if image needs to be built
-    False: if not (image already exists)
+        Examples:
+        - jupyterhub/k8s-hub:0.9.0
+        - index.docker.io/library/ubuntu:latest
+        - eu.gcr.io/my-gcp-project/my-image:0.1.0
     """
     d = docker_client()
 
@@ -296,13 +325,14 @@ def build_images(prefix, images, tag=None, push=False, chart_version=None, skip_
     """
     value_modifications = {}
     for name, options in images.items():
-        context_path = options.get('contextPath', os.path.join('images', name))
         image_tag = tag
         chart_version = _strip_identifiers_build_suffix(chart_version)
         # include chartpress.yaml itself as it can contain build args and
         # similar that influence the image that would be built
-        paths = list(options.get('paths', [])) + [context_path, 'chartpress.yaml']
-        image_commit = latest_tag_or_mod_commit(*paths, echo=False)
+        image_paths = get_image_paths(name, options) + ["chartpress.yaml"]
+        context_path = image_paths[0]
+        dockerfile_path = image_paths[1]
+        image_commit = latest_tag_or_mod_commit(*image_paths, echo=False)
         if image_tag is None:
             n_commits = check_output(
                 [
@@ -342,7 +372,7 @@ def build_images(prefix, images, tag=None, push=False, chart_version=None, skip_
                     'TAG': image_tag,
                 },
             )
-            build_image(context_path, image_spec, build_args, options.get('dockerfilePath'))
+            build_image(image_spec, context_path, dockerfile_path=dockerfile_path, build_args=build_args)
         else:
             print(f"Skipping build for {image_spec}, it already exists")
 
@@ -612,9 +642,13 @@ def main(args=None):
     #   - build values.yaml (--reset)
     #   - push chart (--publish-chart, --extra-message)
     for chart in config['charts']:
-        # FIXME: Ensure that '.' means the chart path itself. I think it referrs to anything.
-        # FIXME: Ensure that a changed image leads to a changed chart
-        chart_paths = ['.'] + list(chart.get('paths', []))
+        chart_paths = []
+        chart_paths.append("chartpress.yaml")
+        chart_paths.append(chart['name'])
+        chart_paths.extend(chart.get('paths', []))
+        for image_name, image_config in chart['images'].items():
+            chart_paths.extend(get_image_paths(image_name, image_config))
+        chart_paths = list(set(chart_paths))
 
         chart_version = args.tag
         if chart_version:

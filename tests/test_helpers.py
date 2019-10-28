@@ -3,8 +3,15 @@ from chartpress import GITHUB_TOKEN_KEY
 from chartpress import git_remote
 from chartpress import image_needs_pushing
 from chartpress import latest_tag_or_mod_commit
+from chartpress import render_build_args
 from chartpress import _strip_identifiers_build_suffix
 from chartpress import _get_identifier
+
+from ruamel.yaml import YAML
+# use safe roundtrip yaml loader
+yaml = YAML(typ='rt')
+yaml.preserve_quotes = True ## avoid mangling of quotes
+yaml.indent(mapping=2, offset=2, sequence=4)
 
 def test__strip_identifiers_build_suffix():
     assert _strip_identifiers_build_suffix(identifier="0.1.2-005.asdf1234") == "0.1.2"
