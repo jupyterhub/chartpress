@@ -42,3 +42,20 @@ def test_latest_tag_or_mod_commit(git_repo):
     assert latest_tag_or_mod_commit("chartpress.yaml")  == tag_commit.hexsha[:7]
     assert latest_tag_or_mod_commit("tag-mod.txt")      == tag_commit.hexsha[:7]
     assert latest_tag_or_mod_commit("post-tag-mod.txt") == post_tag_commit.hexsha[:7]
+
+def test_render_build_args(git_repo):
+    with open('chartpress.yaml') as f:
+        config = yaml.load(f)
+    for chart in config["charts"]:
+        for name, options in chart["images"].items():
+            build_args = render_build_args(
+                options,
+                {
+                    'LAST_COMMIT': "sha",
+                    'TAG': "tag",
+                },
+            )
+            assert build_args == {
+                'TEST_STATIC_BUILD_ARG': 'test',
+                'TEST_DYNAMIC_BUILD_ARG': 'tag-sha',
+            }
