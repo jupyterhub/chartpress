@@ -4,13 +4,47 @@
 
 ## 0.4
 
-### 0.4.3
+### 0.4.3 (Breaking changes)
 
-- Support `valuesPath` pointing to a single `image:tag` string in
-  addition to a dict with separate `repository` and `tag` keys.
-- Support lists in `valuesPath` by using integer indices,
-  e.g. `section.list.1.image` for the yaml:
+0.4.3 contains important bug fixes for versions `0.4.0` to `0.4.2`. A big bug
+fixed was that charts published using `--publish-chart` replaced previous charts
+in the helm chart repositories' `index.yaml` file that only differed by a SemVer
+2 compliant build suffix like `+001.asdf123`. The bugfixes introduced in this
+release avoid this issue, caused by a bug in helm, by using a build suffix of
+`.001.asdf123` instead - a breaking change.
 
+Example versions to expect in this release and onwards are given below where
+some commits were made in between git tagged (`0.1.0` and `0.2.0-beta.1`)
+commits.
+
+```
+# without --long
+0.1.0
+0.1.0-002.sdfg234
+0.2.0-beta.1
+0.2.0-beta.1.003.asdf123
+
+# with --long
+0.1.0-000.qwer123
+0.1.0-002.sdfg234
+0.2.0-beta.1.000.wert234
+0.2.0-beta.1.003.asdf123
+```
+
+- Fix latest tagged commit
+  [#66](https://github.com/jupyterhub/chartpress/pull/66)
+  ([@minrk](https://github.com/minrk))
+- Fix bugs: index merge, image tag, g prefix, ignored tags
+  [#64](https://github.com/jupyterhub/chartpress/pull/64)
+  ([@consideRatio](https://github.com/consideRatio))
+- Support `valuesPath` pointing to a single `image:tag` string in addition to a
+  dict with separate `repository` and `tag` keys
+  [#63](https://github.com/jupyterhub/chartpress/pull/63)
+  ([@minrk](https://github.com/minrk)).
+- Support lists in `valuesPath` by using integer indices
+  [#65](https://github.com/jupyterhub/chartpress/pull/65)
+  ([@minrk](https://github.com/minrk)), e.g. `section.list.1.image` for the
+  yaml:
   ```yaml
   section:
     list:
@@ -20,19 +54,18 @@
         image: "image:tag"  #  <--sets this here
   ```
 
-
-### 0.4.2
+### 0.4.2 (broken)
 
 - --long flag to always output build information in image tags and chart version [#57](https://github.com/jupyterhub/chartpress/pull/57) ([@consideRatio](https://github.com/consideRatio))
 - Refactor publish_pages for comprehensibility [#56](https://github.com/jupyterhub/chartpress/pull/56) ([@consideRatio](https://github.com/consideRatio))
 
-### 0.4.1
+### 0.4.1 (broken)
 
 - Deprecate --commit-range [#55](https://github.com/jupyterhub/chartpress/pull/55) ([@consideRatio](https://github.com/consideRatio))
 - Reset Chart.yaml's version to a valid value [#54](https://github.com/jupyterhub/chartpress/pull/54) ([@consideRatio](https://github.com/consideRatio))
 - Don't append +build on tagged commits [#53](https://github.com/jupyterhub/chartpress/pull/53) ([@consideRatio](https://github.com/consideRatio))
 
-### 0.4.0
+### 0.4.0 (broken)
 
 - Chart and image versioning, and Chart.yaml's --reset interaction [#52](https://github.com/jupyterhub/chartpress/pull/52) ([@consideRatio](https://github.com/consideRatio))
 - Add --version flag [#45](https://github.com/jupyterhub/chartpress/pull/45) ([@consideRatio](https://github.com/consideRatio))
