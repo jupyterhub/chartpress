@@ -24,7 +24,6 @@ def test_chartpress_run(git_repo, capfd):
     tag = f"0.0.1-001.{sha}"
 
     # run chartpress
-    chartpress.image_needs_building.cache_clear()
     out = _capture_output([], capfd)
     
     # verify image was built
@@ -50,7 +49,6 @@ def test_chartpress_run(git_repo, capfd):
     assert f"Updating testchart/values.yaml: list.1.image: testchart/testimage:test-reset-tag" in out
 
     # verify that we don't need to rebuild the image
-    chartpress.image_needs_building.cache_clear()
     out = _capture_output([], capfd)
     assert f"Skipping build" in out
 
@@ -129,7 +127,6 @@ def test_chartpress_run(git_repo, capfd):
     open("extra-chart-path.txt", "w").close()
     git_repo.git.add(all=True)
     sha = git_repo.index.commit("Added extra-chart-path.txt").hexsha[:7]
-    chartpress.latest_tag_or_mod_commit.cache_clear()
     out = _capture_output(
         [
             "--skip-build",
@@ -182,7 +179,6 @@ def test_chartpress_paths_configuration(git_repo, capfd):
 
     # Add a file outside the chart repo and verify chartpress didn't update the
     # Chart.yaml version or the image tags in values.yaml.
-    chartpress.latest_tag_or_mod_commit.cache_clear()
     open("not-in-paths.txt", "w").close()
     git_repo.git.add(all=True)
     sha = git_repo.index.commit("Added not-in-paths.txt").hexsha[:7]
@@ -195,7 +191,6 @@ def test_chartpress_paths_configuration(git_repo, capfd):
     # Add a file specified in the chart's paths configuration and verify
     # chartpress updated the Chart.yaml version, but not the image tags in
     # values.yaml.
-    chartpress.latest_tag_or_mod_commit.cache_clear()
     open("extra-chart-path.txt", "w").close()
     git_repo.git.add(all=True)
     sha = git_repo.index.commit("Added extra-chart-path.txt").hexsha[:7]
@@ -206,7 +201,6 @@ def test_chartpress_paths_configuration(git_repo, capfd):
 
     # Add a file specified in a chart image's paths configuration and verify
     # updates to Chart.yaml version as well as the image tags in values.yaml.
-    chartpress.latest_tag_or_mod_commit.cache_clear()
     open("extra-image-path.txt", "w").close()
     git_repo.git.add(all=True)
     sha = git_repo.index.commit("Added extra-image-path.txt").hexsha[:7]
@@ -217,9 +211,24 @@ def test_chartpress_paths_configuration(git_repo, capfd):
 
 
 def _capture_output(args, capfd):
+    """
+    Calls chartpress given provided arguments and captures the output during the
+    call.
+    """
+    # clear cache of in memory cached functions
+    # this allows us to better mimic the chartpress CLI behavior
+    chartpress.image_needs_building.cache_clear()
+    chartpress.image_needs_pushing.cache_clear()
+    chartpress.latest_tag_or_mod_commit.cache_clear()
+
+    # first flush past captured output, then run chartpress, and finally read
+    # and save all output that came of it
     _, _ = capfd.readouterr()
     chartpress.main(args)
     out, err = capfd.readouterr()
+
+    # since the output was captured, print it back out again for debugging
+    # purposes if a test fails for example
     header = f'--- chartpress {" ".join(args)} ---'
     footer = "-" * len(header)
     print()
