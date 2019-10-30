@@ -517,6 +517,8 @@ def publish_pages(chart_name, chart_version, chart_repo_github_path, chart_repo_
        temporary directory folder (a single one), and then merge in the bigger
        and existing index.yaml from the cloned Helm chart registry using the
        --merge flag.
+    4. Copy the new index.yaml and packaged Helm chart .tar into the gh-pages
+       branch, commit it, and push it back to the origin remote.
 
     Note that if we would add the new chart .tar file next to the other .tar
     files and use `helm repo index` we would recreate `index.yaml` and update
