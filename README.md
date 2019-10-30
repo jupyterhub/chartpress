@@ -13,7 +13,7 @@ Chartpress can do the following with the help of some configuration.
 - Build docker images and tag them appropriately
 - Push built images to a docker iamge repository
 - Update values.yaml to reference the built images
-- Publish a chart to a Helm chart repository based on GitHub pages
+- Publish a chart to a Helm chart registry based on GitHub pages
 - Reset changes to Chart.yaml and values.yaml
 
 ## Requirements

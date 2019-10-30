@@ -503,7 +503,32 @@ def build_chart(name, version=None, paths=None, long=False):
 
 
 def publish_pages(chart_name, chart_version, chart_repo_github_path, chart_repo_url, extra_message=''):
-    """Publish Helm chart index to github pages"""
+    """
+    Update a Helm chart registry hosted in the gh-pages branch of a GitHub git
+    repository.
+
+    The strategy adopted to do this is:
+
+    1. Clone the Helm chart registry as found in the gh-pages branch of a git
+       reposistory.
+    2. Create a temporary directory and `helm package` the chart into a file
+       within this temporary directory now only containing the chart .tar file.
+    3. Generate a index.yaml with `helm repo index` based on charts found in the
+       temporary directory folder (a single one), and then merge in the bigger
+       and existing index.yaml from the cloned Helm chart registry using the
+       --merge flag.
+
+    Note that if we would add the new chart .tar file next to the other .tar
+    files and use `helm repo index` we would recreate `index.yaml` and update
+    all the timestamps etc. which is something we don't want. Using `helm repo
+    index` on a directory with only the new chart .tar file allows us to avoid
+    this issue.
+
+    Also note that the --merge flag will not override existing entries to the
+    fresh index.yaml file with the index.yaml from the --merge flag. Due to
+    this, it is as we would have a --force-publish-chart by default.
+    """
+
     # clone the Helm chart repo and checkout its gh-pages branch,
     # note the use of cwd (current working directory)
     checkout_dir = '{}-{}'.format(chart_name, chart_version)
@@ -580,7 +605,7 @@ def main(args=None):
     argparser.add_argument(
         '--publish-chart',
         action='store_true',
-        help='Package a Helm chart and publish it to a Helm chart repository contructed with a GitHub git repository and GitHub pages.',
+        help='Package a Helm chart and publish it to a Helm chart registry contructed with a GitHub git repository and GitHub pages.',
     )
     argparser.add_argument(
         '--extra-message',
