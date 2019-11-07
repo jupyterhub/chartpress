@@ -11,16 +11,18 @@ For you to follow along according to these instructions, you need:
 
 ## Technical steps to make a release
 
-1. Checkout master and make sure it is up to date.
+1. Update [CHANGELOG.md](CHANGELOG.md) if it is not up to date,
+   and verify [README.md](README.md) has an updated output of running `--help`.
+   Make a PR to review the CHANGELOG notes.
+
+1. Once the changelog is up to date, checkout master and make sure it is up to date.
 
    ```
+   ORIGIN=${ORIGIN:-origin} # set to the canonical remote, e.g. 'upstream' if 'origin' is not the official repo
    git checkout master
    git fetch <upstream> master
    git reset --hard <upstream>/master
    ```
-
-1. Update [CHANGELOG.md](CHANGELOG.md) and verify [README.md](README.md) has an
-   updated output of running `--help`.
 
 1. Set the `__version__` variable in [chartpress.py](chartpress.py)
    appropriately and make a commit with message `release <tag>`.
