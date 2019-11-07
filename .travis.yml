@@ -5,13 +5,12 @@ cache: pip
 install:
   - set -e
   - pip install --upgrade pip
-  - pip install pyflakes pytest .
-script:
-  - chartpress --version
-  - chartpress --help
-  - pyflakes .
-  - pytest -v ./tests
+  - pip install .
+  - pip install -r dev-requirements.txt
+  - curl -L https://git.io/get_helm.sh | bash
+  - helm init --client-only
 
+script:
   # This is a workaround to an issue caused by the existence of a docker
   # registrymirror in our CI environment. Without this fix that removes the
   # mirror, chartpress fails to realize the existence of already built images
@@ -22,31 +21,6 @@ script:
       echo '{"mtu": 1460}' | sudo dd of=/etc/docker/daemon.json &&
       sudo systemctl restart docker &&
       echo "Travis docker registry mirroring disabled.\n\n"
-
-  - |-
-      git clone https://github.com/jupyterhub/zero-to-jupyterhub-k8s &&
-      cd zero-to-jupyterhub-k8s &&
-      chartpress &&
-      echo -e "\n\n### realistic run: expecting no rebuilds" &&
-      git --no-pager diff --unified=1
-
-  - |-
-      chartpress --skip-build --tag 1.2.3-test.tag &&
-      echo -e "\n\n### --tag --skip-build: expecting no rebuilds and version 1.2.3-test.tag" &&
-      git --no-pager diff --unified=1
-
-  - |-
-      git tag -a 1.2.3-test.tag -m 1.2.3-test.tag HEAD &&
-      chartpress --skip-build &&
-      echo -e "\n\n### git tag: expecting version 1.2.3-test.tag" &&
-      git --no-pager diff --unified=1
-
-  - |-
-      chartpress --skip-build --long &&
-      echo -e "\n\n### --long: expecting version 1.2.3-test.tag+000.asdf1234" &&
-      git --no-pager diff --unified=1
-  
-  - |-
-      chartpress --reset &&
-      echo -e '\n\n### --reset: expecting version "0.0.1+set.by.chartpress"' &&
-      git --no-pager diff --unified=1
+  - chartpress --version
+  - chartpress --help
+  - pytest --verbose --flakes

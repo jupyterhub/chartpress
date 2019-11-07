@@ -1,0 +1,7 @@
+FROM scratch
+
+ARG TEST_STATIC_BUILD_ARG
+ARG TEST_DYNAMIC_BUILD_ARG
+
+LABEL test_static_build_arg="$TEST_STATIC_BUILD_ARG"
+LABEL test_dynamic_build_arg="$TEST_DYNAMIC_BUILD_ARG"

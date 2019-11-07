@@ -49,6 +49,12 @@ def git_remote(git_repo):
 
     Depending on the system setup it returns ssh or https remote.
     """
+    # if not matching something/something
+    # such as a local directory ".", then
+    # simply return this unmodified.
+    if not re.match(r'^[^/]+/[^/]+$', git_repo):
+        return git_repo
+
     github_token = os.getenv(GITHUB_TOKEN_KEY)
     if github_token:
         return 'https://{0}@github.com/{1}'.format(
@@ -56,6 +62,7 @@ def git_remote(git_repo):
     return 'git@github.com:{0}'.format(git_repo)
 
 
+@lru_cache()
 def latest_tag_or_mod_commit(*paths, **kwargs):
     """
     Get the latest of a) the latest tagged commit, or b) the latest modification
@@ -72,12 +79,17 @@ def latest_tag_or_mod_commit(*paths, **kwargs):
         **kwargs,
     ).decode('utf-8').strip()
 
-    git_describe_head = check_output(
-        [
-            'git', 'describe', '--tags', '--long',
-        ],
-        **kwargs,
-    ).decode('utf-8').strip().rsplit("-", maxsplit=2)
+    try:
+        git_describe_head = check_output(
+            [
+                'git', 'describe', '--tags', '--long',
+            ],
+            **kwargs,
+        ).decode('utf-8').strip().rsplit("-", maxsplit=2)
+    except subprocess.CalledProcessError:
+        # no tags on branch
+        return latest_modification_commit
+
     latest_tag = git_describe_head[0]
     latest_tagged_commit = check_output(
         [
@@ -119,21 +131,52 @@ def render_build_args(image_options, ns):
     return build_args
 
 
-def build_image(image_path, image_name, build_args=None, dockerfile_path=None):
+def get_image_paths(name, options):
+    """
+    Returns the paths that when changed should trigger a rebuild of a chart's
+    image. This includes the Dockerfile itself and the context of the Dockerfile
+    during the build process.
+
+    The first element will always be the context path, the second always the
+    Dockerfile path, and the optional others for extra paths.
+    """
+    r = []
+    if options.get("contextPath"):
+        r.append(options["contextPath"])
+    else:
+        r.append(os.path.join("images", name))
+    if options.get("dockerfilePath"):
+        r.append(options["dockerfilePath"])
+    else:
+        r.append(os.path.join(r[0], "Dockerfile"))
+    r.extend(options.get("paths", []))
+    return r
+
+def build_image(image_spec, context_path, dockerfile_path=None, build_args=None):
     """Build an image
 
     Args:
-    image_path (str): the path to the image directory
-    image_name (str): image 'name:tag' to build
-    build_args (dict, optional): dict of docker build arguments
+    image_spec (str):
+        The image name, including tag, and optionally a registry prefix for
+        other image registries than DockerHub.
+
+        Examples:
+        - jupyterhub/k8s-hub:0.9.0
+        - index.docker.io/library/ubuntu:latest
+        - eu.gcr.io/my-gcp-project/my-image:0.1.0
+    context_path (str):
+        The path to the directory that is to be considered the current working
+        directory during the build process of the Dockerfile. This is typically
+        the same folder as the Dockerfile resides in.
     dockerfile_path (str, optional):
-        path to dockerfile relative to image_path
-        if not `image_path/Dockerfile`.
+        Path to Dockerfile relative to chartpress.yaml's directory if not
+        "<context_path>/Dockerfile".
+    build_args (dict, optional):
+        Dictionary of docker build arguments.
     """
-    cmd = ['docker', 'build', '-t', image_name, image_path]
+    cmd = ['docker', 'build', '-t', image_spec, context_path]
     if dockerfile_path:
         cmd.extend(['-f', dockerfile_path])
-
     for k, v in (build_args or {}).items():
         cmd += ['--build-arg', '{}={}'.format(k, v)]
     check_call(cmd)
@@ -146,16 +189,19 @@ def docker_client():
 
 @lru_cache()
 def image_needs_pushing(image):
-    """Return whether an image needs pushing
+    """
+    Returns a boolean whether an image needs pushing by checking if the image
+    exists on the image registry.
 
     Args:
 
-    image (str): the `repository:tag` image to be build.
+    image (str):
+        The name of an image to be passed to the docker push command.
 
-    Returns:
-
-    True: if image needs to be pushed (not on registry)
-    False: if not (already present on registry)
+        Examples:
+        - jupyterhub/k8s-hub:0.9.0
+        - index.docker.io/library/ubuntu:latest
+        - eu.gcr.io/my-gcp-project/my-image:0.1.0
     """
     d = docker_client()
     try:
@@ -166,22 +212,21 @@ def image_needs_pushing(image):
     else:
         return False
 
-
 @lru_cache()
 def image_needs_building(image):
-    """Return whether an image needs building
-
-    Checks if the image exists (ignores commit range),
-    either locally or on the registry.
+    """
+    Returns a boolean whether an image needs building by checking if the image
+    exists either locally or on the registry.
 
     Args:
 
-    image (str): the `repository:tag` image to be build.
+    image (str):
+        The name of an image to be passed to the docker build command.
 
-    Returns:
-
-    True: if image needs to be built
-    False: if not (image already exists)
+        Examples:
+        - jupyterhub/k8s-hub:0.9.0
+        - index.docker.io/library/ubuntu:latest
+        - eu.gcr.io/my-gcp-project/my-image:0.1.0
     """
     d = docker_client()
 
@@ -280,13 +325,14 @@ def build_images(prefix, images, tag=None, push=False, chart_version=None, skip_
     """
     value_modifications = {}
     for name, options in images.items():
-        image_path = options.get('contextPath', os.path.join('images', name))
         image_tag = tag
         chart_version = _strip_identifiers_build_suffix(chart_version)
         # include chartpress.yaml itself as it can contain build args and
         # similar that influence the image that would be built
-        paths = list(options.get('paths', [])) + [image_path, 'chartpress.yaml']
-        image_commit = latest_tag_or_mod_commit(*paths, echo=False)
+        image_paths = get_image_paths(name, options) + ["chartpress.yaml"]
+        context_path = image_paths[0]
+        dockerfile_path = image_paths[1]
+        image_commit = latest_tag_or_mod_commit(*image_paths, echo=False)
         if image_tag is None:
             n_commits = check_output(
                 [
@@ -326,7 +372,7 @@ def build_images(prefix, images, tag=None, push=False, chart_version=None, skip_
                     'TAG': image_tag,
                 },
             )
-            build_image(image_path, image_spec, build_args, options.get('dockerfilePath'))
+            build_image(image_spec, context_path, dockerfile_path=dockerfile_path, build_args=build_args)
         else:
             print(f"Skipping build for {image_spec}, it already exists")
 
@@ -446,7 +492,9 @@ def build_chart(name, version=None, paths=None, long=False):
 
             version = _get_identifier(latest_tag_in_branch, n_commits, chart_commit, long)
 
-    chart['version'] = version
+    if chart['version'] != version:
+        print(f"Updating {chart_file}: version: {version}")
+        chart['version'] = version
 
     with open(chart_file, 'w') as f:
         yaml.dump(chart, f)
@@ -455,7 +503,34 @@ def build_chart(name, version=None, paths=None, long=False):
 
 
 def publish_pages(chart_name, chart_version, chart_repo_github_path, chart_repo_url, extra_message=''):
-    """Publish Helm chart index to github pages"""
+    """
+    Update a Helm chart registry hosted in the gh-pages branch of a GitHub git
+    repository.
+
+    The strategy adopted to do this is:
+
+    1. Clone the Helm chart registry as found in the gh-pages branch of a git
+       reposistory.
+    2. Create a temporary directory and `helm package` the chart into a file
+       within this temporary directory now only containing the chart .tar file.
+    3. Generate a index.yaml with `helm repo index` based on charts found in the
+       temporary directory folder (a single one), and then merge in the bigger
+       and existing index.yaml from the cloned Helm chart registry using the
+       --merge flag.
+    4. Copy the new index.yaml and packaged Helm chart .tar into the gh-pages
+       branch, commit it, and push it back to the origin remote.
+
+    Note that if we would add the new chart .tar file next to the other .tar
+    files and use `helm repo index` we would recreate `index.yaml` and update
+    all the timestamps etc. which is something we don't want. Using `helm repo
+    index` on a directory with only the new chart .tar file allows us to avoid
+    this issue.
+
+    Also note that the --merge flag will not override existing entries to the
+    fresh index.yaml file with the index.yaml from the --merge flag. Due to
+    this, it is as we would have a --force-publish-chart by default.
+    """
+
     # clone the Helm chart repo and checkout its gh-pages branch,
     # note the use of cwd (current working directory)
     checkout_dir = '{}-{}'.format(chart_name, chart_version)
@@ -465,9 +540,10 @@ def publish_pages(chart_name, chart_version, chart_repo_github_path, chart_repo_
             git_remote(chart_repo_github_path),
             checkout_dir,
         ],
-        echo=False,
+        # warning: if echoed, this call could reveal the github token
+        echo=True,
     )
-    check_call(['git', 'checkout', 'gh-pages'], cwd=checkout_dir)
+    check_call(['git', 'checkout', 'gh-pages'], cwd=checkout_dir, echo=True)
 
     # package the latest version into a temporary directory
     # and run helm repo index with --merge to update index.yaml
@@ -520,7 +596,7 @@ class ActionAppendDeprecated(argparse.Action):
 
 
 
-def main():
+def main(args=None):
     """Run chartpress"""
     argparser = argparse.ArgumentParser(description=__doc__)
 
@@ -532,7 +608,7 @@ def main():
     argparser.add_argument(
         '--publish-chart',
         action='store_true',
-        help='Package a Helm chart and publish it to a Helm chart repository contructed with a GitHub git repository and GitHub pages.',
+        help='Package a Helm chart and publish it to a Helm chart registry contructed with a GitHub git repository and GitHub pages.',
     )
     argparser.add_argument(
         '--extra-message',
@@ -577,7 +653,7 @@ def main():
         help='Deprecated: this flag will be ignored. The new logic to determine if an image needs to be rebuilt does not require this. It will find the time in git history where the image was last in need of a rebuild due to changes, and check if that build exists locally or remotely already.',
     )
 
-    args = argparser.parse_args()
+    args = argparser.parse_args(args)
 
     if args.version:
         print(f"chartpress version {__version__}")
@@ -594,7 +670,13 @@ def main():
     #   - build values.yaml (--reset)
     #   - push chart (--publish-chart, --extra-message)
     for chart in config['charts']:
-        chart_paths = ['.'] + list(chart.get('paths', []))
+        chart_paths = []
+        chart_paths.append("chartpress.yaml")
+        chart_paths.append(chart['name'])
+        chart_paths.extend(chart.get('paths', []))
+        for image_name, image_config in chart['images'].items():
+            chart_paths.extend(get_image_paths(image_name, image_config))
+        chart_paths = list(set(chart_paths))
 
         chart_version = args.tag
         if chart_version:
