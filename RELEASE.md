@@ -9,47 +9,51 @@ For you to follow along according to these instructions, you need:
   project](https://pypi.org/project/chartpress/).
 - To have push rights to the [chartpress GitHub repository](https://github.com/jupyterhub/chartpress).
 
-## Technical steps to make a release
+## Steps to make a release
 
 1. Update [CHANGELOG.md](CHANGELOG.md) if it is not up to date,
    and verify [README.md](README.md) has an updated output of running `--help`.
    Make a PR to review the CHANGELOG notes.
 
-1. Once the changelog is up to date, checkout master and make sure it is up to date.
+1. Once the changelog is up to date, checkout master and make sure it is up to date and clean.
 
-   ```
+   ```bash
    ORIGIN=${ORIGIN:-origin} # set to the canonical remote, e.g. 'upstream' if 'origin' is not the official repo
    git checkout master
-   git fetch <upstream> master
-   git reset --hard <upstream>/master
+   git fetch $ORIGIN master
+   git reset --hard $ORIGIN/master
+   # WARNING! This next command deletes any untracked files in the repo
+   git clean -xfd
    ```
 
-1. Set the `__version__` variable in [chartpress.py](chartpress.py)
-   appropriately and make a commit with message `release <tag>`.
+1. Update the version with `bump2version` (can be installed with `pip install -r requirements-dev.txt`)
 
-1. Create a git tag for the commit.
-
-   ```
-   git tag -a <tag> -m <tag> HEAD
+   ```bash
+   VERSION=...  # e.g. 1.2.3
+   bump2version --tag --new-version $VERSION patch
    ```
 
 1. Package the release
-   ```
-   python3 setup.py bdist_wheel
+
+   ```bash
+   python3 setup.py sdist bdist_wheel
    ```
 
 1. Upload it to PyPI
-   ```
-   twine upload dist/chartpress-<tag>-py3-none-any.whl
+
+   ```bash
+   twine upload dist/*
    ```
 
-1. Reset the `__version__` variable in [chartpress.py](chartpress.py)
-   appropriately with a `.dev` appendix and make a commit with the message `back
-   to dev`.
+1. Reset the version to the next development version with `bump2version`
+
+   ```bash
+   bump2version --no-tag patch
+   ```
 
 1. Push your two commits to master along with the annotated tags referencing
    commits on master.
 
    ```
-   git push --follow-tags <upstream> master
+   git push --follow-tags $ORIGIN master
    ```
