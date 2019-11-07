@@ -292,7 +292,7 @@ def _strip_identifiers_build_suffix(identifier):
     return re.sub(r'[-\.]\d{3,}\.\w{4,}\Z', "", identifier)
 
 
-def build_images(prefix, images, tag=None, push=False, chart_version=None, skip_build=False, long=False):
+def build_images(prefix, images, tag=None, push=False, force_push=False, chart_version=None, force_build=False, skip_build=False, long=False):
     """Build a collection of docker images
 
     Args:
@@ -304,9 +304,14 @@ def build_images(prefix, images, tag=None, push=False, chart_version=None, skip_
         to modify the image's files.
     push (bool):
         Whether to push the resulting images (default: False).
+    force_push (bool):
+        Whether to push the built images even if they already exist in the image
+        registry (default: False).
     chart_version (str):
         The latest chart version, trimmed from its build suffix, will be included
         as a prefix on image tags if `tag` is not specified.
+    force_build (bool):
+        To build even if the image is available locally or remotely already.
     skip_build (bool):
         Whether to skip the actual image build (only updates tags).
     long (bool):
@@ -364,7 +369,7 @@ def build_images(prefix, images, tag=None, push=False, chart_version=None, skip_
         if skip_build:
             continue
 
-        if tag or image_needs_building(image_spec):
+        if force_build or image_needs_building(image_spec):
             build_args = render_build_args(
                 options,
                 {
@@ -376,8 +381,8 @@ def build_images(prefix, images, tag=None, push=False, chart_version=None, skip_
         else:
             print(f"Skipping build for {image_spec}, it already exists")
 
-        if push:
-            if tag or image_needs_pushing(image_spec):
+        if push or force_push:
+            if force_push or image_needs_pushing(image_spec):
                 check_call([
                     'docker', 'push', image_spec
                 ])
@@ -603,7 +608,12 @@ def main(args=None):
     argparser.add_argument(
         '--push',
         action='store_true',
-        help='Push built images to their docker image registry.',
+        help='Push built images to their image registries, but not if it would replace an existing image.',
+    )
+    argparser.add_argument(
+        '--force-push',
+        action='store_true',
+        help='Push built images to their image registries, regardless if it would replace an existing image.',
     )
     argparser.add_argument(
         '--publish-chart',
@@ -636,10 +646,16 @@ def main(args=None):
         action='store_true',
         help="Skip image build step and reset Chart.yaml's version field and values.yaml's image tags. What it resets to can be configured in chartpress.yaml with the resetTag and resetVersion configurations.",
     )
-    argparser.add_argument(
+    skip_or_force_build_group = argparser.add_mutually_exclusive_group()
+    skip_or_force_build_group.add_argument(
         '--skip-build',
         action='store_true',
         help='Skip the image build step.',
+    )
+    skip_or_force_build_group.add_argument(
+        '--force-build',
+        action='store_true',
+        help='Enforce the image build step, regardless of if the image already is available either locally or remotely.',
     )
     argparser.add_argument(
         '--version',
@@ -695,7 +711,9 @@ def main(args=None):
                 images=chart['images'],
                 tag=args.tag if not args.reset else chart.get('resetTag', 'set-by-chartpress'),
                 push=args.push,
+                force_push=args.force_push,
                 chart_version=chart_version,
+                force_build=args.force_build,
                 skip_build=args.skip_build or args.reset,
                 long=args.long,
             )

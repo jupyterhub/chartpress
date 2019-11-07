@@ -17,7 +17,7 @@ pytest -vx --flakes
 ```
 
 ## Not yet tested
-- `--push`
+- `--push` or `--force-push`
 
 ## References
 - [pytest](https://docs.pytest.org)
