@@ -45,8 +45,6 @@ def test_chartpress_run(git_repo, capfd):
     out = _capture_output(["--reset"], capfd)
     assert f"Updating testchart/Chart.yaml: version: 0.0.1-test.reset.version" in out
     assert f"Updating testchart/values.yaml: image: testchart/testimage:test-reset-tag" in out
-    assert f"Updating testchart/values.yaml: list.0: testchart/testimage:test-reset-tag" in out
-    assert f"Updating testchart/values.yaml: list.1.image: testchart/testimage:test-reset-tag" in out
 
     # verify that we don't need to rebuild the image
     out = _capture_output([], capfd)
@@ -59,8 +57,6 @@ def test_chartpress_run(git_repo, capfd):
     assert f"Successfully tagged" not in out
     assert f"Updating testchart/Chart.yaml: version: {tag}" in out
     assert f"Updating testchart/values.yaml: image: testchart/testimage:{tag}" in out
-    assert f"Updating testchart/values.yaml: list.0: testchart/testimage:{tag}" in out
-    assert f"Updating testchart/values.yaml: list.1.image: testchart/testimage:{tag}" in out
 
 
     # verify a real git tag is detected
@@ -77,16 +73,12 @@ def test_chartpress_run(git_repo, capfd):
     out = _capture_output(["--skip-build", "--long"], capfd)
     assert f"Updating testchart/Chart.yaml: version: {tag}.000.{sha}" in out
     assert f"Updating testchart/values.yaml: image: testchart/testimage:{tag}.000.{sha}" in out
-    assert f"Updating testchart/values.yaml: list.0: testchart/testimage:{tag}.000.{sha}" in out
-    assert f"Updating testchart/values.yaml: list.1.image: testchart/testimage:{tag}.000.{sha}" in out
 
 
     # verify usage of --image-prefix
     out = _capture_output(["--skip-build", "--image-prefix", "test-prefix/"], capfd)
     assert f"Updating testchart/Chart.yaml: version: {tag}" in out
     assert f"Updating testchart/values.yaml: image: test-prefix/testimage:{tag}" in out
-    assert f"Updating testchart/values.yaml: list.0: test-prefix/testimage:{tag}" in out
-    assert f"Updating testchart/values.yaml: list.1.image: test-prefix/testimage:{tag}" in out
 
 
     # verify usage of --publish-chart and --extra-message
