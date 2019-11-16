@@ -11,9 +11,11 @@ from functools import lru_cache, partial
 import os
 import pipes
 import re
+import requests
 import shutil
 import subprocess
 from tempfile import TemporaryDirectory
+from urllib.parse import urljoin
 
 import docker
 from ruamel.yaml import YAML
@@ -290,6 +292,38 @@ def _strip_identifiers_build_suffix(identifier):
     # . or - followed by three or more digits, a dot, an commit sha of four
     # or more alphanumeric characters.
     return re.sub(r'[-\.]\d{3,}\.\w{4,}\Z', "", identifier)
+
+
+def _get_published_chart_information(chart_repo_url, chart_name, chart_version):
+    """
+    Provide information about a chart release from a chart repository url along
+    with a chart name and version to search for.
+
+    - Returns the dictionary representing the matching chart entry from the Helm
+      chart repository if a matching entry is found.
+    - Returns None if a Helm chart repostiory is found but the matching chart
+      name and version isn't.
+    - Raises errors if the Helm chart repository isn't accessible or doesn't
+      seem to be one.
+    """
+    index_url = urljoin(chart_repo_url + "/", "index.yaml")
+    response = requests.get(index_url)
+
+    # this can throw errors, and doing that makes sense
+    # - connection failure
+    # - response doesn't seem like a Helm chart repository
+    response.raise_for_status()
+    index = yaml.load(response.content)
+    chart_repository_entries = index["entries"]
+
+    # let's not throw errors now, but instead return None if
+    # we fail to find a matching chart version
+    chart_releases = chart_repository_entries.get(chart_name, None)
+    if not chart_releases:
+        return None
+
+    matching_chart_release = dict(next((r for r in chart_releases if r["version"]==chart_version), {}))
+    return matching_chart_release
 
 
 def build_images(prefix, images, tag=None, push=False, force_push=False, chart_version=None, force_build=False, skip_build=False, long=False):
@@ -662,6 +696,11 @@ def main(args=None):
         action='store_true',
         help='Print current chartpress version and exit.',
     )
+    argparser.add_argument(
+        '--exit-if-published',
+        action='store_true',
+        help='Exit after chart version has been determined if that chart version is already published.',
+    )
 
     argparser.add_argument(
         '--commit-range',
@@ -703,6 +742,16 @@ def main(args=None):
         if args.reset:
             chart_version = chart.get('resetVersion', '0.0.1-set.by.chartpress')
         chart_version = build_chart(chart['name'], paths=chart_paths, version=chart_version, long=args.long)
+
+        if args.exit_if_published:
+            published_chart_information = _get_published_chart_information(
+                chart_repo_url=chart["repo"]["published"],
+                chart_name=chart["name"],
+                chart_version=chart_version,
+            )
+            if published_chart_information:
+                print("Aborting as the Helm chart is already published.")
+                return
 
         if 'images' in chart:
             image_prefix = args.image_prefix if args.image_prefix is not None else chart['imagePrefix']

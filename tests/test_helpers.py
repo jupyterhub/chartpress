@@ -1,3 +1,5 @@
+import pytest
+
 from chartpress import GITHUB_TOKEN_KEY
 
 from chartpress import git_remote
@@ -6,6 +8,7 @@ from chartpress import latest_tag_or_mod_commit
 from chartpress import render_build_args
 from chartpress import _strip_identifiers_build_suffix
 from chartpress import _get_identifier
+from chartpress import _get_published_chart_information
 
 from ruamel.yaml import YAML
 # use safe roundtrip yaml loader
@@ -66,3 +69,14 @@ def test_render_build_args(git_repo):
                 'TEST_STATIC_BUILD_ARG': 'test',
                 'TEST_DYNAMIC_BUILD_ARG': 'tag-sha',
             }
+
+@pytest.mark.parametrize(
+    "chart_repo_url,chart_name,chart_version",
+    [
+        ("https://jupyterhub.github.io/helm-chart", "jupyterhub", "0.8.2"),
+        ("https://jupyterhub.github.io/helm-chart/", "jupyterhub", "0.8.0-beta.1"),
+        pytest.param("https://jupyterhub.github.io/invalid-url", "jupyterhub", "0.8.2", marks=pytest.mark.xfail),
+    ],
+)
+def test__get_published_chart_information(chart_repo_url, chart_name, chart_version):
+    assert _get_published_chart_information(chart_repo_url, chart_name, chart_version)
