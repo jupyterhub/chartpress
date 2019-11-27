@@ -2,3 +2,5 @@ bump2version
 gitpython
 pytest
 pytest-flakes
+twine
+wheel
