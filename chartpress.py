@@ -248,7 +248,7 @@ def _get_identifier(tag, n_commits, commit, long):
     """
     Returns a chartpress formatted chart version or image tag (identifier) with
     a build suffix.
-    
+
     This function should provide valid Helm chart versions, which means they
     need to be valid SemVer 2 version strings. It also needs to return valid
     image tags, which means they need to not contain `+` signs either.
@@ -452,7 +452,7 @@ def build_values(name, values_mods):
 def build_chart(name, version=None, paths=None, long=False):
     """
     Update Chart.yaml's version, using specified version or by constructing one.
-    
+
     Chart versions are constructed using:
         a) the latest commit that is tagged,
         b) the latest commit that modified provided paths
@@ -690,8 +690,9 @@ def main(args=None):
         chart_paths.append("chartpress.yaml")
         chart_paths.append(chart['name'])
         chart_paths.extend(chart.get('paths', []))
-        for image_name, image_config in chart['images'].items():
-            chart_paths.extend(get_image_paths(image_name, image_config))
+        if 'images' in chart:
+            for image_name, image_config in chart['images'].items():
+                chart_paths.extend(get_image_paths(image_name, image_config))
         chart_paths = list(set(chart_paths))
 
         chart_version = args.tag
