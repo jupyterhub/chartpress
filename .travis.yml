@@ -5,8 +5,9 @@ cache: pip
 install:
   - set -e
   - pip install --upgrade pip
-  - pip install .
   - pip install -r dev-requirements.txt
+  - pip install .
+  - pip freeze
   - curl -L https://git.io/get_helm.sh | bash
   - helm init --client-only
 
