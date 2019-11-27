@@ -30,7 +30,7 @@ For you to follow along according to these instructions, you need:
 
    ```bash
    VERSION=...  # e.g. 1.2.3
-   bump2version --tag --new-version $VERSION patch
+   bump2version --tag --new-version $VERSION -
    ```
 
 1. Package the release
