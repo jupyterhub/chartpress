@@ -322,7 +322,11 @@ def _get_published_chart_information(chart_repo_url, chart_name, chart_version):
     if not chart_releases:
         return None
 
-    matching_chart_release = dict(next((r for r in chart_releases if r["version"]==chart_version), {}))
+    matching_chart_release = None
+    for release in chart_releases:
+         if release["version"] == chart_version:
+            matching_chart_release = release
+            break
     return matching_chart_release
 
 
