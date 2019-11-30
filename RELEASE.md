@@ -2,12 +2,12 @@
 
 `chartpress` is a package [available on
 PyPI](https://pypi.org/project/chartpress/). These are instructions on how to
-make a release on PyPI.
+make a release on PyPI. The PyPI release is packaged and published automatically
+by TravisCI when a git tag is pushed.
 
 For you to follow along according to these instructions, you need:
-- To be a maintainer of the [PyPI chartpress
-  project](https://pypi.org/project/chartpress/).
-- To have push rights to the [chartpress GitHub repository](https://github.com/jupyterhub/chartpress).
+- To have push rights to the [chartpress GitHub
+  repository](https://github.com/jupyterhub/chartpress).
 
 ## Steps to make a release
 
@@ -33,18 +33,6 @@ For you to follow along according to these instructions, you need:
    bump2version --tag --new-version $VERSION -
    ```
 
-1. Package the release
-
-   ```bash
-   python3 setup.py sdist bdist_wheel
-   ```
-
-1. Upload it to PyPI
-
-   ```bash
-   twine upload dist/*
-   ```
-
 1. Reset the version to the next development version with `bump2version`
 
    ```bash
@@ -56,4 +44,22 @@ For you to follow along according to these instructions, you need:
 
    ```
    git push --follow-tags $ORIGIN master
+   ```
+
+## Manually uploading to PyPI
+
+We are using CD with Travis to automatically update PyPI, but if you want to do
+it manually when you are on a tagged commit in a otherwise cleaned repository,
+you can do this.
+
+1. Package the release
+
+   ```bash
+   python3 setup.py sdist bdist_wheel
+   ```
+
+1. Upload it to PyPI
+
+   ```bash
+   twine upload dist/*
    ```
