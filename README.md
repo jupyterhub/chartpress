@@ -11,10 +11,49 @@ Chartpress can do the following with the help of some configuration.
 
 - Update Chart.yaml's version appropriately
 - Build docker images and tag them appropriately
-- Push built images to a docker iamge repository
+- Push built images to a docker image repository
 - Update values.yaml to reference the built images
 - Publish a chart to a Helm chart registry based on GitHub pages
 - Reset changes to Chart.yaml and values.yaml
+
+## How chart version and image tags are determined
+
+Chartpress will infer chart versions and image tags using a few key pieces of
+information.
+
+1. `tag`: The latest commit that is tagged on the current branch, or 0.0.1 if no tag
+   was found.
+2. The latest commit that influenced anything on a path within the git
+   repository that matters to the chart version or image tag. The paths that
+   matters is determined using the image build contexts and additional specified
+   paths.
+   1. `n`: The latest commits commit distance count since the tag, described as 3 or
+      more numbers.
+   2. `sha`: The latest commits abbreviated SHA hash, which is typically 7
+      characters.
+3. If `--long` is specified or not, if it is, a tagged commit will be written
+   out with `n.sha` as well appended to it.
+4. If `tag` contains a `-`, `tag.n.sha` will be used, and if not, `tag-n.sha`
+   will be used. There should be exactly one `-` in the final version
+   specification to become a valid SemVer2 version.
+
+### Examples chart versions and image tags
+
+This is a list of realistic chart versions and/or image tags in a chronological
+order that could come from using chartpress.
+
+```
+0.8.0
+0.8.0-004.asdf123
+0.8.0-010.sdfg234
+0.9.0-beta.1
+0.9.0-beta.1.001.dfgh345
+0.9.0-beta.1.005.fghj456
+0.9.0-beta.2
+0.9.0-beta.2.001.ghjk567
+0.9.0-beta.3
+0.9.0
+```
 
 ## Requirements
 
