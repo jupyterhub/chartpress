@@ -2,12 +2,6 @@ import sys
 from setuptools import setup
 from setuptools.command.bdist_egg import bdist_egg
 
-with open('chartpress.py') as f:
-    for line in f:
-        if line.startswith('__version__'):
-            __version__ = eval(line.split('=', 1)[1])
-            break
-
 
 class bdist_egg_disabled(bdist_egg):
     """Disabled version of bdist_egg
@@ -19,7 +13,7 @@ class bdist_egg_disabled(bdist_egg):
     def run(self):
         sys.exit(
             "Aborting implicit building of eggs."
-            " Use `pip install .` to install from source."
+            "Use `pip install .` to install from source."
         )
 
 
@@ -32,7 +26,7 @@ with open("README.md") as f:
 
 setup(
     name='chartpress',
-    version=__version__,
+    version='0.4.4.dev',
     py_modules=['chartpress'],
     cmdclass=cmdclass,
     entry_points={
