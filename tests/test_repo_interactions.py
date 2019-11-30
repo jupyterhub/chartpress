@@ -216,6 +216,20 @@ def test_chartpress_paths_configuration(git_repo, capfd):
     assert f"Updating testchart/values.yaml: image: testchart/testimage:{tag}" in out
 
 
+def test_chartpress_run_bare_minimum(git_repo_bare_minimum, capfd):
+    """
+    Ensures that chartpress will run with a minimal configuration of only
+    providing a single chart name. This can catch errors that assumes we need to
+    have a images key in the chartpress.yaml configuration for example.
+    """
+    r = git_repo_bare_minimum
+    sha = r.heads.master.commit.hexsha[:7]
+    tag = f"0.0.1-002.{sha}"
+
+    out = _capture_output([], capfd)
+    assert f"Updating testchart/Chart.yaml: version: {tag}" in out
+
+
 def _capture_output(args, capfd):
     """
     Calls chartpress given provided arguments and captures the output during the

@@ -1,4 +1,5 @@
 import os
+import shutil
 import tempfile
 from distutils.dir_util import copy_tree
 
@@ -38,3 +39,18 @@ def git_repo(monkeypatch):
         r.index.commit("initial commit")
 
         yield r
+
+@pytest.fixture(scope="function")
+def git_repo_bare_minimum(monkeypatch, git_repo):
+    """
+    This fixture modifies the default git_repo fixture to use another the
+    chartpress_bare_minimum.yaml as chartpress.yaml and removes the image
+    directory.
+    """
+    r = git_repo
+    shutil.move("chartpress_bare_minimum.yaml", "chartpress.yaml")
+    shutil.rmtree("image")
+    r.git.add(all=True)
+    r.index.commit("bare minimum commit")
+
+    yield r
