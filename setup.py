@@ -26,7 +26,7 @@ with open("README.md") as f:
 
 setup(
     name='chartpress',
-    version='0.5.0',
+    version='0.5.1.dev',
     py_modules=['chartpress'],
     cmdclass=cmdclass,
     entry_points={
