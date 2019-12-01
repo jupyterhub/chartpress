@@ -11,9 +11,14 @@ For you to follow along according to these instructions, you need:
 
 ## Steps to make a release
 
-1. Update [CHANGELOG.md](CHANGELOG.md) if it is not up to date,
-   and verify [README.md](README.md) has an updated output of running `--help`.
-   Make a PR to review the CHANGELOG notes.
+1. Update [CHANGELOG.md](CHANGELOG.md) if it is not up to date, and verify
+   [README.md](README.md) has an updated output of running `--help`. Make a PR
+   to review the CHANGELOG notes.
+
+   To get the foundation of the changelog written, you can install
+   [github-activity](https://github.com/choldgraf/github-activity) and run
+   `github-activity --kind pr jupyterhub/chartpress` after setting up
+   credentials as described in the project's README.md file.
 
 1. Once the changelog is up to date, checkout master and make sure it is up to date and clean.
 
