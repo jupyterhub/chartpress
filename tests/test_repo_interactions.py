@@ -23,7 +23,7 @@ def test_chartpress_run(git_repo, capfd):
 
     # summarize information from git_repo
     sha = git_repo.commit("HEAD").hexsha[:7]
-    tag = f"0.0.1-001.{sha}"
+    tag = f"0.0.1-n001.h{sha}"
 
     # run chartpress
     out = _capture_output([], capfd)
@@ -79,8 +79,8 @@ def test_chartpress_run(git_repo, capfd):
 
     # verify usage of --long
     out = _capture_output(["--skip-build", "--long"], capfd)
-    assert f"Updating testchart/Chart.yaml: version: {tag}.000.{sha}" in out
-    assert f"Updating testchart/values.yaml: image: testchart/testimage:{tag}.000.{sha}" in out
+    assert f"Updating testchart/Chart.yaml: version: {tag}.n000.h{sha}" in out
+    assert f"Updating testchart/values.yaml: image: testchart/testimage:{tag}.n000.h{sha}" in out
 
 
     # verify usage of --image-prefix
@@ -141,7 +141,7 @@ def test_chartpress_run(git_repo, capfd):
     # verify output of --publish-chart
     assert "Branch 'gh-pages' set up to track remote branch 'gh-pages' from 'origin'." in out
     assert "Successfully packaged chart and saved it to:" in out
-    assert f"/testchart-{tag}.001.{sha}.tgz" in out
+    assert f"/testchart-{tag}.n001.h{sha}.tgz" in out
 
     # checkout gh-pages
     git_repo.git.stash()
@@ -156,7 +156,7 @@ def test_chartpress_run(git_repo, capfd):
     assert f"version: 1.2.1" in index_yaml
     assert f"version: 1.2.2" in index_yaml
     assert f"version: {tag}" in index_yaml
-    assert f"version: {tag}.001.{sha}" in index_yaml
+    assert f"version: {tag}.n001.h{sha}" in index_yaml
 
     # return to master
     git_repo.git.checkout("master")
@@ -188,7 +188,7 @@ def test_chartpress_paths_configuration(git_repo, capfd):
     open("not-in-paths.txt", "w").close()
     git_repo.git.add(all=True)
     sha = git_repo.index.commit("Added not-in-paths.txt").hexsha[:7]
-    tag = f"0.0.1-002.{sha}"
+    tag = f"0.0.1-n002.h{sha}"
     out = _capture_output(["--skip-build"], capfd)
     assert f"Updating testchart/Chart.yaml: version: {tag}" not in out
     assert f"Updating testchart/values.yaml: image: testchart/testimage:{tag}" not in out
@@ -200,7 +200,7 @@ def test_chartpress_paths_configuration(git_repo, capfd):
     open("extra-chart-path.txt", "w").close()
     git_repo.git.add(all=True)
     sha = git_repo.index.commit("Added extra-chart-path.txt").hexsha[:7]
-    tag = f"0.0.1-003.{sha}"
+    tag = f"0.0.1-n003.h{sha}"
     out = _capture_output(["--skip-build"], capfd)
     assert f"Updating testchart/Chart.yaml: version: {tag}" in out
     assert f"Updating testchart/values.yaml: image: testchart/testimage:{tag}" not in out
@@ -210,7 +210,7 @@ def test_chartpress_paths_configuration(git_repo, capfd):
     open("extra-image-path.txt", "w").close()
     git_repo.git.add(all=True)
     sha = git_repo.index.commit("Added extra-image-path.txt").hexsha[:7]
-    tag = f"0.0.1-004.{sha}"
+    tag = f"0.0.1-n004.h{sha}"
     out = _capture_output(["--skip-build"], capfd)
     assert f"Updating testchart/Chart.yaml: version: {tag}" in out
     assert f"Updating testchart/values.yaml: image: testchart/testimage:{tag}" in out
@@ -224,7 +224,7 @@ def test_chartpress_run_bare_minimum(git_repo_bare_minimum, capfd):
     """
     r = git_repo_bare_minimum
     sha = r.heads.master.commit.hexsha[:7]
-    tag = f"0.0.1-002.{sha}"
+    tag = f"0.0.1-n002.h{sha}"
 
     out = _capture_output([], capfd)
     assert f"Updating testchart/Chart.yaml: version: {tag}" in out
