@@ -265,11 +265,11 @@ def _get_identifier(tag, n_commits, commit, long):
         if "-" in tag:
             # append a pre-release tag, with a . separator
             # 0.1.2-alpha.1 -> 0.1.2-alpha.1.n.h
-            return f"{tag}.{n_commits:03d}.{commit}"
+            return f"{tag}.n{n_commits:03d}.h{commit}"
         else:
             # append a release tag, with a - separator
             # 0.1.2 -> 0.1.2-n.h
-            return f"{tag}-{n_commits:03d}.{commit}"
+            return f"{tag}-n{n_commits:03d}.h{commit}"
     else:
         return f"{tag}"
 
@@ -291,7 +291,7 @@ def _strip_identifiers_build_suffix(identifier):
     # split away our custom build specification: something ending in either
     # . or - followed by three or more digits, a dot, an commit sha of four
     # or more alphanumeric characters.
-    return re.sub(r'[-\.]\d{3,}\.\w{4,}\Z', "", identifier)
+    return re.sub(r'[-\.]n\d{3,}\.h\w{4,}\Z', "", identifier)
 
 
 def build_images(prefix, images, tag=None, push=False, force_push=False, chart_version=None, force_build=False, skip_build=False, long=False):
