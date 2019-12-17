@@ -44,13 +44,13 @@ order that could come from using chartpress.
 
 ```
 0.8.0
-0.8.0-004.asdf123
-0.8.0-010.sdfg234
+0.8.0-n004.hasdf123
+0.8.0-n010.hsdfg234
 0.9.0-beta.1
-0.9.0-beta.1.001.dfgh345
-0.9.0-beta.1.005.fghj456
+0.9.0-beta.1.n001.hdfgh345
+0.9.0-beta.1.n005.hfghj456
 0.9.0-beta.2
-0.9.0-beta.2.001.ghjk567
+0.9.0-beta.2.n001.hghjk567
 0.9.0-beta.3
 0.9.0
 ```
