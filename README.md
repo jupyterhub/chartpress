@@ -36,7 +36,7 @@ information.
    2. `h`: The latest commits abbreviated SHA hash, which is typically 7
       characters, prefixed with h.
 3. If `--long` is specified or not. When it is specified tagged commits will be
-   written out with `n.sha` appended to it.
+   written out with `n000.h<hash>` appended to it.
 4. If `tag` contains a `-`, `tag.n.h` will be used, and if not, `tag-n.h` will
    be used. There should be exactly one `-` in the final version specification
    to become a valid SemVer2 version.
