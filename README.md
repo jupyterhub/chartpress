@@ -1,7 +1,11 @@
 # [chartpress](https://github.com/jupyterhub/chartpress)
 
-[![PyPI](https://img.shields.io/pypi/v/chartpress.svg)](https://pypi.python.org/pypi/chartpress)
-[![Build Status](https://travis-ci.org/jupyterhub/chartpress.svg?branch=master)](https://travis-ci.org/jupyterhub/chartpress)
+[![Latest PyPI version](https://img.shields.io/pypi/v/chartpress?logo=pypi)](https://pypi.python.org/pypi/chartpress)
+[![TravisCI build status](https://img.shields.io/travis/jupyterhub/chartpress/master?logo=travis)](https://travis-ci.org/jupyterhub/chartpress)
+[![GitHub](https://img.shields.io/badge/issue_tracking-github-blue?logo=github)](https://github.com/jupyterhub/chartpress/issues)
+[![Discourse](https://img.shields.io/badge/help_forum-discourse-blue?logo=discourse)](https://discourse.jupyter.org/c/jupyterhub)
+[![Gitter](https://img.shields.io/badge/social_chat-gitter-blue?logo=gitter)](https://gitter.im/jupyterhub/jupyterhub)
+
 
 Chartpress automate basic Helm chart development work. It is tightly used in development of the [JupyterHub](https://github.com/jupyterhub/zero-to-jupyterhub-k8s) and [BinderHub](https://github.com/jupyterhub/binderhub) Helm charts.
 
