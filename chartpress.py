@@ -19,7 +19,7 @@ import docker
 from ruamel.yaml import YAML
 from ruamel.yaml.scalarstring import SingleQuotedScalarString
 
-__version__ = '0.5.1.dev'
+__version__ = '0.6.0'
 
 # name of the environment variable with GitHub token
 GITHUB_TOKEN_KEY = 'GITHUB_TOKEN'
