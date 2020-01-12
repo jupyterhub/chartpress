@@ -14,16 +14,16 @@ yaml.preserve_quotes = True ## avoid mangling of quotes
 yaml.indent(mapping=2, offset=2, sequence=4)
 
 def test__strip_identifiers_build_suffix():
-    assert _strip_identifiers_build_suffix(identifier="0.1.2-005.asdf1234") == "0.1.2"
-    assert _strip_identifiers_build_suffix(identifier="0.1.2-alpha.1.005.asdf1234") == "0.1.2-alpha.1"
+    assert _strip_identifiers_build_suffix(identifier="0.1.2-n005.hasdf1234") == "0.1.2"
+    assert _strip_identifiers_build_suffix(identifier="0.1.2-alpha.1.n005.hasdf1234") == "0.1.2-alpha.1"
 
 def test__get_identifier():
-    assert _get_identifier(tag="0.1.2",         n_commits="0", commit="asdf123",  long=True)  == "0.1.2-000.asdf123"
+    assert _get_identifier(tag="0.1.2",         n_commits="0", commit="asdf123",  long=True)  == "0.1.2-n000.hasdf123"
     assert _get_identifier(tag="0.1.2",         n_commits="0", commit="asdf123",  long=False) == "0.1.2"
-    assert _get_identifier(tag="0.1.2",         n_commits="5", commit="asdf123",  long=False) == "0.1.2-005.asdf123"
-    assert _get_identifier(tag="0.1.2-alpha.1", n_commits="0", commit="asdf1234", long=True)  == "0.1.2-alpha.1.000.asdf1234"
+    assert _get_identifier(tag="0.1.2",         n_commits="5", commit="asdf123",  long=False) == "0.1.2-n005.hasdf123"
+    assert _get_identifier(tag="0.1.2-alpha.1", n_commits="0", commit="asdf1234", long=True)  == "0.1.2-alpha.1.n000.hasdf1234"
     assert _get_identifier(tag="0.1.2-alpha.1", n_commits="0", commit="asdf1234", long=False) == "0.1.2-alpha.1"
-    assert _get_identifier(tag="0.1.2-alpha.1", n_commits="5", commit="asdf1234", long=False) == "0.1.2-alpha.1.005.asdf1234"
+    assert _get_identifier(tag="0.1.2-alpha.1", n_commits="5", commit="asdf1234", long=False) == "0.1.2-alpha.1.n005.hasdf1234"
 
 def test_git_remote(monkeypatch):
     monkeypatch.setenv(GITHUB_TOKEN_KEY, "test-github-token")
