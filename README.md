@@ -25,21 +25,21 @@ Chartpress can do the following with the help of some configuration.
 Chartpress will infer chart versions and image tags using a few key pieces of
 information.
 
-1. `tag`: The latest commit that is tagged on the current branch, or 0.0.1 if no tag
-   was found.
+1. `tag`: The latest commit that is tagged on the current branch, or 0.0.1 if no
+   tag was found.
 2. The latest commit that influenced anything on a path within the git
    repository that matters to the chart version or image tag. The paths that
    matters is determined using the image build contexts and additional specified
    paths.
-   1. `n`: The latest commits commit distance count since the tag, described as 3 or
-      more numbers.
-   2. `sha`: The latest commits abbreviated SHA hash, which is typically 7
-      characters.
-3. If `--long` is specified or not, if it is, a tagged commit will be written
-   out with `n.sha` as well appended to it.
-4. If `tag` contains a `-`, `tag.n.sha` will be used, and if not, `tag-n.sha`
-   will be used. There should be exactly one `-` in the final version
-   specification to become a valid SemVer2 version.
+   1. `n`: The latest commits commit distance count since the tag, described as
+      3 or more numbers, prefixed with n.
+   2. `h`: The latest commits abbreviated SHA hash, which is typically 7
+      characters, prefixed with h.
+3. If `--long` is specified or not. When it is specified tagged commits will be
+   written out with `n.sha` appended to it.
+4. If `tag` contains a `-`, `tag.n.h` will be used, and if not, `tag-n.h` will
+   be used. There should be exactly one `-` in the final version specification
+   to become a valid SemVer2 version.
 
 ### Examples chart versions and image tags
 
