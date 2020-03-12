@@ -354,7 +354,7 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, chart_v
                 echo=False,
             ).decode('utf-8').strip()
             image_tag = _get_identifier(chart_version, n_commits, image_commit, long)
-        image_name = prefix + name
+        image_name = options.get('imageName', prefix + name)
         image_spec = '{}:{}'.format(image_name, image_tag)
 
         values_path_list = options['valuesPath']
