@@ -1,0 +1,6 @@
+charts:
+  - name: testchart
+    images:
+      testimage:
+        imageName: test-image-name-configuration
+        contextPath: image

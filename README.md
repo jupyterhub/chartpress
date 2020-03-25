@@ -164,9 +164,12 @@ charts:
     # images to build for this chart (optional)
     images:
       binderhub:
-        # Template docker build arguments to be passed using docker's
-        # --build-arg flag as --build-arg <key>=<value>. Available dynamic
-        # values are TAG and LAST_COMMIT.
+        # imageName overrides the default name of the image. The default name
+        # is the imagePrefix augmented with the key of this configuration. It
+        # would be jupyterhub/k8s-binderhub in this case.
+        imageName: jupyterhub/k8s-custom-image-name
+        # Build arguments to be passed using docker's --build-arg flag as
+        # --build-arg <key>=<value>. TAG and LAST_COMMIT are expandable.
         buildArgs:
           MY_STATIC_BUILD_ARG: "hello world"
           MY_DYNAMIC_BUILD_ARG: "{TAG}-{LAST_COMMIT}"
