@@ -357,7 +357,7 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, chart_v
         image_name = options.get('imageName', prefix + name)
         image_spec = '{}:{}'.format(image_name, image_tag)
 
-        values_path_list = options['valuesPath']
+        values_path_list = options.get('valuesPath', [])
         if isinstance(values_path_list, str):
             # single path, wrap it in a list
             values_path_list = [values_path_list]
@@ -708,7 +708,7 @@ def main(args=None):
         chart_version = build_chart(chart['name'], paths=chart_paths, version=chart_version, long=args.long)
 
         if 'images' in chart:
-            image_prefix = args.image_prefix if args.image_prefix is not None else chart['imagePrefix']
+            image_prefix = args.image_prefix or chart.get('imagePrefix', '')
             value_mods = build_images(
                 prefix=image_prefix,
                 images=chart['images'],
