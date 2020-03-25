@@ -1,15 +1,17 @@
+dist: bionic
 language: python
 python:
   - 3.6
-cache: pip
 install:
   - set -e
   - pip install --upgrade pip
   - pip install -r dev-requirements.txt
   - pip install .
   - pip freeze
-  - curl -L https://git.io/get_helm.sh | bash
-  - helm init --client-only
+
+before_script:
+  - # Default to use helm3
+  - curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
 
 script:
   # This is a workaround to an issue caused by the existence of a docker
@@ -22,18 +24,32 @@ script:
       echo '{"mtu": 1460}' | sudo dd of=/etc/docker/daemon.json &&
       sudo systemctl restart docker &&
       echo "Travis docker registry mirroring disabled.\n\n"
+  - docker version
+  - helm version --client
   - chartpress --version
   - chartpress --help
   - pytest --verbose --flakes
 
-deploy:
-  provider: pypi
-  user: "__token__"
-  # password: set by TravisCI's environment variable PYPI_PASSWORD
-  # ref: https://travis-ci.org/jupyterhub/chartpress/settings
-  distributions: sdist bdist_wheel
-  on:
-    # Only deploy on tagged commits instead of the default of only doing it to
-    # the master branch. A tag does not belong specifically to a branch, so
-    # without this it would fail to deploy for tags.
-    tags: true
+jobs:
+  include:
+    # Default stage: test
+    - name: Helm 2
+    - name: Helm 3
+      before_script:
+        # Install helm2 instead of helm3
+        - curl -L https://git.io/get_helm.sh | bash
+        - helm init --client-only
+    # Only deploy if all test jobs passed
+    - stage: deploy
+      if: tag IS present
+      deploy:
+        provider: pypi
+        user: "__token__"
+        # password: set by TravisCI's environment variable PYPI_PASSWORD
+        # ref: https://travis-ci.org/jupyterhub/chartpress/settings
+        distributions: sdist bdist_wheel
+        on:
+          # Only deploy on tagged commits instead of the default of only doing it to
+          # the master branch. A tag does not belong specifically to a branch, so
+          # without this it would fail to deploy for tags.
+          tags: true
