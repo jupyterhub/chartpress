@@ -230,6 +230,20 @@ def test_chartpress_run_bare_minimum(git_repo_bare_minimum, capfd):
     assert f"Updating testchart/Chart.yaml: version: {tag}" in out
 
 
+def test_chartpress_run_alternative(git_repo_alternative, capfd):
+    """
+    Ensures that chartpress will run with an alternative configuration. This
+    allow us to test against more kinds of configurations than we could squeeze
+    into a single chartpress.yaml file.
+    """
+    r = git_repo_alternative
+    sha = r.heads.master.commit.hexsha[:7]
+    tag = f"0.0.1-n002.h{sha}"
+
+    out = _capture_output([], capfd)
+    assert f"Successfully tagged test-image-name-configuration:{tag}" in out
+
+
 def _capture_output(args, capfd):
     """
     Calls chartpress given provided arguments and captures the output during the

@@ -51,6 +51,19 @@ def git_repo_bare_minimum(monkeypatch, git_repo):
     shutil.move("chartpress_bare_minimum.yaml", "chartpress.yaml")
     shutil.rmtree("image")
     r.git.add(all=True)
-    r.index.commit("bare minimum commit")
+    r.index.commit("chartpress_bare_minimum.yaml initial commit")
+
+    yield r
+
+@pytest.fixture(scope="function")
+def git_repo_alternative(monkeypatch, git_repo):
+    """
+    This fixture modifies the default git_repo fixture to use another the
+    chartpress_alternative.yaml as chartpress.yaml.
+    """
+    r = git_repo
+    shutil.move("chartpress_alternative.yaml", "chartpress.yaml")
+    r.git.add(all=True)
+    r.index.commit("chartpress_alternative.yaml initial commit")
 
     yield r
