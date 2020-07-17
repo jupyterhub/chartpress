@@ -1,4 +1,4 @@
 bump2version
 gitpython
 pytest
-pytest-flakes
+pytest-flake8

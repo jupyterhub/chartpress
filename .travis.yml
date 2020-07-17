@@ -34,7 +34,7 @@ script:
   - helm version --client
   - chartpress --version
   - chartpress --help
-  - pytest --verbose --flakes
+  - pytest --verbose --flake8
 
 jobs:
   include:
