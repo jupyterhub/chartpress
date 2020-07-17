@@ -1,7 +1,13 @@
+os: linux
 dist: bionic
 language: python
-python:
-  - 3.6
+
+stages:
+  - name: test
+    if: tag IS NOT present
+  - name: publish
+    if: tag IS present
+
 install:
   - set -e
   - pip install --upgrade pip
@@ -32,16 +38,20 @@ script:
 
 jobs:
   include:
-    # Default stage: test
-    - name: Helm 2
-    - name: Helm 3
+    - name: Helm 2, Python 3.6
+      python: 3.6
       before_script:
         # Install helm2 instead of helm3
         - curl -L https://git.io/get_helm.sh | bash
         - helm init --client-only
-    # Only deploy if all test jobs passed
-    - stage: deploy
-      if: tag IS present
+
+    - name: Helm 3, Python 3.7
+      python: 3.7
+
+    - name: Helm 3, Python 3.8
+      python: 3.8
+
+    - stage: publish
       deploy:
         provider: pypi
         user: "__token__"
@@ -53,3 +63,7 @@ jobs:
           # the master branch. A tag does not belong specifically to a branch, so
           # without this it would fail to deploy for tags.
           tags: true
+        before_script:
+          - echo "Required dummy override of default 'before_script' in .travis.yml."
+        script:
+          - echo "Required dummy override of default 'script' in .travis.yml."
