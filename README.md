@@ -233,5 +233,5 @@ pip install  -e .
 pip install -r dev-requirements.txt
 
 # run tests
-pytest --verbose --flakes --exitfirst
+pytest --verbose --flake8 --exitfirst
 ```
