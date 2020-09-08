@@ -668,12 +668,17 @@ def main(args=None):
         action='store_true',
         help='Enforce the image build step, regardless of if the image already is available either locally or remotely.',
     )
+
+    argparser.add_argument(
+        "--list-images",
+        action="store_true",
+        help="print list of images to stdout. Images will not be built.",
+    )
     argparser.add_argument(
         '--version',
         action='store_true',
         help='Print current chartpress version and exit.',
     )
-
     argparser.add_argument(
         '--commit-range',
         action=ActionStoreDeprecated,
@@ -685,6 +690,9 @@ def main(args=None):
     if args.version:
         print(f"chartpress version {__version__}")
         return
+
+    if args.list_images:
+        args.skip_build = True
 
     with open('chartpress.yaml') as f:
         config = yaml.load(f)
@@ -729,6 +737,15 @@ def main(args=None):
                 skip_build=args.skip_build or args.reset,
                 long=args.long,
             )
+            if args.list_images:
+                seen_images = set()
+                for key, image_dict in value_mods.items():
+                    image = "{repository}:{tag}".format(**image_dict)
+                    if image not in seen_images:
+                        print(image)
+                        # record image, in case the same image occurs in multiple places
+                        seen_images.add(image)
+                return
             build_values(chart['name'], value_mods)
 
         if args.publish_chart:
