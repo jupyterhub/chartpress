@@ -1,12 +1,13 @@
 import sys
-from subprocess import run
+from subprocess import run, PIPE
 
 
 def test_list_images(git_repo):
     p = run(
         [sys.executable, "-m", "chartpress", "--list-images"],
         check=True,
-        capture_output=True,
+        stdout=PIPE,
+        stderr=PIPE,
     )
     stdout = p.stdout.decode("utf8").strip()
     # echo stdout/stderr for debugging
