@@ -49,7 +49,11 @@ def run_cmd(call, cmd, *, echo=True, **kwargs):
     return call(cmd, **kwargs)
 
 
-check_call = partial(run_cmd, subprocess.check_call, stdout=sys.stderr)
+def check_call(cmd, **kwargs):
+    kwargs.setdefault("stdout", sys.stderr.fileno())
+    return run_cmd(subprocess.check_call, cmd, **kwargs)
+
+
 check_output = partial(run_cmd, subprocess.check_output)
 
 
