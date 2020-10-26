@@ -13,6 +13,7 @@ import pipes
 import re
 import shutil
 import subprocess
+import sys
 from tempfile import TemporaryDirectory
 
 import docker
@@ -33,14 +34,26 @@ yaml.preserve_quotes = True ## avoid mangling of quotes
 yaml.indent(mapping=2, offset=2, sequence=4)
 
 
+def log(message):
+    """Print messages to stderr
+
+    to avoid conflicts with piped output, e.g. `--list-images`
+    """
+    print(message, file=sys.stderr)
+
+
 def run_cmd(call, cmd, *, echo=True, **kwargs):
     """Run a command and echo it first"""
     if echo:
-        print('$> ' + ' '.join(map(pipes.quote, cmd)))
+        log("$> " + " ".join(map(pipes.quote, cmd)))
     return call(cmd, **kwargs)
 
 
-check_call = partial(run_cmd, subprocess.check_call)
+def check_call(cmd, **kwargs):
+    kwargs.setdefault("stdout", sys.stderr.fileno())
+    return run_cmd(subprocess.check_call, cmd, **kwargs)
+
+
 check_output = partial(run_cmd, subprocess.check_output)
 
 
@@ -381,7 +394,7 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, chart_v
             )
             build_image(image_spec, context_path, dockerfile_path=dockerfile_path, build_args=build_args)
         else:
-            print(f"Skipping build for {image_spec}, it already exists")
+            log(f"Skipping build for {image_spec}, it already exists")
 
         if push or force_push:
             if force_push or image_needs_pushing(image_spec):
@@ -389,7 +402,7 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, chart_v
                     'docker', 'push', image_spec
                 ])
             else:
-                print(f"Skipping push for {image_spec}, already on registry")
+                log(f"Skipping push for {image_spec}, already on registry")
     return value_modifications
 
 
@@ -419,7 +432,7 @@ def build_values(name, values_mods):
                 for repo_key in keys:
                     before = mod_obj.get(repo_key, None)
                     if before != value['repository']:
-                        print(f"Updating {values_file}: {key}.{repo_key}: {value}")
+                        log(f"Updating {values_file}: {key}.{repo_key}: {value}")
                     mod_obj[repo_key] = value['repository']
             else:
                 possible_keys = ' or '.join(IMAGE_REPOSITORY_KEYS)
@@ -429,7 +442,7 @@ def build_values(name, values_mods):
 
             before = mod_obj.get('tag', None)
             if before != value['tag']:
-                print(f"Updating {values_file}: {key}.tag: {value}")
+                log(f"Updating {values_file}: {key}.tag: {value}")
             mod_obj['tag'] = value['tag']
         elif isinstance(mod_obj, str):
             # scalar image string, not dict with separate repository, tag keys
@@ -439,7 +452,7 @@ def build_values(name, values_mods):
             except (KeyError, IndexError):
                 before = None
             if before != image:
-                print(f"Updating {values_file}: {key}: {image}")
+                log(f"Updating {values_file}: {key}: {image}")
             parent[last_part] = image
         else:
             raise TypeError(
@@ -500,7 +513,7 @@ def build_chart(name, version=None, paths=None, long=False):
             version = _get_identifier(latest_tag_in_branch, n_commits, chart_commit, long)
 
     if chart['version'] != version:
-        print(f"Updating {chart_file}: version: {version}")
+        log(f"Updating {chart_file}: version: {version}")
         chart['version'] = version
 
     with open(chart_file, 'w') as f:
@@ -589,14 +602,14 @@ def publish_pages(chart_name, chart_version, chart_repo_github_path, chart_repo_
 class ActionStoreDeprecated(argparse.Action):
     """Used with argparse as a deprecation action."""
     def __call__(self, parser, namespace, values, option_string=None):
-        print(f"Warning: use of {'|'.join(self.option_strings)} is deprecated.")
+        log(f"Warning: use of {'|'.join(self.option_strings)} is deprecated.")
         setattr(namespace, self.dest, values)
 
 
 class ActionAppendDeprecated(argparse.Action):
     """Used with argparse as a deprecation action."""
     def __call__(self, parser, namespace, values, option_string=None):
-        print(f"Warning: use of {'|'.join(self.option_strings)} is deprecated.")
+        log(f"Warning: use of {'|'.join(self.option_strings)} is deprecated.")
         if not getattr(namespace, self.dest):
             setattr(namespace, self.dest, [])
         getattr(namespace, self.dest).append(values)
@@ -659,12 +672,17 @@ def main(args=None):
         action='store_true',
         help='Enforce the image build step, regardless of if the image already is available either locally or remotely.',
     )
+
+    argparser.add_argument(
+        "--list-images",
+        action="store_true",
+        help="print list of images to stdout. Images will not be built.",
+    )
     argparser.add_argument(
         '--version',
         action='store_true',
         help='Print current chartpress version and exit.',
     )
-
     argparser.add_argument(
         '--commit-range',
         action=ActionStoreDeprecated,
@@ -676,6 +694,9 @@ def main(args=None):
     if args.version:
         print(f"chartpress version {__version__}")
         return
+
+    if args.list_images:
+        args.skip_build = True
 
     with open('chartpress.yaml') as f:
         config = yaml.load(f)
@@ -720,6 +741,15 @@ def main(args=None):
                 skip_build=args.skip_build or args.reset,
                 long=args.long,
             )
+            if args.list_images:
+                seen_images = set()
+                for key, image_dict in value_mods.items():
+                    image = "{repository}:{tag}".format(**image_dict)
+                    if image not in seen_images:
+                        print(image)
+                        # record image, in case the same image occurs in multiple places
+                        seen_images.add(image)
+                return
             build_values(chart['name'], value_mods)
 
         if args.publish_chart:

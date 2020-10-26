@@ -1,6 +1,8 @@
 import os
+import sys
 
 import chartpress
+
 
 def test_git_repo_fixture(git_repo):
     # assert we use the git repo as our current working directory
@@ -27,7 +29,7 @@ def test_chartpress_run(git_repo, capfd):
 
     # run chartpress
     out = _capture_output([], capfd)
-    
+
     # verify image was built
     # verify the fallback tag of "0.0.1" when a tag is missing
     assert f"Successfully tagged testchart/testimage:{tag}" in out
@@ -244,7 +246,7 @@ def test_chartpress_run_alternative(git_repo_alternative, capfd):
     assert f"Successfully tagged test-image-name-configuration:{tag}" in out
 
 
-def _capture_output(args, capfd):
+def _capture_output(args, capfd, expect_output=False):
     """
     Calls chartpress given provided arguments and captures the output during the
     call.
@@ -260,6 +262,8 @@ def _capture_output(args, capfd):
     _, _ = capfd.readouterr()
     chartpress.main(args)
     out, err = capfd.readouterr()
+    if not expect_output:
+        assert out == ""
 
     # since the output was captured, print it back out again for debugging
     # purposes if a test fails for example
@@ -267,6 +271,9 @@ def _capture_output(args, capfd):
     footer = "-" * len(header)
     print()
     print(header)
+    print("out:")
     print(out)
+    print("err:")
+    print(err, file=sys.stderr)
     print(footer)
-    return out
+    return err
