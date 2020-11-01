@@ -144,6 +144,26 @@ def render_build_args(image_options, ns):
     return build_args
 
 
+def get_image_context_path(name, options):
+    """
+    Return the image's contextPath configuration value or a default value based
+    on the image name.
+    """
+    if options.get("contextPath"):
+        return options["contextPath"]
+    else:
+        return os.path.join("images", name)
+
+def get_image_dockerfile_path(name, options):
+    """
+    Return the image dockerfilePath configuration value or a default value based
+    on the contextPath.
+    """
+    if options.get("dockerfilePath"):
+        return options["dockerfilePath"]
+    else:
+        return os.path.join(get_image_context_path(name, options), "Dockerfile")
+
 def get_image_paths(name, options):
     """
     Returns the paths that when changed should trigger a rebuild of a chart's
@@ -154,14 +174,9 @@ def get_image_paths(name, options):
     Dockerfile path, and the optional others for extra paths.
     """
     r = []
-    if options.get("contextPath"):
-        r.append(options["contextPath"])
-    else:
-        r.append(os.path.join("images", name))
-    if options.get("dockerfilePath"):
-        r.append(options["dockerfilePath"])
-    else:
-        r.append(os.path.join(r[0], "Dockerfile"))
+    if options.get("rebuildOnContextPathChanges", True):
+        r.append(get_image_context_path(name, options))
+    r.append(get_image_dockerfile_path(name, options))
     r.extend(options.get("paths", []))
     return r
 
@@ -350,8 +365,8 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, chart_v
         # include chartpress.yaml itself as it can contain build args and
         # similar that influence the image that would be built
         image_paths = get_image_paths(name, options) + ["chartpress.yaml"]
-        context_path = image_paths[0]
-        dockerfile_path = image_paths[1]
+        context_path = get_image_context_path(name, options)
+        dockerfile_path = get_image_dockerfile_path(name, options)
         image_commit = latest_tag_or_mod_commit(*image_paths, echo=False)
         if image_tag is None:
             n_commits = check_output(
