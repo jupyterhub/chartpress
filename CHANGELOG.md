@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+## [0.7]
+
+### [0.7.0] - UNRELEASED
+
+#### Enhancements made
+
+* Image config option added: rebuildOnContextPathChanges [#98](https://github.com/jupyterhub/chartpress/pull/98) ([@consideRatio](https://github.com/consideRatio))
+* add chartpress --list-images [#96](https://github.com/jupyterhub/chartpress/pull/96) ([@minrk](https://github.com/minrk))
+* support overriding imageName [#90](https://github.com/jupyterhub/chartpress/pull/90) ([@minrk](https://github.com/minrk))
+
+#### Maintenance and upkeep improvements
+
+* CI: publish tags without tests and test python 3.6-3.8 [#95](https://github.com/jupyterhub/chartpress/pull/95) ([@consideRatio](https://github.com/consideRatio))
+* CI: Test chartpress usage with both helm2 and helm3 [#92](https://github.com/jupyterhub/chartpress/pull/92) ([@consideRatio](https://github.com/consideRatio))
+
+#### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/chartpress/graphs/contributors?from=2020-01-12&to=2020-11-01&type=c))
+
+[@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3AconsideRatio+updated%3A2020-01-12..2020-11-01&type=Issues) | [@manics](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Amanics+updated%3A2020-01-12..2020-11-01&type=Issues) | [@minrk](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Aminrk+updated%3A2020-01-12..2020-11-01&type=Issues)
+
+
 ## [0.6]
 
 ### [0.6.0] - 2020-01-12
