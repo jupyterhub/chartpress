@@ -178,6 +178,9 @@ charts:
         # This is by default the folder of the Dockerfile. This path should be
         # set relative to chartpress.yaml.
         contextPath: ..
+        # By default, changes to the contextPath will make chartpress rebuild
+        # the image, but this option make that configurable.
+        rebuildOnContextPathChanges: false
         # Path to the Dockerfile, relative to chartpress.yaml. Defaults to
         # "images/<image name>/Dockerfile".
         dockerfilePath: images/binderhub/Dockerfile
