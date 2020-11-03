@@ -52,6 +52,10 @@ jobs:
       python: 3.8
 
     - stage: publish
+      before_script:
+        - echo "Required dummy override of default 'before_script' in .travis.yml."
+      script:
+        - echo "Required dummy override of default 'script' in .travis.yml."
       deploy:
         provider: pypi
         user: "__token__"
@@ -63,7 +67,3 @@ jobs:
           # the master branch. A tag does not belong specifically to a branch, so
           # without this it would fail to deploy for tags.
           tags: true
-        before_script:
-          - echo "Required dummy override of default 'before_script' in .travis.yml."
-        script:
-          - echo "Required dummy override of default 'script' in .travis.yml."
