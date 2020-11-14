@@ -3,7 +3,7 @@
 `chartpress` is a package [available on
 PyPI](https://pypi.org/project/chartpress/). These are instructions on how to
 make a release on PyPI. The PyPI release is packaged and published automatically
-by TravisCI when a git tag is pushed.
+by a GitHub workflow when a git tag is pushed.
 
 For you to follow along according to these instructions, you need:
 - To have push rights to the [chartpress GitHub
@@ -53,9 +53,9 @@ For you to follow along according to these instructions, you need:
 
 ## Manually uploading to PyPI
 
-We are using CD with Travis to automatically update PyPI, but if you want to do
-it manually when you are on a tagged commit in a otherwise cleaned repository,
-you can do this.
+We are using CI with GitHub workflows to automatically publish to PyPI, but if
+you want to do it manually when you are on a tagged commit in a otherwise
+cleaned repository, you can do this.
 
 1. Package the release
 
