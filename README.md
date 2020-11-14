@@ -1,7 +1,7 @@
 # [chartpress](https://github.com/jupyterhub/chartpress)
 
 [![Latest PyPI version](https://img.shields.io/pypi/v/chartpress?logo=pypi)](https://pypi.python.org/pypi/chartpress)
-[![TravisCI build status](https://img.shields.io/travis/com/jupyterhub/chartpress?logo=travis)](https://travis-ci.com/jupyterhub/chartpress)
+[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/jupyterhub/chartpress/Test?logo=github)](https://github.com/jupyterhub/chartpress/actions)
 [![GitHub](https://img.shields.io/badge/issue_tracking-github-blue?logo=github)](https://github.com/jupyterhub/chartpress/issues)
 [![Discourse](https://img.shields.io/badge/help_forum-discourse-blue?logo=discourse)](https://discourse.jupyter.org/c/jupyterhub)
 [![Gitter](https://img.shields.io/badge/social_chat-gitter-blue?logo=gitter)](https://gitter.im/jupyterhub/jupyterhub)
