@@ -1,0 +1,93 @@
+# This is a GitHub workflow defining a set of jobs with a set of steps.
+# ref: https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions
+#
+name: Test
+
+# Trigger the workflow's on all PRs but only on pushed tags or commits to
+# main/master branch to avoid PRs developed in a GitHub fork's dedicated branch
+# to trigger.
+on:
+  pull_request:
+  push:
+    branches:
+    tags:
+  workflow_dispatch:
+
+defaults:
+  run:
+    # Declare bash be used by default in this workflow's "run" steps.
+    #
+    # NOTE: bash will by default run with:
+    #   --noprofile: Ignore ~/.profile etc.
+    #   --norc:      Ignore ~/.bashrc etc.
+    #   -e:          Exit directly on errors
+    #   -o pipefail: Don't mask errors from a command piped into another command
+    shell: bash
+
+jobs:
+  chart_tests:
+    runs-on: ubuntu-20.04
+
+    strategy:
+      # Keep running even if one variation of the job fail
+      fail-fast: false
+      matrix:
+        # We run this job multiple times with different parameterization
+        # specified below, these parameters have no meaning on their own and
+        # gain meaning on how job steps use them.
+        include:
+          - python: 3.6
+            helm2: helm2
+          - python: 3.7
+          - python: 3.8
+          - python: 3.9
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          # chartpress requires the full history
+          fetch-depth: 0
+
+      # NOTE: actions/setup-python@v2 make use of a cache within the GitHub base
+      #       environment and setup in a fraction of a second.
+      - uses: actions/setup-python@v2
+        with:
+          python-version: "${{ matrix.python }}"
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install .
+          pip install -r dev-requirements.txt
+          pip freeze
+
+      - name: Install helm
+        run: |
+          if [[ "$HELM2" == "helm2" ]]; then
+              curl -L https://git.io/get_helm.sh | bash
+              helm init --client-only
+          else
+              curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+          fi
+        env:
+          HELM2: ${{ matrix.helm2 }}
+
+      - name: Log environment information
+        run: |
+          docker version
+          helm version --client
+          chartpress --version
+          chartpress --help
+
+      - name: Configure a git user
+        # Having a user.email and user.name configured with git is required to
+        # make commits, which is something chartpress does when publishing.
+        # While Travis CI had a dummy user by default, GitHub Actions doesn't
+        # and require this explicitly setup.
+        run: |
+          git config --global user.email "github-actions@example.local"
+          git config --global user.name "GitHub Actions user"
+
+      - name: Run tests
+        run: |
+          pytest --verbose --flake8 --color=yes
