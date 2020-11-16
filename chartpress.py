@@ -584,7 +584,8 @@ def publish_pages(chart_name, chart_version, chart_repo_github_path, chart_repo_
         check_call(['git', 'fetch'], cwd=checkout_dir, echo=True)
     check_call(['git', 'checkout', 'gh-pages'], cwd=checkout_dir, echo=True)
 
-    # check if there is any already published chart with chart_name
+    # check if a chart with the same name and version has already been published. If
+    # there is, the behaviour depends on `-force-publish-chart`
     # and chart_version and make a decision based on the --force-publish-chart
     # flag if that is the case, but always log what's done
     if os.path.isfile(os.path.join(checkout_dir, 'index.yaml')):
