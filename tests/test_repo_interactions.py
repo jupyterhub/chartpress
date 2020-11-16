@@ -136,9 +136,20 @@ def test_chartpress_run(git_repo, capfd):
         ],
         capfd,
     )
-
     # verify output of --publish-chart
     assert f"Skipping chart publishing" in out
+
+    # verify usage of --force-publish-chart when the chart version exists in the
+    # chart repo already
+    out = _capture_output(
+        [
+            "--skip-build",
+            "--force-publish-chart",
+        ],
+        capfd,
+    )
+    # verify output of --force-publish-chart
+    assert f"already exists, overwriting it" in out
 
 
 
