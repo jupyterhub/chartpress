@@ -43,9 +43,13 @@ def log(message):
 
 
 def run_cmd(call, cmd, *, echo=True, **kwargs):
-    """Run a command and echo it first"""
+    """Run a command and echo it first with censoring of GITHUB_TOKEN."""
     if echo:
-        log("$> " + " ".join(map(pipes.quote, cmd)))
+        cmd_string = " ".join(map(pipes.quote, cmd))
+        github_token = os.getenv(GITHUB_TOKEN_KEY)
+        if github_token:
+            cmd_string = cmd_string.replace(github_token, "CENSORED_GITHUB_TOKEN")
+        log("$> " + cmd_string)
     return call(cmd, **kwargs)
 
 
@@ -61,12 +65,6 @@ def git_remote(git_repo):
     """Return the URL for remote git repository.
 
     Depending on the system setup it returns ssh or https remote.
-
-    FIXME: We provide a remote url with a secret GITHUB_TOKEN inside it. This is
-           retained in the cloned repository later. All this combined makes for
-           a unexpected result in my mind where having used ` GITHUB_TOKEN=asdf
-           chartpress --publish-chart` would make you permanently stored the
-           GITHUB_TOKEN on disk.
     """
     # if not matching something/something
     # such as a local directory ".", then
@@ -583,10 +581,8 @@ def publish_pages(chart_name, chart_version, chart_repo_github_path, chart_repo_
                 git_remote(chart_repo_github_path),
                 checkout_dir,
             ],
-            # FIXME: We want to echo this I think, but... When we use
-            #        GITHUB_TOKEN, we cannot echo the command securly, because
-            #        git_remote(chart_repo_github_path) will contain it.
-            echo=False,
+            # We don't echo the GITHUB_TOKEN, it is censored in run_call
+            echo=True,
         )
     else:
         check_call(['git', 'fetch'], cwd=checkout_dir, echo=True)
