@@ -43,9 +43,13 @@ def log(message):
 
 
 def run_cmd(call, cmd, *, echo=True, **kwargs):
-    """Run a command and echo it first"""
+    """Run a command and echo it first with censoring of GITHUB_TOKEN."""
     if echo:
-        log("$> " + " ".join(map(pipes.quote, cmd)))
+        cmd_string = " ".join(map(pipes.quote, cmd))
+        github_token = os.getenv(GITHUB_TOKEN_KEY)
+        if github_token:
+            cmd_string = cmd_string.replace(github_token, "CENSORED_GITHUB_TOKEN")
+        log("$> " + cmd_string)
     return call(cmd, **kwargs)
 
 
@@ -70,9 +74,8 @@ def git_remote(git_repo):
 
     github_token = os.getenv(GITHUB_TOKEN_KEY)
     if github_token:
-        return 'https://{0}@github.com/{1}'.format(
-            github_token, git_repo)
-    return 'git@github.com:{0}'.format(git_repo)
+        return f'https://{github_token}@github.com/{git_repo}'
+    return f'git@github.com:{git_repo}'
 
 
 @lru_cache()
@@ -206,7 +209,7 @@ def build_image(image_spec, context_path, dockerfile_path=None, build_args=None)
     if dockerfile_path:
         cmd.extend(['-f', dockerfile_path])
     for k, v in (build_args or {}).items():
-        cmd += ['--build-arg', '{}={}'.format(k, v)]
+        cmd += ['--build-arg', f'{k}={v}']
     check_call(cmd)
 
 @lru_cache()
@@ -383,7 +386,7 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, chart_v
             ).decode('utf-8').strip()
             image_tag = _get_identifier(chart_version, n_commits, image_commit, long)
         image_name = options.get('imageName', prefix + name)
-        image_spec = '{}:{}'.format(image_name, image_tag)
+        image_spec = f'{image_name}:{image_tag}'
 
         values_path_list = options.get('valuesPath', [])
         if isinstance(values_path_list, str):
@@ -537,7 +540,7 @@ def build_chart(name, version=None, paths=None, long=False):
     return version
 
 
-def publish_pages(chart_name, chart_version, chart_repo_github_path, chart_repo_url, extra_message=''):
+def publish_pages(chart_name, chart_version, chart_repo_github_path, chart_repo_url, extra_message="", force=False):
     """
     Update a Helm chart registry hosted in the gh-pages branch of a GitHub git
     repository.
@@ -546,13 +549,15 @@ def publish_pages(chart_name, chart_version, chart_repo_github_path, chart_repo_
 
     1. Clone the Helm chart registry as found in the gh-pages branch of a git
        reposistory.
-    2. Create a temporary directory and `helm package` the chart into a file
+    2. If --force-publish-chart isn't specified, then verify that we won't
+       overwrite an existing chart version.
+    3. Create a temporary directory and `helm package` the chart into a file
        within this temporary directory now only containing the chart .tar file.
-    3. Generate a index.yaml with `helm repo index` based on charts found in the
+    4. Generate a index.yaml with `helm repo index` based on charts found in the
        temporary directory folder (a single one), and then merge in the bigger
        and existing index.yaml from the cloned Helm chart registry using the
        --merge flag.
-    4. Copy the new index.yaml and packaged Helm chart .tar into the gh-pages
+    5. Copy the new index.yaml and packaged Helm chart .tar into the gh-pages
        branch, commit it, and push it back to the origin remote.
 
     Note that if we would add the new chart .tar file next to the other .tar
@@ -566,19 +571,38 @@ def publish_pages(chart_name, chart_version, chart_repo_github_path, chart_repo_
     this, it is as we would have a --force-publish-chart by default.
     """
 
-    # clone the Helm chart repo and checkout its gh-pages branch,
-    # note the use of cwd (current working directory)
-    checkout_dir = '{}-{}'.format(chart_name, chart_version)
-    check_call(
-        [
-            'git', 'clone', '--no-checkout',
-            git_remote(chart_repo_github_path),
-            checkout_dir,
-        ],
-        # warning: if echoed, this call could reveal the github token
-        echo=True,
-    )
+    # clone/fetch the Helm chart repo and checkout its gh-pages branch, note the
+    # use of cwd (current working directory)
+    checkout_dir = f'{chart_name}-{chart_version}'
+    if not os.path.isdir(checkout_dir):
+        check_call(
+            [
+                'git', 'clone', '--no-checkout',
+                git_remote(chart_repo_github_path),
+                checkout_dir,
+            ],
+            # We don't echo the GITHUB_TOKEN, it is censored in run_call
+            echo=True,
+        )
+    else:
+        check_call(['git', 'fetch'], cwd=checkout_dir, echo=True)
     check_call(['git', 'checkout', 'gh-pages'], cwd=checkout_dir, echo=True)
+
+    # check if a chart with the same name and version has already been published. If
+    # there is, the behaviour depends on `-force-publish-chart`
+    # and chart_version and make a decision based on the --force-publish-chart
+    # flag if that is the case, but always log what's done
+    if os.path.isfile(os.path.join(checkout_dir, 'index.yaml')):
+        with open(os.path.join(checkout_dir, 'index.yaml')) as f:
+            chart_repo_index = yaml.load(f)
+            published_charts = chart_repo_index["entries"].get(chart_name)
+
+        if any(c["version"] == chart_version for c in published_charts):
+            if force:
+                log(f"Chart of version {chart_version} already exists, overwriting it.")
+            else:
+                log(f"Skipping chart publishing of version {chart_version}, it is already published")
+                return
 
     # package the latest version into a temporary directory
     # and run helm repo index with --merge to update index.yaml
@@ -648,7 +672,12 @@ def main(args=None):
     argparser.add_argument(
         '--publish-chart',
         action='store_true',
-        help='Package a Helm chart and publish it to a Helm chart registry contructed with a GitHub git repository and GitHub pages.',
+        help='Package a Helm chart and publish it to a Helm chart registry constructed with a GitHub git repository and GitHub pages, but not if it would replace an existing chart version.',
+    )
+    argparser.add_argument(
+        '--force-publish-chart',
+        action='store_true',
+        help='Package a Helm chart and publish it to a Helm chart registry constructed with a GitHub git repository and GitHub pages, regardless if it would replace an existing chart version',
     )
     argparser.add_argument(
         '--extra-message',
@@ -767,13 +796,14 @@ def main(args=None):
                 return
             build_values(chart['name'], value_mods)
 
-        if args.publish_chart:
+        if args.publish_chart or args.force_publish_chart:
             publish_pages(
                 chart_name=chart['name'],
                 chart_version=chart_version,
                 chart_repo_github_path=chart['repo']['git'],
                 chart_repo_url=chart['repo']['published'],
                 extra_message=args.extra_message,
+                force=args.force_publish_chart,
             )
 
 

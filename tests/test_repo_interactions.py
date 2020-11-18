@@ -127,8 +127,34 @@ def test_chartpress_run(git_repo, capfd):
     git_repo.git.stash("pop")
 
 
+    # verify usage of --publish-chart when the chart version exists in the chart
+    # repo already
+    out = _capture_output(
+        [
+            "--skip-build",
+            "--publish-chart",
+        ],
+        capfd,
+    )
+    # verify output of --publish-chart
+    assert f"Skipping chart publishing" in out
+
+    # verify usage of --force-publish-chart when the chart version exists in the
+    # chart repo already
+    out = _capture_output(
+        [
+            "--skip-build",
+            "--force-publish-chart",
+        ],
+        capfd,
+    )
+    # verify output of --force-publish-chart
+    assert f"already exists, overwriting it" in out
+
+
+
     # verify we don't overwrite the previous version when we make dev commits
-    # and use --publish-chart
+    # and use --publish-chart and that we don't skip publishing
     open("extra-chart-path.txt", "w").close()
     git_repo.git.add(all=True)
     sha = git_repo.index.commit("Added extra-chart-path.txt").hexsha[:7]
@@ -144,6 +170,7 @@ def test_chartpress_run(git_repo, capfd):
     assert "Branch 'gh-pages' set up to track remote branch 'gh-pages' from 'origin'." in out
     assert "Successfully packaged chart and saved it to:" in out
     assert f"/testchart-{tag}.n001.h{sha}.tgz" in out
+    assert f"Skipping chart publishing" not in out
 
     # checkout gh-pages
     git_repo.git.stash()

@@ -4,6 +4,7 @@ from chartpress import git_remote
 from chartpress import image_needs_pushing
 from chartpress import latest_tag_or_mod_commit
 from chartpress import render_build_args
+from chartpress import check_call
 from chartpress import _strip_identifiers_build_suffix
 from chartpress import _get_identifier
 
@@ -31,6 +32,12 @@ def test_git_remote(monkeypatch):
 
     monkeypatch.delenv(GITHUB_TOKEN_KEY)
     assert git_remote("jupyterhub/helm-chart") == "git@github.com:jupyterhub/helm-chart"
+
+def test_git_token_censoring(monkeypatch, capfd):
+    monkeypatch.setenv(GITHUB_TOKEN_KEY, "secret-token-not-to-be-exposed-in-logs")
+    check_call(["echo", "Non failing dummy command with secret-token-not-to-be-exposed-in-logs"])
+    _, err = capfd.readouterr()
+    assert "CENSORED_GITHUB_TOKEN" in err
 
 def test_image_needs_pushing():
     assert image_needs_pushing("jupyterhub/image-not-to-be-found:latest")
