@@ -42,7 +42,7 @@ def _log(message):
     print(message, file=sys.stderr)
 
 
-def run_cmd(call, cmd, *, echo=True, **kwargs):
+def _run_cmd(call, cmd, *, echo=True, **kwargs):
     """Run a command and echo it first with censoring of GITHUB_TOKEN."""
     if echo:
         cmd_string = " ".join(map(pipes.quote, cmd))
@@ -55,10 +55,10 @@ def run_cmd(call, cmd, *, echo=True, **kwargs):
 
 def check_call(cmd, **kwargs):
     kwargs.setdefault("stdout", sys.stderr.fileno())
-    return run_cmd(subprocess.check_call, cmd, **kwargs)
+    return _run_cmd(subprocess.check_call, cmd, **kwargs)
 
 
-check_output = partial(run_cmd, subprocess.check_output)
+check_output = partial(_run_cmd, subprocess.check_output)
 
 
 def git_remote(git_repo):
