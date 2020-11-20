@@ -1,7 +1,7 @@
 from chartpress import GITHUB_TOKEN_KEY
 
 from chartpress import git_remote
-from chartpress import image_needs_pushing
+from chartpress import _image_needs_pushing
 from chartpress import _latest_commit_tagged_or_modifying_path
 from chartpress import render_build_args
 from chartpress import check_call
@@ -39,9 +39,9 @@ def test_git_token_censoring(monkeypatch, capfd):
     _, err = capfd.readouterr()
     assert "CENSORED_GITHUB_TOKEN" in err
 
-def test_image_needs_pushing():
-    assert image_needs_pushing("jupyterhub/image-not-to-be-found:latest")
-    assert not image_needs_pushing("jupyterhub/k8s-hub:0.8.2")
+def test__image_needs_pushing():
+    assert _image_needs_pushing("jupyterhub/image-not-to-be-found:latest")
+    assert not _image_needs_pushing("jupyterhub/k8s-hub:0.8.2")
 
 def test__latest_commit_tagged_or_modifying_path(git_repo):
     open('tag-mod.txt', "w").close()

@@ -121,7 +121,7 @@ def _latest_commit_tagged_or_modifying_path(*paths, **kwargs):
     Get the latest of a) the latest tagged commit, or b) the latest commit
     modifying provided path.
     """
-    latest_commit_modifying_path = _get_latest_commit_modifying_path(**kwargs)
+    latest_commit_modifying_path = _get_latest_commit_modifying_path(*paths, **kwargs)
 
     latest_tag = _get_latest_tag(**kwargs)
     if not latest_tag:
@@ -234,7 +234,7 @@ def docker_client():
 
 
 @lru_cache()
-def image_needs_pushing(image):
+def _image_needs_pushing(image):
     """
     Returns a boolean whether an image needs pushing by checking if the image
     exists on the image registry.
@@ -287,7 +287,7 @@ def image_needs_building(image):
         return False
 
     # image may need building if it's not on the registry
-    return image_needs_pushing(image)
+    return _image_needs_pushing(image)
 
 
 def _get_identifier(tag, n_commits, commit, long):
@@ -430,7 +430,7 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, chart_v
             log(f"Skipping build for {image_spec}, it already exists")
 
         if push or force_push:
-            if force_push or image_needs_pushing(image_spec):
+            if force_push or _image_needs_pushing(image_spec):
                 check_call([
                     'docker', 'push', image_spec
                 ])
