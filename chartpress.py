@@ -143,7 +143,7 @@ def _latest_commit_tagged_or_modifying_path(*paths, **kwargs):
         return latest_commit_modifying_path
 
 
-def render_build_args(image_options, ns):
+def _get_image_build_args(image_options, ns):
     """
     Render buildArgs from chartpress.yaml that could be templates, using
     provided namespace that contains keys with dynamic values such as
@@ -423,7 +423,7 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, chart_v
             continue
 
         if force_build or _image_needs_building(image_spec):
-            build_args = render_build_args(
+            build_args = _get_image_build_args(
                 options,
                 {
                     'LAST_COMMIT': image_commit,

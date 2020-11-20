@@ -3,7 +3,7 @@ from chartpress import GITHUB_TOKEN_KEY
 from chartpress import _get_git_remote_url
 from chartpress import _image_needs_pushing
 from chartpress import _latest_commit_tagged_or_modifying_path
-from chartpress import render_build_args
+from chartpress import _get_image_build_args
 from chartpress import _check_call
 from chartpress import _strip_identifiers_build_suffix
 from chartpress import _get_identifier
@@ -57,12 +57,12 @@ def test__latest_commit_tagged_or_modifying_path(git_repo):
     assert _latest_commit_tagged_or_modifying_path("tag-mod.txt")      == tag_commit.hexsha[:7]
     assert _latest_commit_tagged_or_modifying_path("post-tag-mod.txt") == post_tag_commit.hexsha[:7]
 
-def test_render_build_args(git_repo):
+def test__get_image_build_args(git_repo):
     with open('chartpress.yaml') as f:
         config = yaml.load(f)
     for chart in config["charts"]:
         for name, options in chart["images"].items():
-            build_args = render_build_args(
+            build_args = _get_image_build_args(
                 options,
                 {
                     'LAST_COMMIT': "sha",
