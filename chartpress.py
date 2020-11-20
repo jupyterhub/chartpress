@@ -374,7 +374,7 @@ def _strip_build_suffix_from_identifier(identifier):
     return re.sub(r'[-\.]n\d{3,}\.h\w{4,}\Z', "", identifier)
 
 
-def build_images(prefix, images, tag=None, push=False, force_push=False, chart_version=None, force_build=False, skip_build=False, long=False):
+def build_images(prefix, images, tag=None, push=False, force_push=False, force_build=False, skip_build=False, long=False):
     """Build a collection of docker images
 
     Args:
@@ -389,9 +389,6 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, chart_v
     force_push (bool):
         Whether to push the built images even if they already exist in the image
         registry (default: False).
-    chart_version (str):
-        The latest chart version, trimmed from its build suffix, will be included
-        as a prefix on image tags if `tag` is not specified.
     force_build (bool):
         To build even if the image is available locally or remotely already.
     skip_build (bool):
@@ -412,57 +409,49 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, chart_v
     """
     values_file_modifications = {}
     for name, options in images.items():
-        image_tag = tag
-        chart_version = _strip_build_suffix_from_identifier(chart_version)
-        # include chartpress.yaml itself as it can contain build args and
-        # similar that influence the image that would be built
-        image_paths = _get_all_image_paths(name, options) + ["chartpress.yaml"]
-        context_path = _get_image_build_context_path(name, options)
-        dockerfile_path = _get_image_dockerfile_path(name, options)
-        image_commit = _latest_commit_tagged_or_modifying_path(*image_paths, echo=False)
-        if image_tag is None:
-            n_commits = _check_output(
-                [
-                    'git', 'rev-list', '--count',
-                    # Note that the 0.0.1 chart_version may not exist as it was a
-                    # workaround to handle git histories with no tags in the
-                    # current branch. Also, if the chart_version is a later git
-                    # reference than the image_commit, this
-                    # command will return 0.
-                    f'{"" if chart_version == "0.0.1" else chart_version + ".."}{image_commit}',
-                ],
-                echo=False,
-            ).decode('utf-8').strip()
-            image_tag = _get_identifier(chart_version, n_commits, image_commit, long)
-        image_name = options.get('imageName', prefix + name)
-        image_spec = f'{image_name}:{image_tag}'
+        # include chartpress.yaml in the image paths to inspect as
+        # chartpress.yaml can contain build args influencing the image
+        all_image_paths = _get_all_image_paths(name, options) + ["chartpress.yaml"]
 
+        # decide a tag string
+        if tag is None:
+            tag = _get_identifier_from_paths(*all_image_paths, long=long)
+
+        image_name = options.get('imageName', prefix + name)
+
+        # update values_file_modifications to return
         values_path_list = options.get('valuesPath', [])
         if isinstance(values_path_list, str):
-            # single path, wrap it in a list
             values_path_list = [values_path_list]
-
         for values_path in values_path_list:
             values_file_modifications[values_path] = {
                 'repository': image_name,
-                'tag': SingleQuotedScalarString(image_tag),
+                'tag': SingleQuotedScalarString(tag),
             }
 
         if skip_build:
             continue
 
+        image_spec = f'{image_name}:{tag}'
+
+        # build image
         if force_build or _image_needs_building(image_spec):
-            build_args = _get_image_build_args(
-                options,
-                {
-                    'LAST_COMMIT': image_commit,
-                    'TAG': image_tag,
-                },
+            build_image(
+                image_spec,
+                _get_image_build_context_path(name, options),
+                dockerfile_path=_get_image_dockerfile_path(name, options),
+                build_args=_get_image_build_args(
+                    options,
+                    {
+                        'LAST_COMMIT': _latest_commit_tagged_or_modifying_path(*all_image_paths, echo=False),
+                        'TAG': tag,
+                    },
+                )
             )
-            build_image(image_spec, context_path, dockerfile_path=dockerfile_path, build_args=build_args)
         else:
             _log(f"Skipping build for {image_spec}, it already exists")
 
+        # push image
         if push or force_push:
             if force_push or _image_needs_pushing(image_spec):
                 _check_call([
@@ -470,6 +459,7 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, chart_v
                 ])
             else:
                 _log(f"Skipping push for {image_spec}, already on registry")
+
     return values_file_modifications
 
 
@@ -804,7 +794,6 @@ def main(args=None):
                 tag=args.tag if not args.reset else chart.get('resetTag', 'set-by-chartpress'),
                 push=args.push,
                 force_push=args.force_push,
-                chart_version=chart_version,
                 force_build=args.force_build,
                 skip_build=args.skip_build or args.reset,
                 long=args.long,
