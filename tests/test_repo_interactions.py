@@ -292,15 +292,4 @@ def _capture_output(args, capfd, expect_output=False):
     if not expect_output:
         assert out == ""
 
-    # since the output was captured, print it back out again for debugging
-    # purposes if a test fails for example
-    header = f'--- chartpress {" ".join(args)} ---'
-    footer = "-" * len(header)
-    print()
-    print(header)
-    print("out:")
-    print(out)
-    print("err:")
-    print(err, file=sys.stderr)
-    print(footer)
     return err
