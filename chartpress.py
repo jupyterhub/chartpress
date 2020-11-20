@@ -749,11 +749,6 @@ def main(args=None):
         action='store_true',
         help='Print current chartpress version and exit.',
     )
-    argparser.add_argument(
-        '--commit-range',
-        action=ActionStoreDeprecated,
-        help='Deprecated: this flag will be ignored. The new logic to determine if an image needs to be rebuilt does not require this. It will find the time in git history where the image was last in need of a rebuild due to changes, and check if that build exists locally or remotely already.',
-    )
 
     args = argparser.parse_args(args)
 
