@@ -53,7 +53,7 @@ def _run_cmd(call, cmd, *, echo=True, **kwargs):
     return call(cmd, **kwargs)
 
 
-def check_call(cmd, **kwargs):
+def _check_call(cmd, **kwargs):
     kwargs.setdefault("stdout", sys.stderr.fileno())
     return _run_cmd(subprocess.check_call, cmd, **kwargs)
 
@@ -131,7 +131,7 @@ def _latest_commit_tagged_or_modifying_path(*paths, **kwargs):
     # Is one commit is or isn't the ancestor of the other we can figure out what
     # commit is the latest.
     try:
-        check_call(
+        _check_call(
             [
                 'git', 'merge-base', '--is-ancestor', latest_commit_tagged, latest_commit_modifying_path,
             ],
@@ -228,7 +228,7 @@ def build_image(image_spec, context_path, dockerfile_path=None, build_args=None)
         cmd.extend(['-f', dockerfile_path])
     for k, v in (build_args or {}).items():
         cmd += ['--build-arg', f'{k}={v}']
-    check_call(cmd)
+    _check_call(cmd)
 
 
 @lru_cache()
@@ -436,7 +436,7 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, chart_v
 
         if push or force_push:
             if force_push or _image_needs_pushing(image_spec):
-                check_call([
+                _check_call([
                     'docker', 'push', image_spec
                 ])
             else:
@@ -595,7 +595,7 @@ def publish_pages(chart_name, chart_version, chart_repo_github_path, chart_repo_
     # use of cwd (current working directory)
     checkout_dir = f'{chart_name}-{chart_version}'
     if not os.path.isdir(checkout_dir):
-        check_call(
+        _check_call(
             [
                 'git', 'clone', '--no-checkout',
                 git_remote(chart_repo_github_path),
@@ -605,8 +605,8 @@ def publish_pages(chart_name, chart_version, chart_repo_github_path, chart_repo_
             echo=True,
         )
     else:
-        check_call(['git', 'fetch'], cwd=checkout_dir, echo=True)
-    check_call(['git', 'checkout', 'gh-pages'], cwd=checkout_dir, echo=True)
+        _check_call(['git', 'fetch'], cwd=checkout_dir, echo=True)
+    _check_call(['git', 'checkout', 'gh-pages'], cwd=checkout_dir, echo=True)
 
     # check if a chart with the same name and version has already been published. If
     # there is, the behaviour depends on `-force-publish-chart`
@@ -628,13 +628,13 @@ def publish_pages(chart_name, chart_version, chart_repo_github_path, chart_repo_
     # and run helm repo index with --merge to update index.yaml
     # without refreshing all of the timestamps
     with TemporaryDirectory() as td:
-        check_call([
+        _check_call([
             'helm', 'package', chart_name,
             '--dependency-update',
             '--destination', td + '/',
         ])
 
-        check_call([
+        _check_call([
             'helm', 'repo', 'index', td,
             '--url', chart_repo_url,
             '--merge', os.path.join(checkout_dir, 'index.yaml'),
@@ -652,9 +652,9 @@ def publish_pages(chart_name, chart_version, chart_repo_github_path, chart_repo_
     extra_message = f'\n\n{extra_message}' if extra_message else ''
     message = f'[{chart_name}] Automatic update for commit {chart_version}{extra_message}'
 
-    check_call(['git', 'add', '.'], cwd=checkout_dir)
-    check_call(['git', 'commit', '-m', message], cwd=checkout_dir)
-    check_call(['git', 'push', 'origin', 'gh-pages'], cwd=checkout_dir)
+    _check_call(['git', 'add', '.'], cwd=checkout_dir)
+    _check_call(['git', 'commit', '-m', message], cwd=checkout_dir)
+    _check_call(['git', 'push', 'origin', 'gh-pages'], cwd=checkout_dir)
 
 
 

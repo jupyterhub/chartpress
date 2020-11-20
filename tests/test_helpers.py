@@ -4,7 +4,7 @@ from chartpress import git_remote
 from chartpress import _image_needs_pushing
 from chartpress import _latest_commit_tagged_or_modifying_path
 from chartpress import render_build_args
-from chartpress import check_call
+from chartpress import _check_call
 from chartpress import _strip_identifiers_build_suffix
 from chartpress import _get_identifier
 
@@ -35,7 +35,7 @@ def test_git_remote(monkeypatch):
 
 def test_git_token_censoring(monkeypatch, capfd):
     monkeypatch.setenv(GITHUB_TOKEN_KEY, "secret-token-not-to-be-exposed-in-logs")
-    check_call(["echo", "Non failing dummy command with secret-token-not-to-be-exposed-in-logs"])
+    _check_call(["echo", "Non failing dummy command with secret-token-not-to-be-exposed-in-logs"])
     _, err = capfd.readouterr()
     assert "CENSORED_GITHUB_TOKEN" in err
 
