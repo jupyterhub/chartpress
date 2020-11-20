@@ -116,10 +116,10 @@ def _get_commit_from_tag(tag, **kwargs):
 
 
 @lru_cache()
-def _latest_commit_tagged_or_modifying_path(*paths, **kwargs):
+def _get_latest_commit_tagged_or_modifying_paths(*paths, **kwargs):
     """
     Get the latest of a) the latest tagged commit, or b) the latest commit
-    modifying provided path.
+    modifying any file in the the provided paths.
     """
     latest_commit_modifying_path = _get_latest_commit_modifying_path(*paths, **kwargs)
 
@@ -296,7 +296,7 @@ def _image_needs_building(image):
 
 
 def _get_identifier_from_paths(*paths, long=False):
-    latest_commit = _latest_commit_tagged_or_modifying_path(*paths, echo=False)
+    latest_commit = _get_latest_commit_tagged_or_modifying_paths(*paths, echo=False)
 
     try:
         git_describe = _check_output(
@@ -443,7 +443,7 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, force_b
                 build_args=_get_image_build_args(
                     options,
                     {
-                        'LAST_COMMIT': _latest_commit_tagged_or_modifying_path(*all_image_paths, echo=False),
+                        'LAST_COMMIT': _get_latest_commit_tagged_or_modifying_paths(*all_image_paths, echo=False),
                         'TAG': tag,
                     },
                 )

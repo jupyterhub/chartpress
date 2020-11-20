@@ -2,7 +2,7 @@ from chartpress import GITHUB_TOKEN_KEY
 
 from chartpress import _get_git_remote_url
 from chartpress import _image_needs_pushing
-from chartpress import _latest_commit_tagged_or_modifying_path
+from chartpress import _get_latest_commit_tagged_or_modifying_paths
 from chartpress import _get_image_build_args
 from chartpress import _check_call
 from chartpress import _strip_build_suffix_from_identifier
@@ -43,7 +43,7 @@ def test__image_needs_pushing():
     assert _image_needs_pushing("jupyterhub/image-not-to-be-found:latest")
     assert not _image_needs_pushing("jupyterhub/k8s-hub:0.8.2")
 
-def test__latest_commit_tagged_or_modifying_path(git_repo):
+def test__get_latest_commit_tagged_or_modifying_paths(git_repo):
     open('tag-mod.txt', "w").close()
     git_repo.index.add("tag-mod.txt")
     tag_commit = git_repo.index.commit("tag commit")
@@ -53,9 +53,9 @@ def test__latest_commit_tagged_or_modifying_path(git_repo):
     git_repo.index.add("post-tag-mod.txt")
     post_tag_commit = git_repo.index.commit("post tag commit")
 
-    assert _latest_commit_tagged_or_modifying_path("chartpress.yaml")  == tag_commit.hexsha[:7]
-    assert _latest_commit_tagged_or_modifying_path("tag-mod.txt")      == tag_commit.hexsha[:7]
-    assert _latest_commit_tagged_or_modifying_path("post-tag-mod.txt") == post_tag_commit.hexsha[:7]
+    assert _get_latest_commit_tagged_or_modifying_paths("chartpress.yaml")  == tag_commit.hexsha[:7]
+    assert _get_latest_commit_tagged_or_modifying_paths("tag-mod.txt")      == tag_commit.hexsha[:7]
+    assert _get_latest_commit_tagged_or_modifying_paths("post-tag-mod.txt") == post_tag_commit.hexsha[:7]
 
 def test__get_image_build_args(git_repo):
     with open('chartpress.yaml') as f:
