@@ -186,19 +186,20 @@ def _get_image_dockerfile_path(name, options):
 
 def _get_all_image_paths(name, options):
     """
-    Returns the paths that when changed should trigger a rebuild of a chart's
-    image. This includes the Dockerfile itself and the context of the Dockerfile
-    during the build process.
+    Returns the unique paths that when changed should trigger a rebuild of a
+    chart's image. This includes the Dockerfile itself and the context of the
+    Dockerfile during the build process.
 
     The first element will always be the context path, the second always the
     Dockerfile path, and the optional others for extra paths.
     """
-    r = []
+    paths = []
+    paths.append("chartpress.yaml")
     if options.get("rebuildOnContextPathChanges", True):
-        r.append(_get_image_build_context_path(name, options))
-    r.append(_get_image_dockerfile_path(name, options))
-    r.extend(options.get("paths", []))
-    return r
+        paths.append(_get_image_build_context_path(name, options))
+    paths.append(_get_image_dockerfile_path(name, options))
+    paths.extend(options.get("paths", []))
+    return list(set(paths))
 
 
 def _get_all_chart_paths(options):
@@ -426,7 +427,7 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, force_b
     for name, options in images.items():
         # include chartpress.yaml in the image paths to inspect as
         # chartpress.yaml can contain build args influencing the image
-        all_image_paths = _get_all_image_paths(name, options) + ["chartpress.yaml"]
+        all_image_paths = _get_all_image_paths(name, options)
 
         # decide a tag string
         if tag is None:
