@@ -310,7 +310,7 @@ def _get_identifier_from_paths(*paths, long=False):
         # ref: https://git-scm.com/docs/git-describe#_examples
         sha = sha[1:]
 
-        return _get_identifier(latest_tag_in_branch, n_commits, sha, long)
+        return _get_identifier_from_parts(latest_tag_in_branch, n_commits, sha, long)
     except subprocess.CalledProcessError:
         # no tags on branch, so assume 0.0.1 and
         # calculate n_commits from latest_commit
@@ -321,10 +321,10 @@ def _get_identifier_from_paths(*paths, long=False):
             echo=False,
         ).decode('utf-8').strip()
 
-        return _get_identifier("0.0.1", n_commits, latest_commit, long)
+        return _get_identifier_from_parts("0.0.1", n_commits, latest_commit, long)
 
 
-def _get_identifier(tag, n_commits, commit, long):
+def _get_identifier_from_parts(tag, n_commits, commit, long):
     """
     Returns a chartpress formatted chart version or image tag (identifier) with
     a build suffix.
