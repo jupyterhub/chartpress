@@ -162,9 +162,9 @@ def _get_image_build_args(image_options, ns):
     return build_args
 
 
-def get_image_context_path(name, options):
+def _get_image_build_context_path(name, options):
     """
-    Return the image's contextPath configuration value or a default value based
+    Return the image's contextPath configuration value, or a default value based
     on the image name.
     """
     if options.get("contextPath"):
@@ -181,7 +181,7 @@ def get_image_dockerfile_path(name, options):
     if options.get("dockerfilePath"):
         return options["dockerfilePath"]
     else:
-        return os.path.join(get_image_context_path(name, options), "Dockerfile")
+        return os.path.join(_get_image_build_context_path(name, options), "Dockerfile")
 
 
 def get_image_paths(name, options):
@@ -195,7 +195,7 @@ def get_image_paths(name, options):
     """
     r = []
     if options.get("rebuildOnContextPathChanges", True):
-        r.append(get_image_context_path(name, options))
+        r.append(_get_image_build_context_path(name, options))
     r.append(get_image_dockerfile_path(name, options))
     r.extend(options.get("paths", []))
     return r
@@ -388,7 +388,7 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, chart_v
         # include chartpress.yaml itself as it can contain build args and
         # similar that influence the image that would be built
         image_paths = get_image_paths(name, options) + ["chartpress.yaml"]
-        context_path = get_image_context_path(name, options)
+        context_path = _get_image_build_context_path(name, options)
         dockerfile_path = get_image_dockerfile_path(name, options)
         image_commit = _latest_commit_tagged_or_modifying_path(*image_paths, echo=False)
         if image_tag is None:
