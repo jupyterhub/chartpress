@@ -259,7 +259,7 @@ def _image_needs_pushing(image):
         return False
 
 @lru_cache()
-def image_needs_building(image):
+def _image_needs_building(image):
     """
     Returns a boolean whether an image needs building by checking if the image
     exists either locally or on the registry.
@@ -417,7 +417,7 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, chart_v
         if skip_build:
             continue
 
-        if force_build or image_needs_building(image_spec):
+        if force_build or _image_needs_building(image_spec):
             build_args = render_build_args(
                 options,
                 {

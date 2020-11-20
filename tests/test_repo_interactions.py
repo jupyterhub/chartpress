@@ -280,7 +280,7 @@ def _capture_output(args, capfd, expect_output=False):
     """
     # clear cache of in memory cached functions
     # this allows us to better mimic the chartpress CLI behavior
-    chartpress.image_needs_building.cache_clear()
+    chartpress._image_needs_building.cache_clear()
     chartpress._image_needs_pushing.cache_clear()
     chartpress._latest_commit_tagged_or_modifying_path.cache_clear()
 
