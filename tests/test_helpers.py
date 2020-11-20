@@ -1,6 +1,6 @@
 from chartpress import GITHUB_TOKEN_KEY
 
-from chartpress import git_remote
+from chartpress import _get_git_remote_url
 from chartpress import _image_needs_pushing
 from chartpress import _latest_commit_tagged_or_modifying_path
 from chartpress import render_build_args
@@ -26,12 +26,12 @@ def test__get_identifier():
     assert _get_identifier(tag="0.1.2-alpha.1", n_commits="0", commit="asdf1234", long=False) == "0.1.2-alpha.1"
     assert _get_identifier(tag="0.1.2-alpha.1", n_commits="5", commit="asdf1234", long=False) == "0.1.2-alpha.1.n005.hasdf1234"
 
-def test_git_remote(monkeypatch):
+def test__get_git_remote_url(monkeypatch):
     monkeypatch.setenv(GITHUB_TOKEN_KEY, "test-github-token")
-    assert git_remote("jupyterhub/helm-chart") == "https://test-github-token@github.com/jupyterhub/helm-chart"
+    assert _get_git_remote_url("jupyterhub/helm-chart") == "https://test-github-token@github.com/jupyterhub/helm-chart"
 
     monkeypatch.delenv(GITHUB_TOKEN_KEY)
-    assert git_remote("jupyterhub/helm-chart") == "git@github.com:jupyterhub/helm-chart"
+    assert _get_git_remote_url("jupyterhub/helm-chart") == "git@github.com:jupyterhub/helm-chart"
 
 def test_git_token_censoring(monkeypatch, capfd):
     monkeypatch.setenv(GITHUB_TOKEN_KEY, "secret-token-not-to-be-exposed-in-logs")

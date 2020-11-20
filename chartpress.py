@@ -61,7 +61,7 @@ def _check_call(cmd, **kwargs):
 _check_output = partial(_run_cmd, subprocess.check_output)
 
 
-def git_remote(git_repo):
+def _get_git_remote_url(git_repo):
     """Return the URL for remote git repository.
 
     Depending on the system setup it returns ssh or https remote.
@@ -598,7 +598,7 @@ def publish_pages(chart_name, chart_version, chart_repo_github_path, chart_repo_
         _check_call(
             [
                 'git', 'clone', '--no-checkout',
-                git_remote(chart_repo_github_path),
+                _get_git_remote_url(chart_repo_github_path),
                 checkout_dir,
             ],
             # We don't echo the GITHUB_TOKEN, it is censored in run_call
