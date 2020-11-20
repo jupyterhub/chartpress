@@ -61,6 +61,24 @@ def _check_call(cmd, **kwargs):
 _check_output = partial(_run_cmd, subprocess.check_output)
 
 
+def _fix_chart_version(version):
+    """
+    Helm 3 requires the Chart.yaml specified version to be SemVer2 compliant.
+    """
+    # semver.org provided this regular expression:
+    # https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
+    semver2 = re.compile(r"^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$")
+
+    if semver2.fullmatch(version):
+        return version
+
+    if version.startswith("v") and semver2.fullmatch(version[1:]):
+        _log('Stripped a "v" from the chart version to become SemVer 2 compliant as required by Helm 3.')
+        return version[1:]
+
+    raise ValueError(f'The Chart.yaml "{version}" required by Helm 3 to be SemVer2 compliant!')
+
+
 def _get_git_remote_url(git_repo):
     """Return the URL for remote git repository.
 
@@ -539,7 +557,7 @@ def _update_values_file_with_modifications(name, modifications):
         yaml.dump(values, f)
 
 
-def build_chart(name, version=None, paths=None, long=False):
+def build_chart(name, version=None, paths=None, long=False, reset=False):
     """
     Update Chart.yaml's version, using specified version or by constructing one.
 
@@ -563,6 +581,8 @@ def build_chart(name, version=None, paths=None, long=False):
     # decide a version string
     if version is None:
         version = _get_identifier_from_paths(*paths, long=long)
+    if not reset:
+        version = _fix_chart_version(version)
 
     # update Chart.yaml
     if chart['version'] != version:
@@ -786,10 +806,6 @@ def main(args=None):
         forced_version = None
         if args.tag:
             forced_version = args.tag
-            # The chart's version shouldn't have leading 'v' prefix if tag is of
-            # the form 'v1.2.3', as that would break Chart.yaml's SemVer 2
-            # requirement on the version field.
-            forced_version = forced_version.lstrip('v')
         if args.reset:
             forced_version = chart.get('resetVersion', '0.0.1-set.by.chartpress')
 
@@ -799,6 +815,7 @@ def main(args=None):
             paths=_get_all_chart_paths(chart),
             version=forced_version,
             long=args.long,
+            reset=args.reset,
         )
 
         if 'images' in chart:
