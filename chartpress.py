@@ -78,13 +78,9 @@ def git_remote(git_repo):
     return f'git@github.com:{git_repo}'
 
 
-@lru_cache()
-def latest_tag_or_mod_commit(*paths, **kwargs):
-    """
-    Get the latest of a) the latest tagged commit, or b) the latest modification
-    commit to provided path.
-    """
-    latest_modification_commit = check_output(
+def _get_latest_commit_modifying_path(*paths, **kwargs):
+    """Get the latest commit modifying the given path or return None."""
+    return check_output(
         [
             'git', 'log',
             '--max-count=1',
@@ -95,37 +91,56 @@ def latest_tag_or_mod_commit(*paths, **kwargs):
         **kwargs,
     ).decode('utf-8').strip()
 
-    try:
-        git_describe_head = check_output(
-            [
-                'git', 'describe', '--tags', '--long',
-            ],
-            **kwargs,
-        ).decode('utf-8').strip().rsplit("-", maxsplit=2)
-    except subprocess.CalledProcessError:
-        # no tags on branch
-        return latest_modification_commit
 
-    latest_tag = git_describe_head[0]
-    latest_tagged_commit = check_output(
+def _get_latest_tag(**kwargs):
+    """Get the latest tag on a commit in branch or return None."""
+    try:
+        # If the git command output is my-tag-14-g0aed65e,
+        # then the return value will become my-tag.
+        return check_output(
+            ['git', 'describe', '--tags', '--long'],
+            **kwargs,
+        ).decode('utf-8').strip().rsplit("-", maxsplit=2)[0]
+    except subprocess.CalledProcessError:
+        return None
+
+
+def _get_commit_from_tag(tag, **kwargs):
+    """Return the abbreviated commit hash for the tag."""
+    return check_output(
         [
-            'git', 'rev-list', '--abbrev-commit', '-n', '1', latest_tag,
+            'git', 'rev-list', '--abbrev-commit', '-n', '1', tag,
         ],
         **kwargs,
     ).decode('utf-8').strip()
 
+
+@lru_cache()
+def _latest_commit_tagged_or_modifying_path(*paths, **kwargs):
+    """
+    Get the latest of a) the latest tagged commit, or b) the latest commit
+    modifying provided path.
+    """
+    latest_commit_modifying_path = _get_latest_commit_modifying_path(**kwargs)
+
+    latest_tag = _get_latest_tag(**kwargs)
+    if not latest_tag:
+        return latest_commit_modifying_path
+    latest_commit_tagged = _get_commit_from_tag(latest_tag, **kwargs)
+
+    # Is one commit is or isn't the ancestor of the other we can figure out what
+    # commit is the latest.
     try:
         check_call(
             [
-                'git', 'merge-base', '--is-ancestor', latest_tagged_commit, latest_modification_commit,
+                'git', 'merge-base', '--is-ancestor', latest_commit_tagged, latest_commit_modifying_path,
             ],
             **kwargs,
         )
     except subprocess.CalledProcessError:
-        # latest_tagged_commit was newer than latest_modification_commit
-        return latest_tagged_commit
+        return latest_commit_tagged
     else:
-        return latest_modification_commit
+        return latest_commit_modifying_path
 
 
 def render_build_args(image_options, ns):
@@ -370,7 +385,7 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, chart_v
         image_paths = get_image_paths(name, options) + ["chartpress.yaml"]
         context_path = get_image_context_path(name, options)
         dockerfile_path = get_image_dockerfile_path(name, options)
-        image_commit = latest_tag_or_mod_commit(*image_paths, echo=False)
+        image_commit = _latest_commit_tagged_or_modifying_path(*image_paths, echo=False)
         if image_tag is None:
             n_commits = check_output(
                 [
@@ -503,7 +518,7 @@ def build_chart(name, version=None, paths=None, long=False):
         chart = yaml.load(f)
 
     if version is None:
-        chart_commit = latest_tag_or_mod_commit(*paths, echo=False)
+        chart_commit = _latest_commit_tagged_or_modifying_path(*paths, echo=False)
 
         try:
             git_describe = check_output(
