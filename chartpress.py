@@ -802,9 +802,9 @@ def main(args=None):
         )
 
         if 'images' in chart:
-            image_prefix = args.image_prefix or chart.get('imagePrefix', '')
+            # build images
             values_file_modifications = build_images(
-                prefix=image_prefix,
+                prefix=args.image_prefix or chart.get('imagePrefix', ''),
                 images=chart['images'],
                 tag=args.tag if not args.reset else chart.get('resetTag', 'set-by-chartpress'),
                 push=args.push,
@@ -813,6 +813,8 @@ def main(args=None):
                 skip_build=args.skip_build or args.reset,
                 long=args.long,
             )
+
+            # list images
             if args.list_images:
                 seen_images = set()
                 for key, image_dict in values_file_modifications.items():
@@ -822,8 +824,11 @@ def main(args=None):
                         # record image, in case the same image occurs in multiple places
                         seen_images.add(image)
                 return
+
+            # update values.yaml
             _update_values_file_with_modifications(chart['name'], values_file_modifications)
 
+        # publish chart
         if args.publish_chart or args.force_publish_chart:
             publish_pages(
                 chart_name=chart['name'],
