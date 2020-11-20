@@ -184,7 +184,7 @@ def _get_image_dockerfile_path(name, options):
         return os.path.join(_get_image_build_context_path(name, options), "Dockerfile")
 
 
-def get_image_paths(name, options):
+def _get_all_image_paths(name, options):
     """
     Returns the paths that when changed should trigger a rebuild of a chart's
     image. This includes the Dockerfile itself and the context of the Dockerfile
@@ -387,7 +387,7 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, chart_v
         chart_version = _strip_identifiers_build_suffix(chart_version)
         # include chartpress.yaml itself as it can contain build args and
         # similar that influence the image that would be built
-        image_paths = get_image_paths(name, options) + ["chartpress.yaml"]
+        image_paths = _get_all_image_paths(name, options) + ["chartpress.yaml"]
         context_path = _get_image_build_context_path(name, options)
         dockerfile_path = _get_image_dockerfile_path(name, options)
         image_commit = _latest_commit_tagged_or_modifying_path(*image_paths, echo=False)
@@ -779,7 +779,7 @@ def main(args=None):
         chart_paths.extend(chart.get('paths', []))
         if 'images' in chart:
             for image_name, image_config in chart['images'].items():
-                chart_paths.extend(get_image_paths(image_name, image_config))
+                chart_paths.extend(_get_all_image_paths(image_name, image_config))
         chart_paths = list(set(chart_paths))
 
         chart_version = args.tag
