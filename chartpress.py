@@ -58,7 +58,7 @@ def _check_call(cmd, **kwargs):
     return _run_cmd(subprocess.check_call, cmd, **kwargs)
 
 
-check_output = partial(_run_cmd, subprocess.check_output)
+_check_output = partial(_run_cmd, subprocess.check_output)
 
 
 def git_remote(git_repo):
@@ -80,7 +80,7 @@ def git_remote(git_repo):
 
 def _get_latest_commit_modifying_path(*paths, **kwargs):
     """Get the latest commit modifying the given path or return None."""
-    return check_output(
+    return _check_output(
         [
             'git', 'log',
             '--max-count=1',
@@ -97,7 +97,7 @@ def _get_latest_tag(**kwargs):
     try:
         # If the git command output is my-tag-14-g0aed65e,
         # then the return value will become my-tag.
-        return check_output(
+        return _check_output(
             ['git', 'describe', '--tags', '--long'],
             **kwargs,
         ).decode('utf-8').strip().rsplit("-", maxsplit=2)[0]
@@ -107,7 +107,7 @@ def _get_latest_tag(**kwargs):
 
 def _get_commit_from_tag(tag, **kwargs):
     """Return the abbreviated commit hash for the tag."""
-    return check_output(
+    return _check_output(
         [
             'git', 'rev-list', '--abbrev-commit', '-n', '1', tag,
         ],
@@ -392,7 +392,7 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, chart_v
         dockerfile_path = get_image_dockerfile_path(name, options)
         image_commit = _latest_commit_tagged_or_modifying_path(*image_paths, echo=False)
         if image_tag is None:
-            n_commits = check_output(
+            n_commits = _check_output(
                 [
                     'git', 'rev-list', '--count',
                     # Note that the 0.0.1 chart_version may not exist as it was a
@@ -526,7 +526,7 @@ def build_chart(name, version=None, paths=None, long=False):
         chart_commit = _latest_commit_tagged_or_modifying_path(*paths, echo=False)
 
         try:
-            git_describe = check_output(
+            git_describe = _check_output(
                 [
                     'git', 'describe', '--tags', '--long', chart_commit
                 ],
@@ -541,7 +541,7 @@ def build_chart(name, version=None, paths=None, long=False):
             # no tags on branch: fallback to the SemVer 2 compliant version
             # 0.0.1-<n_commits>.<chart_commit>
             latest_tag_in_branch = "0.0.1"
-            n_commits = check_output(
+            n_commits = _check_output(
                 [
                     'git', 'rev-list', '--count', chart_commit
                 ],
