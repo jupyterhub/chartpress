@@ -444,14 +444,16 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, chart_v
     return value_modifications
 
 
-def build_values(name, values_mods):
-    """Update name/values.yaml with modifications"""
+def _update_values_file_with_modifications(name, modifications):
+    """
+    Update <name>/values.yaml file with a dictionary of modifications.
+    """
     values_file = os.path.join(name, 'values.yaml')
 
     with open(values_file) as f:
         values = yaml.load(f)
 
-    for key, value in values_mods.items():
+    for key, value in modifications.items():
         if not isinstance(value, dict) or set(value.keys()) != {'repository', 'tag'}:
             raise ValueError(f"I only understand image updates with 'repository', 'tag', not: {value!r}")
         parts = key.split('.')
@@ -814,7 +816,7 @@ def main(args=None):
                         # record image, in case the same image occurs in multiple places
                         seen_images.add(image)
                 return
-            build_values(chart['name'], value_mods)
+            _update_values_file_with_modifications(chart['name'], value_mods)
 
         if args.publish_chart or args.force_publish_chart:
             publish_pages(
