@@ -34,7 +34,7 @@ yaml.preserve_quotes = True ## avoid mangling of quotes
 yaml.indent(mapping=2, offset=2, sequence=4)
 
 
-def log(message):
+def _log(message):
     """Print messages to stderr
 
     to avoid conflicts with piped output, e.g. `--list-images`
@@ -49,7 +49,7 @@ def run_cmd(call, cmd, *, echo=True, **kwargs):
         github_token = os.getenv(GITHUB_TOKEN_KEY)
         if github_token:
             cmd_string = cmd_string.replace(github_token, "CENSORED_GITHUB_TOKEN")
-        log("$> " + cmd_string)
+        _log("$> " + cmd_string)
     return call(cmd, **kwargs)
 
 
@@ -432,7 +432,7 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, chart_v
             )
             build_image(image_spec, context_path, dockerfile_path=dockerfile_path, build_args=build_args)
         else:
-            log(f"Skipping build for {image_spec}, it already exists")
+            _log(f"Skipping build for {image_spec}, it already exists")
 
         if push or force_push:
             if force_push or _image_needs_pushing(image_spec):
@@ -440,7 +440,7 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, chart_v
                     'docker', 'push', image_spec
                 ])
             else:
-                log(f"Skipping push for {image_spec}, already on registry")
+                _log(f"Skipping push for {image_spec}, already on registry")
     return value_modifications
 
 
@@ -470,7 +470,7 @@ def build_values(name, values_mods):
                 for repo_key in keys:
                     before = mod_obj.get(repo_key, None)
                     if before != value['repository']:
-                        log(f"Updating {values_file}: {key}.{repo_key}: {value}")
+                        _log(f"Updating {values_file}: {key}.{repo_key}: {value}")
                     mod_obj[repo_key] = value['repository']
             else:
                 possible_keys = ' or '.join(IMAGE_REPOSITORY_KEYS)
@@ -480,7 +480,7 @@ def build_values(name, values_mods):
 
             before = mod_obj.get('tag', None)
             if before != value['tag']:
-                log(f"Updating {values_file}: {key}.tag: {value}")
+                _log(f"Updating {values_file}: {key}.tag: {value}")
             mod_obj['tag'] = value['tag']
         elif isinstance(mod_obj, str):
             # scalar image string, not dict with separate repository, tag keys
@@ -490,7 +490,7 @@ def build_values(name, values_mods):
             except (KeyError, IndexError):
                 before = None
             if before != image:
-                log(f"Updating {values_file}: {key}: {image}")
+                _log(f"Updating {values_file}: {key}: {image}")
             parent[last_part] = image
         else:
             raise TypeError(
@@ -551,7 +551,7 @@ def build_chart(name, version=None, paths=None, long=False):
             version = _get_identifier(latest_tag_in_branch, n_commits, chart_commit, long)
 
     if chart['version'] != version:
-        log(f"Updating {chart_file}: version: {version}")
+        _log(f"Updating {chart_file}: version: {version}")
         chart['version'] = version
 
     with open(chart_file, 'w') as f:
@@ -619,9 +619,9 @@ def publish_pages(chart_name, chart_version, chart_repo_github_path, chart_repo_
 
         if any(c["version"] == chart_version for c in published_charts):
             if force:
-                log(f"Chart of version {chart_version} already exists, overwriting it.")
+                _log(f"Chart of version {chart_version} already exists, overwriting it.")
             else:
-                log(f"Skipping chart publishing of version {chart_version}, it is already published")
+                _log(f"Skipping chart publishing of version {chart_version}, it is already published")
                 return
 
     # package the latest version into a temporary directory
@@ -661,14 +661,14 @@ def publish_pages(chart_name, chart_version, chart_repo_github_path, chart_repo_
 class ActionStoreDeprecated(argparse.Action):
     """Used with argparse as a deprecation action."""
     def __call__(self, parser, namespace, values, option_string=None):
-        log(f"Warning: use of {'|'.join(self.option_strings)} is deprecated.")
+        _log(f"Warning: use of {'|'.join(self.option_strings)} is deprecated.")
         setattr(namespace, self.dest, values)
 
 
 class ActionAppendDeprecated(argparse.Action):
     """Used with argparse as a deprecation action."""
     def __call__(self, parser, namespace, values, option_string=None):
-        log(f"Warning: use of {'|'.join(self.option_strings)} is deprecated.")
+        _log(f"Warning: use of {'|'.join(self.option_strings)} is deprecated.")
         if not getattr(namespace, self.dest):
             setattr(namespace, self.dest, [])
         getattr(namespace, self.dest).append(values)
