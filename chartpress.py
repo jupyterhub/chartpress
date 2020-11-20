@@ -295,6 +295,35 @@ def _image_needs_building(image):
     return _image_needs_pushing(image)
 
 
+def _get_identifier_from_paths(*paths, long=False):
+    latest_commit = _latest_commit_tagged_or_modifying_path(*paths, echo=False)
+
+    try:
+        git_describe = _check_output(
+            [
+                'git', 'describe', '--tags', '--long', latest_commit
+            ],
+            echo=False,
+        ).decode('utf8').strip()
+        latest_tag_in_branch, n_commits, sha = git_describe.rsplit('-', maxsplit=2)
+        # remove "g" prefix output by the git describe command
+        # ref: https://git-scm.com/docs/git-describe#_examples
+        sha = sha[1:]
+
+        return _get_identifier(latest_tag_in_branch, n_commits, sha, long)
+    except subprocess.CalledProcessError:
+        # no tags on branch, so assume 0.0.1 and
+        # calculate n_commits from latest_commit
+        n_commits = _check_output(
+            [
+                'git', 'rev-list', '--count', latest_commit
+            ],
+            echo=False,
+        ).decode('utf-8').strip()
+
+        return _get_identifier("0.0.1", n_commits, latest_commit, long)
+
+
 def _get_identifier(tag, n_commits, commit, long):
     """
     Returns a chartpress formatted chart version or image tag (identifier) with
@@ -520,45 +549,23 @@ def build_chart(name, version=None, paths=None, long=False):
         - 0.9.0
         - 0.9.0-n002.hdfgh3456
     """
+    # read Chart.yaml
     chart_file = os.path.join(name, 'Chart.yaml')
     with open(chart_file) as f:
         chart = yaml.load(f)
 
+    # decide a version string
     if version is None:
-        chart_commit = _latest_commit_tagged_or_modifying_path(*paths, echo=False)
+        version = _get_identifier_from_paths(*paths, long=long)
 
-        try:
-            git_describe = _check_output(
-                [
-                    'git', 'describe', '--tags', '--long', chart_commit
-                ],
-                echo=False,
-            ).decode('utf8').strip()
-            latest_tag_in_branch, n_commits, sha = git_describe.rsplit('-', maxsplit=2)
-            # remove "g" prefix output by the git describe command
-            # ref: https://git-scm.com/docs/git-describe#_examples
-            sha = sha[1:]
-            version = _get_identifier(latest_tag_in_branch, n_commits, sha, long)
-        except subprocess.CalledProcessError:
-            # no tags on branch: fallback to the SemVer 2 compliant version
-            # 0.0.1-<n_commits>.<chart_commit>
-            latest_tag_in_branch = "0.0.1"
-            n_commits = _check_output(
-                [
-                    'git', 'rev-list', '--count', chart_commit
-                ],
-                echo=False,
-            ).decode('utf-8').strip()
-
-            version = _get_identifier(latest_tag_in_branch, n_commits, chart_commit, long)
-
+    # update Chart.yaml
     if chart['version'] != version:
         _log(f"Updating {chart_file}: version: {version}")
         chart['version'] = version
-
     with open(chart_file, 'w') as f:
         yaml.dump(chart, f)
 
+    # return version
     return version
 
 
