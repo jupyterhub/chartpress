@@ -381,7 +381,7 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, chart_v
         - long=False: 0.9.0-n004.hsdfg2345
         - long=True:  0.9.0-n004.hsdfg2345
     """
-    value_modifications = {}
+    values_file_modifications = {}
     for name, options in images.items():
         image_tag = tag
         chart_version = _strip_build_suffix_from_identifier(chart_version)
@@ -414,7 +414,7 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, chart_v
             values_path_list = [values_path_list]
 
         for values_path in values_path_list:
-            value_modifications[values_path] = {
+            values_file_modifications[values_path] = {
                 'repository': image_name,
                 'tag': SingleQuotedScalarString(image_tag),
             }
@@ -441,7 +441,7 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, chart_v
                 ])
             else:
                 _log(f"Skipping push for {image_spec}, already on registry")
-    return value_modifications
+    return values_file_modifications
 
 
 def _update_values_file_with_modifications(name, modifications):
@@ -796,7 +796,7 @@ def main(args=None):
 
         if 'images' in chart:
             image_prefix = args.image_prefix or chart.get('imagePrefix', '')
-            value_mods = build_images(
+            values_file_modifications = build_images(
                 prefix=image_prefix,
                 images=chart['images'],
                 tag=args.tag if not args.reset else chart.get('resetTag', 'set-by-chartpress'),
@@ -809,14 +809,14 @@ def main(args=None):
             )
             if args.list_images:
                 seen_images = set()
-                for key, image_dict in value_mods.items():
+                for key, image_dict in values_file_modifications.items():
                     image = "{repository}:{tag}".format(**image_dict)
                     if image not in seen_images:
                         print(image)
                         # record image, in case the same image occurs in multiple places
                         seen_images.add(image)
                 return
-            _update_values_file_with_modifications(chart['name'], value_mods)
+            _update_values_file_with_modifications(chart['name'], values_file_modifications)
 
         if args.publish_chart or args.force_publish_chart:
             publish_pages(
