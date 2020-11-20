@@ -172,6 +172,7 @@ def get_image_context_path(name, options):
     else:
         return os.path.join("images", name)
 
+
 def get_image_dockerfile_path(name, options):
     """
     Return the image dockerfilePath configuration value or a default value based
@@ -181,6 +182,7 @@ def get_image_dockerfile_path(name, options):
         return options["dockerfilePath"]
     else:
         return os.path.join(get_image_context_path(name, options), "Dockerfile")
+
 
 def get_image_paths(name, options):
     """
@@ -197,6 +199,7 @@ def get_image_paths(name, options):
     r.append(get_image_dockerfile_path(name, options))
     r.extend(options.get("paths", []))
     return r
+
 
 def build_image(image_spec, context_path, dockerfile_path=None, build_args=None):
     """Build an image
@@ -227,8 +230,9 @@ def build_image(image_spec, context_path, dockerfile_path=None, build_args=None)
         cmd += ['--build-arg', f'{k}={v}']
     check_call(cmd)
 
+
 @lru_cache()
-def docker_client():
+def _get_docker_client():
     """Cached getter for docker client"""
     return docker.from_env()
 
@@ -249,7 +253,7 @@ def _image_needs_pushing(image):
         - index.docker.io/library/ubuntu:latest
         - eu.gcr.io/my-gcp-project/my-image:0.1.0
     """
-    d = docker_client()
+    d = _get_docker_client()
     try:
         d.images.get_registry_data(image)
     except docker.errors.APIError:
@@ -257,6 +261,7 @@ def _image_needs_pushing(image):
         return True
     else:
         return False
+
 
 @lru_cache()
 def _image_needs_building(image):
@@ -274,7 +279,7 @@ def _image_needs_building(image):
         - index.docker.io/library/ubuntu:latest
         - eu.gcr.io/my-gcp-project/my-image:0.1.0
     """
-    d = docker_client()
+    d = _get_docker_client()
 
     # first, check for locally built image
     try:
