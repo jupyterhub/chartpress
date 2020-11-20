@@ -201,6 +201,21 @@ def _get_all_image_paths(name, options):
     return r
 
 
+def _get_all_chart_paths(options):
+    """
+    Returns the unique paths that when changed should trigger a version update
+    of the chart. These paths includes all the chart's images' paths as well.
+    """
+    paths = []
+    paths.append("chartpress.yaml")
+    paths.append(options['name'])
+    paths.extend(options.get('paths', []))
+    if 'images' in options:
+        for image_name, image_config in options['images'].items():
+            paths.extend(_get_all_image_paths(image_name, image_config))
+    return list(set(paths))
+
+
 def build_image(image_spec, context_path, dockerfile_path=None, build_args=None):
     """Build an image
 
@@ -767,24 +782,23 @@ def main(args=None):
     #   - build values.yaml (--reset)
     #   - push chart (--publish-chart, --extra-message)
     for chart in config['charts']:
-        chart_paths = []
-        chart_paths.append("chartpress.yaml")
-        chart_paths.append(chart['name'])
-        chart_paths.extend(chart.get('paths', []))
-        if 'images' in chart:
-            for image_name, image_config in chart['images'].items():
-                chart_paths.extend(_get_all_image_paths(image_name, image_config))
-        chart_paths = list(set(chart_paths))
-
-        chart_version = args.tag
-        if chart_version:
+        forced_version = None
+        if args.tag:
+            forced_version = args.tag
             # The chart's version shouldn't have leading 'v' prefix if tag is of
             # the form 'v1.2.3', as that would break Chart.yaml's SemVer 2
             # requirement on the version field.
-            chart_version = chart_version.lstrip('v')
+            forced_version = forced_version.lstrip('v')
         if args.reset:
-            chart_version = chart.get('resetVersion', '0.0.1-set.by.chartpress')
-        chart_version = build_chart(chart['name'], paths=chart_paths, version=chart_version, long=args.long)
+            forced_version = chart.get('resetVersion', '0.0.1-set.by.chartpress')
+
+        # update Chart.yaml with a version
+        chart_version = build_chart(
+            chart['name'],
+            paths=_get_all_chart_paths(chart),
+            version=forced_version,
+            long=args.long,
+        )
 
         if 'images' in chart:
             image_prefix = args.image_prefix or chart.get('imagePrefix', '')
