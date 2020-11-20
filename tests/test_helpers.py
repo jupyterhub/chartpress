@@ -5,7 +5,7 @@ from chartpress import _image_needs_pushing
 from chartpress import _latest_commit_tagged_or_modifying_path
 from chartpress import _get_image_build_args
 from chartpress import _check_call
-from chartpress import _strip_identifiers_build_suffix
+from chartpress import _strip_build_suffix_from_identifier
 from chartpress import _get_identifier
 
 from ruamel.yaml import YAML
@@ -14,9 +14,9 @@ yaml = YAML(typ='rt')
 yaml.preserve_quotes = True ## avoid mangling of quotes
 yaml.indent(mapping=2, offset=2, sequence=4)
 
-def test__strip_identifiers_build_suffix():
-    assert _strip_identifiers_build_suffix(identifier="0.1.2-n005.hasdf1234") == "0.1.2"
-    assert _strip_identifiers_build_suffix(identifier="0.1.2-alpha.1.n005.hasdf1234") == "0.1.2-alpha.1"
+def test__strip_build_suffix_from_identifier():
+    assert _strip_build_suffix_from_identifier(identifier="0.1.2-n005.hasdf1234") == "0.1.2"
+    assert _strip_build_suffix_from_identifier(identifier="0.1.2-alpha.1.n005.hasdf1234") == "0.1.2-alpha.1"
 
 def test__get_identifier():
     assert _get_identifier(tag="0.1.2",         n_commits="0", commit="asdf123",  long=True)  == "0.1.2-n000.hasdf123"

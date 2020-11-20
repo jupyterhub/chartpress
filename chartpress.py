@@ -325,7 +325,7 @@ def _get_identifier(tag, n_commits, commit, long):
         return f"{tag}"
 
 
-def _strip_identifiers_build_suffix(identifier):
+def _strip_build_suffix_from_identifier(identifier):
     """
     Return a stripped chart version or image tag (identifier) without its build
     suffix (.n005.hasdf1234), leaving it to represent a Semver 2 release or
@@ -384,7 +384,7 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, chart_v
     value_modifications = {}
     for name, options in images.items():
         image_tag = tag
-        chart_version = _strip_identifiers_build_suffix(chart_version)
+        chart_version = _strip_build_suffix_from_identifier(chart_version)
         # include chartpress.yaml itself as it can contain build args and
         # similar that influence the image that would be built
         image_paths = _get_all_image_paths(name, options) + ["chartpress.yaml"]
