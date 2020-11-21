@@ -76,7 +76,7 @@ def _fix_chart_version(version):
         _log('Stripped a "v" from the chart version to become SemVer 2 compliant as required by Helm 3.')
         return version[1:]
 
-    raise ValueError(f'The version in Chart.yaml "{version}" isn't SemVer2 compliant as required by Helm 3!')
+    raise ValueError(f"The version in Chart.yaml '{version}' isn't SemVer2 compliant as required by Helm 3!")
 
 
 def _get_git_remote_url(git_repo):
