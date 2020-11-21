@@ -34,7 +34,7 @@ yaml.preserve_quotes = True ## avoid mangling of quotes
 yaml.indent(mapping=2, offset=2, sequence=4)
 
 
-def log(message):
+def _log(message):
     """Print messages to stderr
 
     to avoid conflicts with piped output, e.g. `--list-images`
@@ -42,26 +42,26 @@ def log(message):
     print(message, file=sys.stderr)
 
 
-def run_cmd(call, cmd, *, echo=True, **kwargs):
+def _run_cmd(call, cmd, *, echo=True, **kwargs):
     """Run a command and echo it first with censoring of GITHUB_TOKEN."""
     if echo:
         cmd_string = " ".join(map(pipes.quote, cmd))
         github_token = os.getenv(GITHUB_TOKEN_KEY)
         if github_token:
             cmd_string = cmd_string.replace(github_token, "CENSORED_GITHUB_TOKEN")
-        log("$> " + cmd_string)
+        _log("$> " + cmd_string)
     return call(cmd, **kwargs)
 
 
-def check_call(cmd, **kwargs):
+def _check_call(cmd, **kwargs):
     kwargs.setdefault("stdout", sys.stderr.fileno())
-    return run_cmd(subprocess.check_call, cmd, **kwargs)
+    return _run_cmd(subprocess.check_call, cmd, **kwargs)
 
 
-check_output = partial(run_cmd, subprocess.check_output)
+_check_output = partial(_run_cmd, subprocess.check_output)
 
 
-def git_remote(git_repo):
+def _get_git_remote_url(git_repo):
     """Return the URL for remote git repository.
 
     Depending on the system setup it returns ssh or https remote.
@@ -78,13 +78,9 @@ def git_remote(git_repo):
     return f'git@github.com:{git_repo}'
 
 
-@lru_cache()
-def latest_tag_or_mod_commit(*paths, **kwargs):
-    """
-    Get the latest of a) the latest tagged commit, or b) the latest modification
-    commit to provided path.
-    """
-    latest_modification_commit = check_output(
+def _get_latest_commit_modifying_path(*paths, **kwargs):
+    """Get the latest commit modifying the given path or return None."""
+    return _check_output(
         [
             'git', 'log',
             '--max-count=1',
@@ -95,40 +91,59 @@ def latest_tag_or_mod_commit(*paths, **kwargs):
         **kwargs,
     ).decode('utf-8').strip()
 
-    try:
-        git_describe_head = check_output(
-            [
-                'git', 'describe', '--tags', '--long',
-            ],
-            **kwargs,
-        ).decode('utf-8').strip().rsplit("-", maxsplit=2)
-    except subprocess.CalledProcessError:
-        # no tags on branch
-        return latest_modification_commit
 
-    latest_tag = git_describe_head[0]
-    latest_tagged_commit = check_output(
+def _get_latest_tag(**kwargs):
+    """Get the latest tag on a commit in branch or return None."""
+    try:
+        # If the git command output is my-tag-14-g0aed65e,
+        # then the return value will become my-tag.
+        return _check_output(
+            ['git', 'describe', '--tags', '--long'],
+            **kwargs,
+        ).decode('utf-8').strip().rsplit("-", maxsplit=2)[0]
+    except subprocess.CalledProcessError:
+        return None
+
+
+def _get_commit_from_tag(tag, **kwargs):
+    """Return the abbreviated commit hash for the tag."""
+    return _check_output(
         [
-            'git', 'rev-list', '--abbrev-commit', '-n', '1', latest_tag,
+            'git', 'rev-list', '--abbrev-commit', '-n', '1', tag,
         ],
         **kwargs,
     ).decode('utf-8').strip()
 
+
+@lru_cache()
+def _get_latest_commit_tagged_or_modifying_paths(*paths, **kwargs):
+    """
+    Get the latest of a) the latest tagged commit, or b) the latest commit
+    modifying any file in the the provided paths.
+    """
+    latest_commit_modifying_path = _get_latest_commit_modifying_path(*paths, **kwargs)
+
+    latest_tag = _get_latest_tag(**kwargs)
+    if not latest_tag:
+        return latest_commit_modifying_path
+    latest_commit_tagged = _get_commit_from_tag(latest_tag, **kwargs)
+
+    # Is one commit is or isn't the ancestor of the other we can figure out what
+    # commit is the latest.
     try:
-        check_call(
+        _check_call(
             [
-                'git', 'merge-base', '--is-ancestor', latest_tagged_commit, latest_modification_commit,
+                'git', 'merge-base', '--is-ancestor', latest_commit_tagged, latest_commit_modifying_path,
             ],
             **kwargs,
         )
     except subprocess.CalledProcessError:
-        # latest_tagged_commit was newer than latest_modification_commit
-        return latest_tagged_commit
+        return latest_commit_tagged
     else:
-        return latest_modification_commit
+        return latest_commit_modifying_path
 
 
-def render_build_args(image_options, ns):
+def _get_image_build_args(image_options, ns):
     """
     Render buildArgs from chartpress.yaml that could be templates, using
     provided namespace that contains keys with dynamic values such as
@@ -147,9 +162,9 @@ def render_build_args(image_options, ns):
     return build_args
 
 
-def get_image_context_path(name, options):
+def _get_image_build_context_path(name, options):
     """
-    Return the image's contextPath configuration value or a default value based
+    Return the image's contextPath configuration value, or a default value based
     on the image name.
     """
     if options.get("contextPath"):
@@ -157,7 +172,8 @@ def get_image_context_path(name, options):
     else:
         return os.path.join("images", name)
 
-def get_image_dockerfile_path(name, options):
+
+def _get_image_dockerfile_path(name, options):
     """
     Return the image dockerfilePath configuration value or a default value based
     on the contextPath.
@@ -165,23 +181,41 @@ def get_image_dockerfile_path(name, options):
     if options.get("dockerfilePath"):
         return options["dockerfilePath"]
     else:
-        return os.path.join(get_image_context_path(name, options), "Dockerfile")
+        return os.path.join(_get_image_build_context_path(name, options), "Dockerfile")
 
-def get_image_paths(name, options):
+
+def _get_all_image_paths(name, options):
     """
-    Returns the paths that when changed should trigger a rebuild of a chart's
-    image. This includes the Dockerfile itself and the context of the Dockerfile
-    during the build process.
+    Returns the unique paths that when changed should trigger a rebuild of a
+    chart's image. This includes the Dockerfile itself and the context of the
+    Dockerfile during the build process.
 
     The first element will always be the context path, the second always the
     Dockerfile path, and the optional others for extra paths.
     """
-    r = []
+    paths = []
+    paths.append("chartpress.yaml")
     if options.get("rebuildOnContextPathChanges", True):
-        r.append(get_image_context_path(name, options))
-    r.append(get_image_dockerfile_path(name, options))
-    r.extend(options.get("paths", []))
-    return r
+        paths.append(_get_image_build_context_path(name, options))
+    paths.append(_get_image_dockerfile_path(name, options))
+    paths.extend(options.get("paths", []))
+    return list(set(paths))
+
+
+def _get_all_chart_paths(options):
+    """
+    Returns the unique paths that when changed should trigger a version update
+    of the chart. These paths includes all the chart's images' paths as well.
+    """
+    paths = []
+    paths.append("chartpress.yaml")
+    paths.append(options['name'])
+    paths.extend(options.get('paths', []))
+    if 'images' in options:
+        for image_name, image_config in options['images'].items():
+            paths.extend(_get_all_image_paths(image_name, image_config))
+    return list(set(paths))
+
 
 def build_image(image_spec, context_path, dockerfile_path=None, build_args=None):
     """Build an image
@@ -210,16 +244,17 @@ def build_image(image_spec, context_path, dockerfile_path=None, build_args=None)
         cmd.extend(['-f', dockerfile_path])
     for k, v in (build_args or {}).items():
         cmd += ['--build-arg', f'{k}={v}']
-    check_call(cmd)
+    _check_call(cmd)
+
 
 @lru_cache()
-def docker_client():
+def _get_docker_client():
     """Cached getter for docker client"""
     return docker.from_env()
 
 
 @lru_cache()
-def image_needs_pushing(image):
+def _image_needs_pushing(image):
     """
     Returns a boolean whether an image needs pushing by checking if the image
     exists on the image registry.
@@ -234,7 +269,7 @@ def image_needs_pushing(image):
         - index.docker.io/library/ubuntu:latest
         - eu.gcr.io/my-gcp-project/my-image:0.1.0
     """
-    d = docker_client()
+    d = _get_docker_client()
     try:
         d.images.get_registry_data(image)
     except docker.errors.APIError:
@@ -243,8 +278,9 @@ def image_needs_pushing(image):
     else:
         return False
 
+
 @lru_cache()
-def image_needs_building(image):
+def _image_needs_building(image):
     """
     Returns a boolean whether an image needs building by checking if the image
     exists either locally or on the registry.
@@ -259,7 +295,7 @@ def image_needs_building(image):
         - index.docker.io/library/ubuntu:latest
         - eu.gcr.io/my-gcp-project/my-image:0.1.0
     """
-    d = docker_client()
+    d = _get_docker_client()
 
     # first, check for locally built image
     try:
@@ -272,10 +308,39 @@ def image_needs_building(image):
         return False
 
     # image may need building if it's not on the registry
-    return image_needs_pushing(image)
+    return _image_needs_pushing(image)
 
 
-def _get_identifier(tag, n_commits, commit, long):
+def _get_identifier_from_paths(*paths, long=False):
+    latest_commit = _get_latest_commit_tagged_or_modifying_paths(*paths, echo=False)
+
+    try:
+        git_describe = _check_output(
+            [
+                'git', 'describe', '--tags', '--long', latest_commit
+            ],
+            echo=False,
+        ).decode('utf8').strip()
+        latest_tag_in_branch, n_commits, sha = git_describe.rsplit('-', maxsplit=2)
+        # remove "g" prefix output by the git describe command
+        # ref: https://git-scm.com/docs/git-describe#_examples
+        sha = sha[1:]
+
+        return _get_identifier_from_parts(latest_tag_in_branch, n_commits, sha, long)
+    except subprocess.CalledProcessError:
+        # no tags on branch, so assume 0.0.1 and
+        # calculate n_commits from latest_commit
+        n_commits = _check_output(
+            [
+                'git', 'rev-list', '--count', latest_commit
+            ],
+            echo=False,
+        ).decode('utf-8').strip()
+
+        return _get_identifier_from_parts("0.0.1", n_commits, latest_commit, long)
+
+
+def _get_identifier_from_parts(tag, n_commits, commit, long):
     """
     Returns a chartpress formatted chart version or image tag (identifier) with
     a build suffix.
@@ -305,7 +370,7 @@ def _get_identifier(tag, n_commits, commit, long):
         return f"{tag}"
 
 
-def _strip_identifiers_build_suffix(identifier):
+def _strip_build_suffix_from_identifier(identifier):
     """
     Return a stripped chart version or image tag (identifier) without its build
     suffix (.n005.hasdf1234), leaving it to represent a Semver 2 release or
@@ -325,7 +390,7 @@ def _strip_identifiers_build_suffix(identifier):
     return re.sub(r'[-\.]n\d{3,}\.h\w{4,}\Z', "", identifier)
 
 
-def build_images(prefix, images, tag=None, push=False, force_push=False, chart_version=None, force_build=False, skip_build=False, long=False):
+def build_images(prefix, images, tag=None, push=False, force_push=False, force_build=False, skip_build=False, long=False):
     """Build a collection of docker images
 
     Args:
@@ -340,9 +405,6 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, chart_v
     force_push (bool):
         Whether to push the built images even if they already exist in the image
         registry (default: False).
-    chart_version (str):
-        The latest chart version, trimmed from its build suffix, will be included
-        as a prefix on image tags if `tag` is not specified.
     force_build (bool):
         To build even if the image is available locally or remotely already.
     skip_build (bool):
@@ -361,77 +423,72 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, chart_v
         - long=False: 0.9.0-n004.hsdfg2345
         - long=True:  0.9.0-n004.hsdfg2345
     """
-    value_modifications = {}
+    values_file_modifications = {}
     for name, options in images.items():
-        image_tag = tag
-        chart_version = _strip_identifiers_build_suffix(chart_version)
-        # include chartpress.yaml itself as it can contain build args and
-        # similar that influence the image that would be built
-        image_paths = get_image_paths(name, options) + ["chartpress.yaml"]
-        context_path = get_image_context_path(name, options)
-        dockerfile_path = get_image_dockerfile_path(name, options)
-        image_commit = latest_tag_or_mod_commit(*image_paths, echo=False)
-        if image_tag is None:
-            n_commits = check_output(
-                [
-                    'git', 'rev-list', '--count',
-                    # Note that the 0.0.1 chart_version may not exist as it was a
-                    # workaround to handle git histories with no tags in the
-                    # current branch. Also, if the chart_version is a later git
-                    # reference than the image_commit, this
-                    # command will return 0.
-                    f'{"" if chart_version == "0.0.1" else chart_version + ".."}{image_commit}',
-                ],
-                echo=False,
-            ).decode('utf-8').strip()
-            image_tag = _get_identifier(chart_version, n_commits, image_commit, long)
-        image_name = options.get('imageName', prefix + name)
-        image_spec = f'{image_name}:{image_tag}'
+        # include chartpress.yaml in the image paths to inspect as
+        # chartpress.yaml can contain build args influencing the image
+        all_image_paths = _get_all_image_paths(name, options)
 
+        # decide a tag string
+        if tag is None:
+            tag = _get_identifier_from_paths(*all_image_paths, long=long)
+
+        image_name = options.get('imageName', prefix + name)
+
+        # update values_file_modifications to return
         values_path_list = options.get('valuesPath', [])
         if isinstance(values_path_list, str):
-            # single path, wrap it in a list
             values_path_list = [values_path_list]
-
         for values_path in values_path_list:
-            value_modifications[values_path] = {
+            values_file_modifications[values_path] = {
                 'repository': image_name,
-                'tag': SingleQuotedScalarString(image_tag),
+                'tag': SingleQuotedScalarString(tag),
             }
 
         if skip_build:
             continue
 
-        if force_build or image_needs_building(image_spec):
-            build_args = render_build_args(
-                options,
-                {
-                    'LAST_COMMIT': image_commit,
-                    'TAG': image_tag,
-                },
-            )
-            build_image(image_spec, context_path, dockerfile_path=dockerfile_path, build_args=build_args)
-        else:
-            log(f"Skipping build for {image_spec}, it already exists")
+        image_spec = f'{image_name}:{tag}'
 
+        # build image
+        if force_build or _image_needs_building(image_spec):
+            build_image(
+                image_spec,
+                _get_image_build_context_path(name, options),
+                dockerfile_path=_get_image_dockerfile_path(name, options),
+                build_args=_get_image_build_args(
+                    options,
+                    {
+                        'LAST_COMMIT': _get_latest_commit_tagged_or_modifying_paths(*all_image_paths, echo=False),
+                        'TAG': tag,
+                    },
+                )
+            )
+        else:
+            _log(f"Skipping build for {image_spec}, it already exists")
+
+        # push image
         if push or force_push:
-            if force_push or image_needs_pushing(image_spec):
-                check_call([
+            if force_push or _image_needs_pushing(image_spec):
+                _check_call([
                     'docker', 'push', image_spec
                 ])
             else:
-                log(f"Skipping push for {image_spec}, already on registry")
-    return value_modifications
+                _log(f"Skipping push for {image_spec}, already on registry")
+
+    return values_file_modifications
 
 
-def build_values(name, values_mods):
-    """Update name/values.yaml with modifications"""
+def _update_values_file_with_modifications(name, modifications):
+    """
+    Update <name>/values.yaml file with a dictionary of modifications.
+    """
     values_file = os.path.join(name, 'values.yaml')
 
     with open(values_file) as f:
         values = yaml.load(f)
 
-    for key, value in values_mods.items():
+    for key, value in modifications.items():
         if not isinstance(value, dict) or set(value.keys()) != {'repository', 'tag'}:
             raise ValueError(f"I only understand image updates with 'repository', 'tag', not: {value!r}")
         parts = key.split('.')
@@ -450,7 +507,7 @@ def build_values(name, values_mods):
                 for repo_key in keys:
                     before = mod_obj.get(repo_key, None)
                     if before != value['repository']:
-                        log(f"Updating {values_file}: {key}.{repo_key}: {value}")
+                        _log(f"Updating {values_file}: {key}.{repo_key}: {value}")
                     mod_obj[repo_key] = value['repository']
             else:
                 possible_keys = ' or '.join(IMAGE_REPOSITORY_KEYS)
@@ -460,7 +517,7 @@ def build_values(name, values_mods):
 
             before = mod_obj.get('tag', None)
             if before != value['tag']:
-                log(f"Updating {values_file}: {key}.tag: {value}")
+                _log(f"Updating {values_file}: {key}.tag: {value}")
             mod_obj['tag'] = value['tag']
         elif isinstance(mod_obj, str):
             # scalar image string, not dict with separate repository, tag keys
@@ -470,7 +527,7 @@ def build_values(name, values_mods):
             except (KeyError, IndexError):
                 before = None
             if before != image:
-                log(f"Updating {values_file}: {key}: {image}")
+                _log(f"Updating {values_file}: {key}: {image}")
             parent[last_part] = image
         else:
             raise TypeError(
@@ -498,45 +555,23 @@ def build_chart(name, version=None, paths=None, long=False):
         - 0.9.0
         - 0.9.0-n002.hdfgh3456
     """
+    # read Chart.yaml
     chart_file = os.path.join(name, 'Chart.yaml')
     with open(chart_file) as f:
         chart = yaml.load(f)
 
+    # decide a version string
     if version is None:
-        chart_commit = latest_tag_or_mod_commit(*paths, echo=False)
+        version = _get_identifier_from_paths(*paths, long=long)
 
-        try:
-            git_describe = check_output(
-                [
-                    'git', 'describe', '--tags', '--long', chart_commit
-                ],
-                echo=False,
-            ).decode('utf8').strip()
-            latest_tag_in_branch, n_commits, sha = git_describe.rsplit('-', maxsplit=2)
-            # remove "g" prefix output by the git describe command
-            # ref: https://git-scm.com/docs/git-describe#_examples
-            sha = sha[1:]
-            version = _get_identifier(latest_tag_in_branch, n_commits, sha, long)
-        except subprocess.CalledProcessError:
-            # no tags on branch: fallback to the SemVer 2 compliant version
-            # 0.0.1-<n_commits>.<chart_commit>
-            latest_tag_in_branch = "0.0.1"
-            n_commits = check_output(
-                [
-                    'git', 'rev-list', '--count', chart_commit
-                ],
-                echo=False,
-            ).decode('utf-8').strip()
-
-            version = _get_identifier(latest_tag_in_branch, n_commits, chart_commit, long)
-
+    # update Chart.yaml
     if chart['version'] != version:
-        log(f"Updating {chart_file}: version: {version}")
+        _log(f"Updating {chart_file}: version: {version}")
         chart['version'] = version
-
     with open(chart_file, 'w') as f:
         yaml.dump(chart, f)
 
+    # return version
     return version
 
 
@@ -575,18 +610,18 @@ def publish_pages(chart_name, chart_version, chart_repo_github_path, chart_repo_
     # use of cwd (current working directory)
     checkout_dir = f'{chart_name}-{chart_version}'
     if not os.path.isdir(checkout_dir):
-        check_call(
+        _check_call(
             [
                 'git', 'clone', '--no-checkout',
-                git_remote(chart_repo_github_path),
+                _get_git_remote_url(chart_repo_github_path),
                 checkout_dir,
             ],
             # We don't echo the GITHUB_TOKEN, it is censored in run_call
             echo=True,
         )
     else:
-        check_call(['git', 'fetch'], cwd=checkout_dir, echo=True)
-    check_call(['git', 'checkout', 'gh-pages'], cwd=checkout_dir, echo=True)
+        _check_call(['git', 'fetch'], cwd=checkout_dir, echo=True)
+    _check_call(['git', 'checkout', 'gh-pages'], cwd=checkout_dir, echo=True)
 
     # check if a chart with the same name and version has already been published. If
     # there is, the behaviour depends on `-force-publish-chart`
@@ -599,22 +634,22 @@ def publish_pages(chart_name, chart_version, chart_repo_github_path, chart_repo_
 
         if any(c["version"] == chart_version for c in published_charts):
             if force:
-                log(f"Chart of version {chart_version} already exists, overwriting it.")
+                _log(f"Chart of version {chart_version} already exists, overwriting it.")
             else:
-                log(f"Skipping chart publishing of version {chart_version}, it is already published")
+                _log(f"Skipping chart publishing of version {chart_version}, it is already published")
                 return
 
     # package the latest version into a temporary directory
     # and run helm repo index with --merge to update index.yaml
     # without refreshing all of the timestamps
     with TemporaryDirectory() as td:
-        check_call([
+        _check_call([
             'helm', 'package', chart_name,
             '--dependency-update',
             '--destination', td + '/',
         ])
 
-        check_call([
+        _check_call([
             'helm', 'repo', 'index', td,
             '--url', chart_repo_url,
             '--merge', os.path.join(checkout_dir, 'index.yaml'),
@@ -632,23 +667,23 @@ def publish_pages(chart_name, chart_version, chart_repo_github_path, chart_repo_
     extra_message = f'\n\n{extra_message}' if extra_message else ''
     message = f'[{chart_name}] Automatic update for commit {chart_version}{extra_message}'
 
-    check_call(['git', 'add', '.'], cwd=checkout_dir)
-    check_call(['git', 'commit', '-m', message], cwd=checkout_dir)
-    check_call(['git', 'push', 'origin', 'gh-pages'], cwd=checkout_dir)
+    _check_call(['git', 'add', '.'], cwd=checkout_dir)
+    _check_call(['git', 'commit', '-m', message], cwd=checkout_dir)
+    _check_call(['git', 'push', 'origin', 'gh-pages'], cwd=checkout_dir)
 
 
 
 class ActionStoreDeprecated(argparse.Action):
     """Used with argparse as a deprecation action."""
     def __call__(self, parser, namespace, values, option_string=None):
-        log(f"Warning: use of {'|'.join(self.option_strings)} is deprecated.")
+        _log(f"Warning: use of {'|'.join(self.option_strings)} is deprecated.")
         setattr(namespace, self.dest, values)
 
 
 class ActionAppendDeprecated(argparse.Action):
     """Used with argparse as a deprecation action."""
     def __call__(self, parser, namespace, values, option_string=None):
-        log(f"Warning: use of {'|'.join(self.option_strings)} is deprecated.")
+        _log(f"Warning: use of {'|'.join(self.option_strings)} is deprecated.")
         if not getattr(namespace, self.dest):
             setattr(namespace, self.dest, [])
         getattr(namespace, self.dest).append(values)
@@ -727,11 +762,6 @@ def main(args=None):
         action='store_true',
         help='Print current chartpress version and exit.',
     )
-    argparser.add_argument(
-        '--commit-range',
-        action=ActionStoreDeprecated,
-        help='Deprecated: this flag will be ignored. The new logic to determine if an image needs to be rebuilt does not require this. It will find the time in git history where the image was last in need of a rebuild due to changes, and check if that build exists locally or remotely already.',
-    )
 
     args = argparser.parse_args(args)
 
@@ -753,49 +783,52 @@ def main(args=None):
     #   - build values.yaml (--reset)
     #   - push chart (--publish-chart, --extra-message)
     for chart in config['charts']:
-        chart_paths = []
-        chart_paths.append("chartpress.yaml")
-        chart_paths.append(chart['name'])
-        chart_paths.extend(chart.get('paths', []))
-        if 'images' in chart:
-            for image_name, image_config in chart['images'].items():
-                chart_paths.extend(get_image_paths(image_name, image_config))
-        chart_paths = list(set(chart_paths))
-
-        chart_version = args.tag
-        if chart_version:
+        forced_version = None
+        if args.tag:
+            forced_version = args.tag
             # The chart's version shouldn't have leading 'v' prefix if tag is of
             # the form 'v1.2.3', as that would break Chart.yaml's SemVer 2
             # requirement on the version field.
-            chart_version = chart_version.lstrip('v')
+            forced_version = forced_version.lstrip('v')
         if args.reset:
-            chart_version = chart.get('resetVersion', '0.0.1-set.by.chartpress')
-        chart_version = build_chart(chart['name'], paths=chart_paths, version=chart_version, long=args.long)
+            forced_version = chart.get('resetVersion', '0.0.1-set.by.chartpress')
+
+        # update Chart.yaml with a version
+        chart_version = build_chart(
+            chart['name'],
+            paths=_get_all_chart_paths(chart),
+            version=forced_version,
+            long=args.long,
+        )
 
         if 'images' in chart:
-            image_prefix = args.image_prefix or chart.get('imagePrefix', '')
-            value_mods = build_images(
-                prefix=image_prefix,
+            # build images
+            values_file_modifications = build_images(
+                prefix=args.image_prefix or chart.get('imagePrefix', ''),
                 images=chart['images'],
                 tag=args.tag if not args.reset else chart.get('resetTag', 'set-by-chartpress'),
                 push=args.push,
                 force_push=args.force_push,
-                chart_version=chart_version,
                 force_build=args.force_build,
                 skip_build=args.skip_build or args.reset,
                 long=args.long,
             )
+
+            # list images
             if args.list_images:
                 seen_images = set()
-                for key, image_dict in value_mods.items():
+                for key, image_dict in values_file_modifications.items():
                     image = "{repository}:{tag}".format(**image_dict)
                     if image not in seen_images:
                         print(image)
                         # record image, in case the same image occurs in multiple places
                         seen_images.add(image)
                 return
-            build_values(chart['name'], value_mods)
 
+            # update values.yaml
+            _update_values_file_with_modifications(chart['name'], values_file_modifications)
+
+        # publish chart
         if args.publish_chart or args.force_publish_chart:
             publish_pages(
                 chart_name=chart['name'],

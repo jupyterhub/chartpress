@@ -89,7 +89,6 @@ usage: chartpress [-h] [--push] [--force-push] [--publish-chart]
                   [--force-publish-chart] [--extra-message EXTRA_MESSAGE]
                   [--tag TAG | --long] [--image-prefix IMAGE_PREFIX] [--reset]
                   [--skip-build | --force-build] [--list-images] [--version]
-                  [--commit-range COMMIT_RANGE]
 
 Automate building and publishing helm charts and associated images. This is
 used as part of the JupyterHub and Binder projects.
@@ -128,13 +127,6 @@ optional arguments:
   --list-images         print list of images to stdout. Images will not be
                         built.
   --version             Print current chartpress version and exit.
-  --commit-range COMMIT_RANGE
-                        Deprecated: this flag will be ignored. The new logic
-                        to determine if an image needs to be rebuilt does not
-                        require this. It will find the time in git history
-                        where the image was last in need of a rebuild due to
-                        changes, and check if that build exists locally or
-                        remotely already.
 ```
 
 ## Configuration
