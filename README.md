@@ -28,19 +28,20 @@ information.
 1. `tag`: If not directly set by `--tag`, it will be inferred from most recent
    commit that is tagged in the _current branch_, or be set to 0.0.1 if no
    commit is tagged.
-   1. If the `--tag` flag starts with a `v`, it will be removed when setting the
-      Chart.yaml version specifically. An error will be raised if it still isn't
-      a valid SemVer2 version because Helm 3 requires it.
+   1. If the `tag` has a leading `v` but is otherwise a valid
+      [SemVer2](https://semver.org) version, it will be stripped from Chart.yaml
+      before its set as Helm 3 requires Helm chart versions to be SemVer2
+      compliant.
 1. The latest commit modifying content in a _relevant path_ since `tag`.
    1. `n`: The latest commit's distance to the tagged commit, described as 3 or
       more numbers, prefixed with n.
-   1. `h`: The latest commit's abbreviated SHA hash, which is typically 7 or a
-      few more characters, prefixed with h.
+   1. `h`: The latest commit's abbreviated hash. which is often 7-8 characters,
+      prefixed with h.
 1. If `tag` (like `0.10.0` or `0.10.0-beta.1`) contains a `-`, a `tag.n.h`
-   format will be used instead of a `tag-n.h` format.
-1. If `tag` (like `v1.0.0`) is prefixed with a `v`, it will be stripped.
+   format will be used instead of a `tag-n.h` format to be SemVer 2 compliant.
 1. If `--long` is specified or not. If `--long` is specified, tagged commits
-   will be written out with the `n.h` part appended to it.
+   will be written out with the `n.h` part appended to it, looking something
+   like `n000.gabcd123`
 
 ### Examples chart versions and image tags
 
