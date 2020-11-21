@@ -267,10 +267,13 @@ def test_chartpress_run_alternative(git_repo_alternative, capfd):
     """
     r = git_repo_alternative
     sha = r.heads.master.commit.hexsha[:7]
-    tag = f"0.0.1-n002.h{sha}"
 
-    out = _capture_output([], capfd)
-    assert f"Successfully tagged test-image-name-configuration:{tag}" in out
+    # verify usage of --tag with a prefix v
+    tag = f"v1.0.0"
+
+    out = _capture_output(["--skip-build", "--tag", tag], capfd)
+    assert f"Updating testchart/Chart.yaml: version: {tag[1:]}" in out
+    assert f"Updating testchart/values.yaml: image: testimage:{tag}" in out
 
 
 def _capture_output(args, capfd, expect_output=False):
@@ -292,15 +295,4 @@ def _capture_output(args, capfd, expect_output=False):
     if not expect_output:
         assert out == ""
 
-    # since the output was captured, print it back out again for debugging
-    # purposes if a test fails for example
-    header = f'--- chartpress {" ".join(args)} ---'
-    footer = "-" * len(header)
-    print()
-    print(header)
-    print("out:")
-    print(out)
-    print("err:")
-    print(err, file=sys.stderr)
-    print(footer)
     return err

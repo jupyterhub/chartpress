@@ -2,5 +2,6 @@ charts:
   - name: testchart
     images:
       testimage:
-        imageName: test-image-name-configuration
+        imageName: testimage
         contextPath: image
+        valuesPath: image
