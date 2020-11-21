@@ -2,9 +2,28 @@
 
 ## Unreleased
 
+## [1.0.0] - 2020-11-21
+
+[@betatim](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Abetatim+updated%3A2018-02-23..2020-11-21&type=Issues) | [@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3AconsideRatio+updated%3A2018-02-23..2020-11-21&type=Issues) | [@jacobtomlinson](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Ajacobtomlinson+updated%3A2018-02-23..2020-11-21&type=Issues) | [@jirikuncar](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Ajirikuncar+updated%3A2018-02-23..2020-11-21&type=Issues) | [@leafty](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Aleafty+updated%3A2018-02-23..2020-11-21&type=Issues) | [@manics](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Amanics+updated%3A2018-02-23..2020-11-21&type=Issues) | [@minrk](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Aminrk+updated%3A2018-02-23..2020-11-21&type=Issues) | [@rokroskar](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Arokroskar+updated%3A2018-02-23..2020-11-21&type=Issues) | [@yuvipanda](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Ayuvipanda+updated%3A2018-02-23..2020-11-21&type=Issues)
+
+The 1.0.0 release can be seen as a reflection of chartpress having become quite
+reliable, thank you everyone for your contributions and work on it!!!
+
+## Enhancements made
+
+* Strip v prefixes for Chart.yaml versions for Helm3 compliancy [#106](https://github.com/jupyterhub/chartpress/pull/106) ([@consideRatio](https://github.com/consideRatio))
+* Add --force-publish-chart and default to not overwriting [#102](https://github.com/jupyterhub/chartpress/pull/102) ([@consideRatio](https://github.com/consideRatio))
+
+## Maintenance and upkeep improvements
+
+* Major refactor for readability pre 1.0.0 release [#105](https://github.com/jupyterhub/chartpress/pull/105) ([@consideRatio](https://github.com/consideRatio))
+* Migrate from Travis CI to GitHub Actions [#101](https://github.com/jupyterhub/chartpress/pull/101) ([@consideRatio](https://github.com/consideRatio))
+* CI: fix syntax typo making us not run tests before publish [#100](https://github.com/jupyterhub/chartpress/pull/100) ([@consideRatio](https://github.com/consideRatio))
+
+
 ## [0.7]
 
-### [0.7.0] - UNRELEASED
+### [0.7.0] - 2020-11-02
 
 #### Enhancements made
 
