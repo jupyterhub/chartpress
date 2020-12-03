@@ -447,9 +447,10 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, force_b
         # chartpress.yaml can contain build args influencing the image
         all_image_paths = _get_all_image_paths(name, options)
 
-        # decide a tag string
         if tag is None:
-            tag = _get_identifier_from_paths(*all_image_paths, long=long)
+            image_tag = _get_identifier_from_paths(*all_image_paths, long=long)
+        else:
+            image_tag = tag
 
         image_name = options.get('imageName', prefix + name)
 
@@ -460,13 +461,13 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, force_b
         for values_path in values_path_list:
             values_file_modifications[values_path] = {
                 'repository': image_name,
-                'tag': SingleQuotedScalarString(tag),
+                'tag': SingleQuotedScalarString(image_tag),
             }
 
         if skip_build:
             continue
 
-        image_spec = f'{image_name}:{tag}'
+        image_spec = f'{image_name}:{image_tag}'
 
         # build image
         if force_build or _image_needs_building(image_spec):
@@ -478,7 +479,7 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, force_b
                     options,
                     {
                         'LAST_COMMIT': _get_latest_commit_tagged_or_modifying_paths(*all_image_paths, echo=False),
-                        'TAG': tag,
+                        'TAG': image_tag,
                     },
                 )
             )
