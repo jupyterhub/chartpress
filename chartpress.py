@@ -61,9 +61,17 @@ def _check_call(cmd, **kwargs):
 _check_output = partial(_run_cmd, subprocess.check_output)
 
 
-def _fix_chart_version(version):
+def _fix_chart_version(version, strict=False):
     """
-    Helm 3 requires the Chart.yaml specified version to be SemVer2 compliant.
+    Helm 3 requires published chart versions to follow strict semantic versioning.
+
+    Fix the version if it can be fixed (strip leading `v`),
+    or warn about the chart being unpublishable (default).
+
+    Use `strict=True` if a chart is to be published,
+    since helm 3 will not install a chart with a version that doesn't pass this check.
+
+    This validation is not relevant for charts not being published to a repository.
     """
     # semver.org provided this regular expression:
     # https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
@@ -73,10 +81,14 @@ def _fix_chart_version(version):
         return version
 
     if version.startswith("v") and semver2.fullmatch(version[1:]):
-        _log('Stripped a "v" from the chart version to become SemVer 2 compliant as required by Helm 3.')
         return version[1:]
 
-    raise ValueError(f"The version in Chart.yaml '{version}' isn't SemVer2 compliant as required by Helm 3!")
+    message = f"The version in Chart.yaml '{version}' doesn't follow semantic versioning. Helm 3 requires published charts to have strict semantic versions."
+    if strict:
+        raise ValueError(message)
+    else:
+        _log(message)
+        return version
 
 
 def _get_git_remote_url(git_repo):
@@ -553,12 +565,13 @@ def _update_values_file_with_modifications(name, modifications):
                 f'The key {key} in {values_file} must be a mapping or string, not {type(mod_obj)}.'
             )
 
-
     with open(values_file, 'w') as f:
         yaml.dump(values, f)
 
 
-def build_chart(name, version=None, paths=None, long=False, reset=False):
+def build_chart(
+    name, version=None, paths=None, long=False, reset=False, strict_version=False
+):
     """
     Update Chart.yaml's version, using specified version or by constructing one.
 
@@ -583,7 +596,7 @@ def build_chart(name, version=None, paths=None, long=False, reset=False):
     if version is None:
         version = _get_identifier_from_paths(*paths, long=long)
     if not reset:
-        version = _fix_chart_version(version)
+        version = _fix_chart_version(version, strict=strict_version)
 
     # update Chart.yaml
     if chart['version'] != version:
@@ -785,6 +798,9 @@ def main(args=None):
     )
 
     args = argparser.parse_args(args)
+    # allow simple checks for whether publish will happen
+    if args.force_publish_chart:
+        args.publish_chart = True
 
     if args.version:
         print(f"chartpress version {__version__}")
@@ -817,6 +833,7 @@ def main(args=None):
             version=forced_version,
             long=args.long,
             reset=args.reset,
+            strict_version=args.publish_chart,
         )
 
         if 'images' in chart:
@@ -847,7 +864,7 @@ def main(args=None):
             _update_values_file_with_modifications(chart['name'], values_file_modifications)
 
         # publish chart
-        if args.publish_chart or args.force_publish_chart:
+        if args.publish_chart:
             publish_pages(
                 chart_name=chart['name'],
                 chart_version=chart_version,
