@@ -4,6 +4,19 @@
 
 ## [1.0]
 
+### [1.0.2]  2020-12-04
+
+#### Bugs fixed
+
+* only apply strict version checking for charts to be published [#109](https://github.com/jupyterhub/chartpress/pull/109) ([@minrk](https://github.com/minrk))
+* fix: compute tag per image [#108](https://github.com/jupyterhub/chartpress/pull/108) ([@danielnorberg](https://github.com/danielnorberg))
+
+#### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/chartpress/graphs/contributors?from=2020-12-03&to=2020-12-04&type=c))
+
+[@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3AconsideRatio+updated%3A2020-12-03..2020-12-04&type=Issues) | [@danielnorberg](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Adanielnorberg+updated%3A2020-12-03..2020-12-04&type=Issues) | [@minrk](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Aminrk+updated%3A2020-12-03..2020-12-04&type=Issues)
+
 ### [1.0.1] - 2020-12-03
 
 #### Bugs fixed
