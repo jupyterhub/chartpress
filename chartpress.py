@@ -776,9 +776,10 @@ def main(args=None):
     )
     skip_or_force_build_group = argparser.add_mutually_exclusive_group()
     skip_or_force_build_group.add_argument(
-        '--skip-build',
-        action='store_true',
-        help='Skip the image build step.',
+        "--no-build",
+        "--skip-build",
+        action="store_true",
+        help="Skip the image build step.",
     )
     skip_or_force_build_group.add_argument(
         '--force-build',
@@ -807,7 +808,8 @@ def main(args=None):
         return
 
     if args.list_images:
-        args.skip_build = True
+        args.no_build = True
+
 
     with open('chartpress.yaml') as f:
         config = yaml.load(f)
@@ -845,7 +847,7 @@ def main(args=None):
                 push=args.push,
                 force_push=args.force_push,
                 force_build=args.force_build,
-                skip_build=args.skip_build or args.reset,
+                skip_build=args.no_build or args.reset,
                 long=args.long,
             )
 
