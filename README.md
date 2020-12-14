@@ -90,7 +90,7 @@ hub and `--publish-chart` to publish the chart and index to gh-pages.
 usage: chartpress [-h] [--push] [--force-push] [--publish-chart]
                   [--force-publish-chart] [--extra-message EXTRA_MESSAGE]
                   [--tag TAG | --long] [--image-prefix IMAGE_PREFIX] [--reset]
-                  [--skip-build | --force-build] [--list-images] [--version]
+                  [--no-build | --force-build] [--list-images] [--version]
 
 Automate building and publishing helm charts and associated images. This is
 used as part of the JupyterHub and Binder projects.
@@ -123,7 +123,8 @@ optional arguments:
                         field and values.yaml's image tags. What it resets to
                         can be configured in chartpress.yaml with the resetTag
                         and resetVersion configurations.
-  --skip-build          Skip the image build step.
+  --no-build, --skip-build
+                        Skip the image build step.
   --force-build         Enforce the image build step, regardless of if the
                         image already is available either locally or remotely.
   --list-images         print list of images to stdout. Images will not be
