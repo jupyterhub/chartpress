@@ -4,7 +4,24 @@
 
 ## [1.0]
 
-### [1.0.2]  2020-12-04
+### [1.0.3]  2020-12-14
+
+#### Enhancements made
+
+* allow standard `--no-build` prefix for disabling builds [#110](https://github.com/jupyterhub/chartpress/pull/110) ([@minrk](https://github.com/minrk))
+
+#### Bugs fixed
+
+* Fix --list-images to not update Chart.yaml's version [#112](https://github.com/jupyterhub/chartpress/pull/112) ([@consideRatio](https://github.com/consideRatio))
+
+#### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/chartpress/graphs/contributors?from=2020-12-04&to=2020-12-14&type=c))
+
+[@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3AconsideRatio+updated%3A2020-12-04..2020-12-14&type=Issues) | [@minrk](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Aminrk+updated%3A2020-12-04..2020-12-14&type=Issues)
+
+
+### [1.0.2] 2020-12-04
 
 #### Bugs fixed
 
