@@ -826,15 +826,16 @@ def main(args=None):
         if args.reset:
             forced_version = chart.get('resetVersion', '0.0.1-set.by.chartpress')
 
-        # update Chart.yaml with a version
-        chart_version = build_chart(
-            chart['name'],
-            paths=_get_all_chart_paths(chart),
-            version=forced_version,
-            long=args.long,
-            reset=args.reset,
-            strict_version=args.publish_chart,
-        )
+        if not args.list_images:
+            # update Chart.yaml with a version
+            chart_version = build_chart(
+                chart['name'],
+                paths=_get_all_chart_paths(chart),
+                version=forced_version,
+                long=args.long,
+                reset=args.reset,
+                strict_version=args.publish_chart,
+            )
 
         if 'images' in chart:
             # build images

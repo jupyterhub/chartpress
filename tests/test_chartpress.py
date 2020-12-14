@@ -19,3 +19,11 @@ def test_list_images(git_repo):
     # split hash_suffix which will be different every run
     pre_hash, hash_suffix = images[0].rsplit(".", 1)
     assert pre_hash == "testchart/testimage:0.0.1-n001"
+
+    p = run(
+        ["git", "status", "--porcelain"],
+        check=True,
+        stdout=PIPE,
+        stderr=PIPE,
+    )
+    assert not p.stdout, "--list-images should not make changes!"
