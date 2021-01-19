@@ -18,7 +18,6 @@ from tempfile import TemporaryDirectory
 
 import docker
 from ruamel.yaml import YAML
-from ruamel.yaml.scalarstring import SingleQuotedScalarString
 
 __version__ = '1.0.4.dev'
 
@@ -28,9 +27,10 @@ GITHUB_TOKEN_KEY = 'GITHUB_TOKEN'
 # name of possible repository keys used in image value
 IMAGE_REPOSITORY_KEYS = {'name', 'repository'}
 
-# use safe roundtrip yaml loader
+# use safe roundtrip yaml loader capable or preserving usage of no/single/double
+# quotes for a string for example
 yaml = YAML(typ='rt')
-yaml.preserve_quotes = True ## avoid mangling of quotes
+yaml.preserve_quotes = True
 yaml.indent(mapping=2, offset=2, sequence=4)
 
 
@@ -473,7 +473,7 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, force_b
         for values_path in values_path_list:
             values_file_modifications[values_path] = {
                 'repository': image_name,
-                'tag': SingleQuotedScalarString(image_tag),
+                'tag': image_tag,
             }
 
         if skip_build:

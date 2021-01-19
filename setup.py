@@ -45,7 +45,7 @@ setup(
     keywords=['helm', 'kubernetes'],
     python_requires=">=3.6",
     install_requires=[
-        'ruamel.yaml>=0.15',
+        'ruamel.yaml>=0.15.44',
         'docker>=3.2.0',
     ],
     classifiers=[
