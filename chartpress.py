@@ -519,10 +519,10 @@ def _update_values_file_with_modifications(name, modifications):
     with open(values_file) as f:
         values = yaml.load(f)
 
-    for key, value in modifications.items():
-        if not isinstance(value, dict) or set(value.keys()) != {'repository', 'tag'}:
-            raise ValueError(f"I only understand image updates with 'repository', 'tag', not: {value!r}")
-        parts = key.split('.')
+    for path_key, path_value in modifications.items():
+        if not isinstance(path_value, dict) or set(path_value.keys()) != {'repository', 'tag'}:
+            raise ValueError(f"I only understand image updates with 'repository', 'tag', not: {path_value!r}")
+        parts = path_key.split('.')
         mod_obj = parent = values
         for p in parts:
             if p.isdigit():
@@ -537,32 +537,32 @@ def _update_values_file_with_modifications(name, modifications):
             if keys:
                 for repo_key in keys:
                     before = mod_obj.get(repo_key, None)
-                    if before != value['repository']:
-                        _log(f"Updating {values_file}: {key}.{repo_key}: {value}")
-                    mod_obj[repo_key] = value['repository']
+                    if before != path_value['repository']:
+                        _log(f"Updating {values_file}: {path_key}.{repo_key}: {path_value}")
+                    mod_obj[repo_key] = path_value['repository']
             else:
                 possible_keys = ' or '.join(IMAGE_REPOSITORY_KEYS)
                 raise KeyError(
-                    f'Could not find {possible_keys} in {values_file}:{key}'
+                    f'Could not find {possible_keys} in {values_file}:{path_key}'
                 )
 
             before = mod_obj.get('tag', None)
-            if before != value['tag']:
-                _log(f"Updating {values_file}: {key}.tag: {value}")
-            mod_obj['tag'] = value['tag']
+            if before != path_value['tag']:
+                _log(f"Updating {values_file}: {path_key}.tag: {path_value}")
+            mod_obj['tag'] = path_value['tag']
         elif isinstance(mod_obj, str):
             # scalar image string, not dict with separate repository, tag keys
-            image = "{repository}:{tag}".format(**value)
+            image = "{repository}:{tag}".format(**path_value)
             try:
                 before = parent[last_part]
             except (KeyError, IndexError):
                 before = None
             if before != image:
-                _log(f"Updating {values_file}: {key}: {image}")
+                _log(f"Updating {values_file}: {path_key}: {image}")
             parent[last_part] = image
         else:
             raise TypeError(
-                f'The key {key} in {values_file} must be a mapping or string, not {type(mod_obj)}.'
+                f'{path_key} in {values_file} must be a mapping or string, not {type(mod_obj)}.'
             )
 
     with open(values_file, 'w') as f:
