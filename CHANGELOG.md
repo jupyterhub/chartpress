@@ -4,7 +4,17 @@
 
 ## [1.0]
 
-### [1.0.3]  2020-12-14
+### [1.0.4] - 2021-01-20
+
+#### Bugs fixed
+
+* fix: preserve quote formatting for image tags also [#115](https://github.com/jupyterhub/chartpress/pull/115) ([@consideRatio](https://github.com/consideRatio))
+
+#### Maintenance and upkeep improvements
+
+* refactor: rename two local variables for readability [#114](https://github.com/jupyterhub/chartpress/pull/114) ([@consideRatio](https://github.com/consideRatio))
+
+### [1.0.3] - 2020-12-14
 
 #### Enhancements made
 
@@ -21,7 +31,7 @@
 [@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3AconsideRatio+updated%3A2020-12-04..2020-12-14&type=Issues) | [@minrk](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Aminrk+updated%3A2020-12-04..2020-12-14&type=Issues)
 
 
-### [1.0.2] 2020-12-04
+### [1.0.2] - 2020-12-04
 
 #### Bugs fixed
 
