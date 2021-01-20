@@ -512,7 +512,21 @@ def build_images(prefix, images, tag=None, push=False, force_push=False, force_b
 
 def _update_values_file_with_modifications(name, modifications):
     """
-    Update <name>/values.yaml file with a dictionary of modifications.
+    Update <name>/values.yaml file with a dictionary of modifications with its
+    root level keys representing a path within the values.yaml file.
+
+    Example of a modifications dictionary:
+
+        {
+            "server.image": {
+                "repository": "my-docker-org/server",
+                "tag": "v1.0.0",
+            },
+            "server.initContainers.0.image": {
+                "repository": "my-docker-org/server-init",
+                "tag": "v1.0.0",
+            }
+        }
     """
     values_file = os.path.join(name, 'values.yaml')
 
@@ -522,9 +536,9 @@ def _update_values_file_with_modifications(name, modifications):
     for path_key, path_value in modifications.items():
         if not isinstance(path_value, dict) or set(path_value.keys()) != {'repository', 'tag'}:
             raise ValueError(f"I only understand image updates with 'repository', 'tag', not: {path_value!r}")
-        parts = path_key.split('.')
+
         mod_obj = parent = values
-        for p in parts:
+        for p in path_key.split('.'):
             if p.isdigit():
                 # integers are indices in lists
                 p = int(p)
