@@ -6,6 +6,7 @@ from distutils.dir_util import copy_tree
 import git
 import pytest
 
+
 @pytest.fixture(scope="function")
 def git_repo(monkeypatch):
     """
@@ -16,7 +17,9 @@ def git_repo(monkeypatch):
     with tempfile.TemporaryDirectory() as temp_dir:
         chartpress_dir = os.getcwd()
         test_helm_chart_dir = os.path.join(chartpress_dir, "tests/test_helm_chart")
-        test_helm_chart_repo_dir = os.path.join(chartpress_dir, "tests/test_helm_chart_repo")
+        test_helm_chart_repo_dir = os.path.join(
+            chartpress_dir, "tests/test_helm_chart_repo"
+        )
 
         # enter the directory
         monkeypatch.chdir(temp_dir)
@@ -40,6 +43,7 @@ def git_repo(monkeypatch):
 
         yield r
 
+
 @pytest.fixture(scope="function")
 def git_repo_bare_minimum(monkeypatch, git_repo):
     """
@@ -54,6 +58,7 @@ def git_repo_bare_minimum(monkeypatch, git_repo):
     r.index.commit("chartpress_bare_minimum.yaml initial commit")
 
     yield r
+
 
 @pytest.fixture(scope="function")
 def git_repo_alternative(monkeypatch, git_repo):

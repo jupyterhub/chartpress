@@ -42,24 +42,26 @@ def test_chartpress_run(git_repo, capfd):
     assert f"Updating testchart/Chart.yaml: version: {tag}" in out
     assert f"Updating testchart/values.yaml: image: testchart/testimage:{tag}" in out
     assert f"Updating testchart/values.yaml: list.0: testchart/testimage:{tag}" in out
-    assert f"Updating testchart/values.yaml: list.1.image: testchart/testimage:{tag}" in out
-
+    assert (
+        f"Updating testchart/values.yaml: list.1.image: testchart/testimage:{tag}"
+        in out
+    )
 
     # verify usage of chartpress.yaml's resetVersion and resetTag
     out = _capture_output(["--reset"], capfd)
     assert f"Updating testchart/Chart.yaml: version: 0.0.1-test.reset.version" in out
-    assert f"Updating testchart/values.yaml: image: testchart/testimage:test-reset-tag" in out
-
+    assert (
+        f"Updating testchart/values.yaml: image: testchart/testimage:test-reset-tag"
+        in out
+    )
 
     # verify that we don't need to rebuild the image
     out = _capture_output([], capfd)
     assert f"Skipping build" in out
 
-
     # verify usage of --force-build
     out = _capture_output(["--force-build"], capfd)
     assert f"Successfully tagged" in out
-
 
     # verify usage --skip-build and --tag
     tag = "1.2.3-test.tag"
@@ -67,7 +69,6 @@ def test_chartpress_run(git_repo, capfd):
     assert f"Successfully tagged" not in out
     assert f"Updating testchart/Chart.yaml: version: {tag}" in out
     assert f"Updating testchart/values.yaml: image: testchart/testimage:{tag}" in out
-
 
     # verify a real git tag is detected
     git_repo.create_tag(tag, message=tag)
@@ -78,31 +79,35 @@ def test_chartpress_run(git_repo, capfd):
     # already.
     assert f"Updating" not in out
 
-
     # verify usage of --long
     out = _capture_output(["--skip-build", "--long"], capfd)
     assert f"Updating testchart/Chart.yaml: version: {tag}.n000.h{sha}" in out
-    assert f"Updating testchart/values.yaml: image: testchart/testimage:{tag}.n000.h{sha}" in out
-
+    assert (
+        f"Updating testchart/values.yaml: image: testchart/testimage:{tag}.n000.h{sha}"
+        in out
+    )
 
     # verify usage of --image-prefix
     out = _capture_output(["--skip-build", "--image-prefix", "test-prefix/"], capfd)
     assert f"Updating testchart/Chart.yaml: version: {tag}" in out
     assert f"Updating testchart/values.yaml: image: test-prefix/testimage:{tag}" in out
 
-
     # verify usage of --publish-chart and --extra-message
     out = _capture_output(
         [
             "--skip-build",
             "--publish-chart",
-            "--extra-message", "test added --extra-message",
+            "--extra-message",
+            "test added --extra-message",
         ],
         capfd,
     )
 
     # verify output of --publish-chart
-    assert "Branch 'gh-pages' set up to track remote branch 'gh-pages' from 'origin'." in out
+    assert (
+        "Branch 'gh-pages' set up to track remote branch 'gh-pages' from 'origin'."
+        in out
+    )
     assert "Successfully packaged chart and saved it to:" in out
     assert f"/testchart-{tag}.tgz" in out
 
@@ -125,7 +130,6 @@ def test_chartpress_run(git_repo, capfd):
     # return to master
     git_repo.git.checkout("master")
     git_repo.git.stash("pop")
-
 
     # verify usage of --publish-chart when the chart version exists in the chart
     # repo already
@@ -151,8 +155,6 @@ def test_chartpress_run(git_repo, capfd):
     # verify output of --force-publish-chart
     assert f"already exists, overwriting it" in out
 
-
-
     # verify we don't overwrite the previous version when we make dev commits
     # and use --publish-chart and that we don't skip publishing
     open("extra-chart-path.txt", "w").close()
@@ -167,7 +169,10 @@ def test_chartpress_run(git_repo, capfd):
     )
 
     # verify output of --publish-chart
-    assert "Branch 'gh-pages' set up to track remote branch 'gh-pages' from 'origin'." in out
+    assert (
+        "Branch 'gh-pages' set up to track remote branch 'gh-pages' from 'origin'."
+        in out
+    )
     assert "Successfully packaged chart and saved it to:" in out
     assert f"/testchart-{tag}.n001.h{sha}.tgz" in out
     assert f"Skipping chart publishing" not in out
@@ -220,8 +225,9 @@ def test_chartpress_paths_configuration(git_repo, capfd):
     tag = f"0.0.1-n002.h{sha}"
     out = _capture_output(["--skip-build"], capfd)
     assert f"Updating testchart/Chart.yaml: version: {tag}" not in out
-    assert f"Updating testchart/values.yaml: image: testchart/testimage:{tag}" not in out
-
+    assert (
+        f"Updating testchart/values.yaml: image: testchart/testimage:{tag}" not in out
+    )
 
     # Add a file specified in the chart's paths configuration and verify
     # chartpress updated the Chart.yaml version, but not the image tags in
@@ -232,7 +238,9 @@ def test_chartpress_paths_configuration(git_repo, capfd):
     tag = f"0.0.1-n003.h{sha}"
     out = _capture_output(["--skip-build"], capfd)
     assert f"Updating testchart/Chart.yaml: version: {tag}" in out
-    assert f"Updating testchart/values.yaml: image: testchart/testimage:{tag}" not in out
+    assert (
+        f"Updating testchart/values.yaml: image: testchart/testimage:{tag}" not in out
+    )
 
     # Add a file specified in a chart image's paths configuration and verify
     # updates to Chart.yaml version as well as the image tags in values.yaml.

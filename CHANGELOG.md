@@ -8,21 +8,21 @@
 
 #### Bugs fixed
 
-* fix: preserve quote formatting for image tags also [#115](https://github.com/jupyterhub/chartpress/pull/115) ([@consideRatio](https://github.com/consideRatio))
+- fix: preserve quote formatting for image tags also [#115](https://github.com/jupyterhub/chartpress/pull/115) ([@consideRatio](https://github.com/consideRatio))
 
 #### Maintenance and upkeep improvements
 
-* refactor: rename two local variables for readability [#114](https://github.com/jupyterhub/chartpress/pull/114) ([@consideRatio](https://github.com/consideRatio))
+- refactor: rename two local variables for readability [#114](https://github.com/jupyterhub/chartpress/pull/114) ([@consideRatio](https://github.com/consideRatio))
 
 ### [1.0.3] - 2020-12-14
 
 #### Enhancements made
 
-* allow standard `--no-build` prefix for disabling builds [#110](https://github.com/jupyterhub/chartpress/pull/110) ([@minrk](https://github.com/minrk))
+- allow standard `--no-build` prefix for disabling builds [#110](https://github.com/jupyterhub/chartpress/pull/110) ([@minrk](https://github.com/minrk))
 
 #### Bugs fixed
 
-* Fix --list-images to not update Chart.yaml's version [#112](https://github.com/jupyterhub/chartpress/pull/112) ([@consideRatio](https://github.com/consideRatio))
+- Fix --list-images to not update Chart.yaml's version [#112](https://github.com/jupyterhub/chartpress/pull/112) ([@consideRatio](https://github.com/consideRatio))
 
 #### Contributors to this release
 
@@ -30,13 +30,12 @@
 
 [@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3AconsideRatio+updated%3A2020-12-04..2020-12-14&type=Issues) | [@minrk](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Aminrk+updated%3A2020-12-04..2020-12-14&type=Issues)
 
-
 ### [1.0.2] - 2020-12-04
 
 #### Bugs fixed
 
-* only apply strict version checking for charts to be published [#109](https://github.com/jupyterhub/chartpress/pull/109) ([@minrk](https://github.com/minrk))
-* fix: compute tag per image [#108](https://github.com/jupyterhub/chartpress/pull/108) ([@danielnorberg](https://github.com/danielnorberg))
+- only apply strict version checking for charts to be published [#109](https://github.com/jupyterhub/chartpress/pull/109) ([@minrk](https://github.com/minrk))
+- fix: compute tag per image [#108](https://github.com/jupyterhub/chartpress/pull/108) ([@danielnorberg](https://github.com/danielnorberg))
 
 #### Contributors to this release
 
@@ -48,14 +47,13 @@
 
 #### Bugs fixed
 
-* bugfix: multiple images built was evaluating to a single tag [#107](https://github.com/jupyterhub/chartpress/pull/107) ([@consideRatio](https://github.com/consideRatio))
+- bugfix: multiple images built was evaluating to a single tag [#107](https://github.com/jupyterhub/chartpress/pull/107) ([@consideRatio](https://github.com/consideRatio))
 
 #### Contributors to this release
 
 ([GitHub contributors page for this release](https://github.com/jupyterhub/chartpress/graphs/contributors?from=2020-11-21&to=2020-12-03&type=c))
 
 [@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3AconsideRatio+updated%3A2020-11-21..2020-12-03&type=Issues)
-
 
 ### [1.0.0] - 2020-11-21
 
@@ -66,15 +64,14 @@ reliable, thank you everyone for your contributions and work on it!!!
 
 #### Enhancements made
 
-* Strip v prefixes for Chart.yaml versions for Helm3 compliancy [#106](https://github.com/jupyterhub/chartpress/pull/106) ([@consideRatio](https://github.com/consideRatio))
-* Add --force-publish-chart and default to not overwriting [#102](https://github.com/jupyterhub/chartpress/pull/102) ([@consideRatio](https://github.com/consideRatio))
+- Strip v prefixes for Chart.yaml versions for Helm3 compliancy [#106](https://github.com/jupyterhub/chartpress/pull/106) ([@consideRatio](https://github.com/consideRatio))
+- Add --force-publish-chart and default to not overwriting [#102](https://github.com/jupyterhub/chartpress/pull/102) ([@consideRatio](https://github.com/consideRatio))
 
 #### Maintenance and upkeep improvements
 
-* Major refactor for readability pre 1.0.0 release [#105](https://github.com/jupyterhub/chartpress/pull/105) ([@consideRatio](https://github.com/consideRatio))
-* Migrate from Travis CI to GitHub Actions [#101](https://github.com/jupyterhub/chartpress/pull/101) ([@consideRatio](https://github.com/consideRatio))
-* CI: fix syntax typo making us not run tests before publish [#100](https://github.com/jupyterhub/chartpress/pull/100) ([@consideRatio](https://github.com/consideRatio))
-
+- Major refactor for readability pre 1.0.0 release [#105](https://github.com/jupyterhub/chartpress/pull/105) ([@consideRatio](https://github.com/consideRatio))
+- Migrate from Travis CI to GitHub Actions [#101](https://github.com/jupyterhub/chartpress/pull/101) ([@consideRatio](https://github.com/consideRatio))
+- CI: fix syntax typo making us not run tests before publish [#100](https://github.com/jupyterhub/chartpress/pull/100) ([@consideRatio](https://github.com/consideRatio))
 
 ## [0.7]
 
@@ -82,21 +79,20 @@ reliable, thank you everyone for your contributions and work on it!!!
 
 #### Enhancements made
 
-* Image config option added: rebuildOnContextPathChanges [#98](https://github.com/jupyterhub/chartpress/pull/98) ([@consideRatio](https://github.com/consideRatio))
-* add chartpress --list-images [#96](https://github.com/jupyterhub/chartpress/pull/96) ([@minrk](https://github.com/minrk))
-* support overriding imageName [#90](https://github.com/jupyterhub/chartpress/pull/90) ([@minrk](https://github.com/minrk))
+- Image config option added: rebuildOnContextPathChanges [#98](https://github.com/jupyterhub/chartpress/pull/98) ([@consideRatio](https://github.com/consideRatio))
+- add chartpress --list-images [#96](https://github.com/jupyterhub/chartpress/pull/96) ([@minrk](https://github.com/minrk))
+- support overriding imageName [#90](https://github.com/jupyterhub/chartpress/pull/90) ([@minrk](https://github.com/minrk))
 
 #### Maintenance and upkeep improvements
 
-* CI: publish tags without tests and test python 3.6-3.8 [#95](https://github.com/jupyterhub/chartpress/pull/95) ([@consideRatio](https://github.com/consideRatio))
-* CI: Test chartpress usage with both helm2 and helm3 [#92](https://github.com/jupyterhub/chartpress/pull/92) ([@consideRatio](https://github.com/consideRatio))
+- CI: publish tags without tests and test python 3.6-3.8 [#95](https://github.com/jupyterhub/chartpress/pull/95) ([@consideRatio](https://github.com/consideRatio))
+- CI: Test chartpress usage with both helm2 and helm3 [#92](https://github.com/jupyterhub/chartpress/pull/92) ([@consideRatio](https://github.com/consideRatio))
 
 #### Contributors to this release
 
 ([GitHub contributors page for this release](https://github.com/jupyterhub/chartpress/graphs/contributors?from=2020-01-12&to=2020-11-01&type=c))
 
 [@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3AconsideRatio+updated%3A2020-01-12..2020-11-01&type=Issues) | [@manics](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Amanics+updated%3A2020-01-12..2020-11-01&type=Issues) | [@minrk](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Aminrk+updated%3A2020-01-12..2020-11-01&type=Issues)
-
 
 ## [0.6]
 
@@ -181,7 +177,7 @@ commits.
       - first: item
         image: "not set"
       - second: item
-        image: "image:tag"  #  <--sets this here
+        image: "image:tag" #  <--sets this here
   ```
 
 ### [0.4.2] - 2019-10-19 (broken)

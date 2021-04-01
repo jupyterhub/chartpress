@@ -16,9 +16,11 @@ pytest -vx --flake8
 ```
 
 ## Not yet tested
+
 - `--push` or `--force-push`
 
 ## References
+
 - [pytest](https://docs.pytest.org)
   - Fixture: [capfd](https://docs.pytest.org/en/latest/reference.html#_pytest.capture.capfd)
   - Fixture: [monkeypatching](https://docs.pytest.org/en/latest/capfd.html)

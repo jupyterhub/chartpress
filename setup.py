@@ -1,4 +1,5 @@
 import sys
+
 from setuptools import setup
 from setuptools.command.bdist_egg import bdist_egg
 
@@ -18,20 +19,20 @@ class bdist_egg_disabled(bdist_egg):
 
 
 cmdclass = {
-    'bdist_egg': bdist_egg if 'bdist_egg' in sys.argv else bdist_egg_disabled,
+    "bdist_egg": bdist_egg if "bdist_egg" in sys.argv else bdist_egg_disabled,
 }
 
 with open("README.md") as f:
     readme = f.read()
 
 setup(
-    name='chartpress',
-    version='1.0.5.dev',
-    py_modules=['chartpress'],
+    name="chartpress",
+    version="1.0.5.dev",
+    py_modules=["chartpress"],
     cmdclass=cmdclass,
     entry_points={
-        'console_scripts': [
-            'chartpress = chartpress:main',
+        "console_scripts": [
+            "chartpress = chartpress:main",
         ],
     },
     description="ChartPress: render and publish helm charts and images",
@@ -42,17 +43,17 @@ setup(
     url="https://github.com/jupyterhub/chartpress",
     license="BSD",
     platforms="Linux, Mac OS X",
-    keywords=['helm', 'kubernetes'],
+    keywords=["helm", "kubernetes"],
     python_requires=">=3.6",
     install_requires=[
-        'ruamel.yaml>=0.15.44',
-        'docker>=3.2.0',
+        "ruamel.yaml>=0.15.44",
+        "docker>=3.2.0",
     ],
     classifiers=[
-        'Intended Audience :: Developers',
-        'Intended Audience :: System Administrators',
-        'License :: OSI Approved :: BSD License',
-        'Programming Language :: Python',
-        'Programming Language :: Python :: 3',
+        "Intended Audience :: Developers",
+        "Intended Audience :: System Administrators",
+        "License :: OSI Approved :: BSD License",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3",
     ],
 )

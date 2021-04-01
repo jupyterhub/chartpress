@@ -13,19 +13,15 @@ on:
     tags:
   workflow_dispatch:
 
-defaults:
-  run:
-    # Declare bash be used by default in this workflow's "run" steps.
-    #
-    # NOTE: bash will by default run with:
-    #   --noprofile: Ignore ~/.profile etc.
-    #   --norc:      Ignore ~/.bashrc etc.
-    #   -e:          Exit directly on errors
-    #   -o pipefail: Don't mask errors from a command piped into another command
-    shell: bash
-
 jobs:
-  chart_tests:
+  pre-commit:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+      - uses: pre-commit/action@v2.0.0
+
+  chart-tests:
     runs-on: ubuntu-20.04
 
     strategy:

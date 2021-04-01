@@ -6,7 +6,6 @@
 [![Discourse](https://img.shields.io/badge/help_forum-discourse-blue?logo=discourse)](https://discourse.jupyter.org/c/jupyterhub)
 [![Gitter](https://img.shields.io/badge/social_chat-gitter-blue?logo=gitter)](https://gitter.im/jupyterhub/jupyterhub)
 
-
 Chartpress automate basic Helm chart development work. It is tightly used in development of the [JupyterHub](https://github.com/jupyterhub/zero-to-jupyterhub-k8s) and [BinderHub](https://github.com/jupyterhub/binderhub) Helm charts.
 
 ## Features
@@ -64,6 +63,7 @@ order that could come from using chartpress.
 ## Requirements
 
 The following binaries must be in your `PATH`:
+
 - [git](https://www.git-scm.com/downloads)
 - [docker](https://docs.docker.com/install/#supported-platforms)
 - [helm](https://helm.sh/docs/using_helm/#installing-helm)
