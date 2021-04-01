@@ -272,7 +272,9 @@ def _get_all_chart_paths(options):
     return list(set(paths))
 
 
-def build_image(image_spec, context_path, dockerfile_path=None, build_args=None):
+def build_image(
+    image_spec, context_path, dockerfile_path=None, build_args=None, *, push=False
+):
     """Build an image
 
     Args:
@@ -293,6 +295,8 @@ def build_image(image_spec, context_path, dockerfile_path=None, build_args=None)
         "<context_path>/Dockerfile".
     build_args (dict, optional):
         Dictionary of docker build arguments.
+    push (bool, optional):
+        Whether to push the image to a registry
     """
     cmd = ["docker", "build", "-t", image_spec, context_path]
     if dockerfile_path:
@@ -300,6 +304,9 @@ def build_image(image_spec, context_path, dockerfile_path=None, build_args=None)
     for k, v in (build_args or {}).items():
         cmd += ["--build-arg", f"{k}={v}"]
     _check_call(cmd)
+
+    if push:
+        _check_call(["docker", "push", image_spec])
 
 
 @lru_cache()
@@ -519,7 +526,7 @@ def build_images(
 
         image_spec = f"{image_name}:{image_tag}"
 
-        # build image
+        # build image and optionally push image
         if force_build or _image_needs_building(image_spec):
             build_image(
                 image_spec,
@@ -534,16 +541,17 @@ def build_images(
                         "TAG": image_tag,
                     },
                 ),
+                push=push or force_push,
             )
         else:
             _log(f"Skipping build for {image_spec}, it already exists")
 
-        # push image
-        if push or force_push:
-            if force_push or _image_needs_pushing(image_spec):
-                _check_call(["docker", "push", image_spec])
-            else:
-                _log(f"Skipping push for {image_spec}, already on registry")
+            # push image
+            if push or force_push:
+                if force_push or _image_needs_pushing(image_spec):
+                    _check_call(["docker", "push", image_spec])
+                else:
+                    _log(f"Skipping push for {image_spec}, already on registry")
 
     return values_file_modifications
 
