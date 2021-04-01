@@ -6,6 +6,7 @@ make a release on PyPI. The PyPI release is packaged and published automatically
 by a GitHub workflow when a git tag is pushed.
 
 For you to follow along according to these instructions, you need:
+
 - To have push rights to the [chartpress GitHub
   repository](https://github.com/jupyterhub/chartpress).
 
