@@ -201,12 +201,6 @@ charts:
 
 ## Caveats
 
-### TravisCI mirror image registry
-
-If you run chartpress on TravisCI, its logic can be fooled by a mirror image
-registry to rebuild something that didn't need rebuilding. A workaround for this
-can be found in this repo's [.travis.yml](.travis.yml).
-
 ### Shallow clones
 
 Chartpress detects the latest commit which changed a directory or file when
@@ -225,6 +219,11 @@ git:
   depth: false
 ```
 
+### Command caching
+
+Chartpress caches the results of some commands to improve performance.
+This means chartpress should not be used as an importable library.
+
 ## Development
 
 Testing of this python package can be done using
@@ -238,6 +237,9 @@ pip install  -e .
 # install dev dependencies
 pip install -r dev-requirements.txt
 
+# format and lint code
+pre-commit run -a
+
 # run tests
-pytest --verbose --flake8 --exitfirst
+pytest --verbose --exitfirst
 ```
