@@ -6,6 +6,8 @@ from distutils.dir_util import copy_tree
 import git
 import pytest
 
+import chartpress
+
 
 @pytest.fixture(scope="function")
 def git_repo(monkeypatch):
@@ -72,3 +74,24 @@ def git_repo_alternative(monkeypatch, git_repo):
     r.index.commit("chartpress_alternative.yaml initial commit")
 
     yield r
+
+
+class MockCheckCall:
+    def __init__(self):
+        self.commands = []
+
+    def __call__(self, cmd, **kwargs):
+        self.commands.append((cmd, kwargs))
+
+
+@pytest.fixture(scope="function")
+def mock_check_call(monkeypatch):
+    """
+    Replace chartpress._check_call with a no-op version that records all commands
+    Also disable lcu_cache to prevent cached information being kept across test calls
+    """
+    mock_call = MockCheckCall()
+    monkeypatch.setattr(chartpress, "_check_call", mock_call)
+    monkeypatch.setattr(chartpress, "lru_cache", lambda func: func)
+
+    yield mock_call
