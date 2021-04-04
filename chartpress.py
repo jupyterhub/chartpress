@@ -27,6 +27,9 @@ GITHUB_TOKEN_KEY = "GITHUB_TOKEN"
 # name of possible repository keys used in image value
 IMAGE_REPOSITORY_KEYS = {"name", "repository"}
 
+# Container builders
+BUILDERS = ["docker-build", "docker-buildx"]
+
 # use safe roundtrip yaml loader capable or preserving usage of no/single/double
 # quotes for a string for example
 yaml = YAML(typ="rt")
@@ -273,7 +276,14 @@ def _get_all_chart_paths(options):
 
 
 def build_image(
-    image_spec, context_path, dockerfile_path=None, build_args=None, *, push=False
+    image_spec,
+    context_path,
+    dockerfile_path=None,
+    build_args=None,
+    *,
+    push=False,
+    builder=BUILDERS[0],
+    platforms=None,
 ):
     """Build an image
 
@@ -297,15 +307,37 @@ def build_image(
         Dictionary of docker build arguments.
     push (bool, optional):
         Whether to push the image to a registry
+    builder (str):
+        The container build engine.
+    platforms (list[str], optional):
+        List of platforms to build for
     """
-    cmd = ["docker", "build", "-t", image_spec, context_path]
+    if builder == "docker-build":
+        cmd = ["docker", "build"]
+    elif builder == "docker-buildx":
+        # plain shows the container output, similar to docker build
+        cmd = ["docker", "buildx", "build", "--progress", "plain"]
+    else:
+        raise ValueError(f"Unknown builder: {builder}")
+
+    cmd.extend(["-t", image_spec, context_path])
     if dockerfile_path:
         cmd.extend(["-f", dockerfile_path])
     for k, v in (build_args or {}).items():
         cmd += ["--build-arg", f"{k}={v}"]
+    if platforms:
+        cmd.extend(["--platform", ",".join(platforms)])
+        # Limitations of docker buildx 0.5.1:
+        # - Can't load into the local Docker host and push to a registry at the
+        #   same time
+        # - Can't load multiple platforms into the local docker host
+        if push:
+            cmd.append("--push")
+        elif len(platforms) == 1:
+            cmd.append("--load")
     _check_call(cmd)
 
-    if push:
+    if builder == "docker-build" and push:
         _check_call(["docker", "push", image_spec])
 
 
@@ -465,6 +497,9 @@ def build_images(
     force_build=False,
     skip_build=False,
     long=False,
+    *,
+    builder=BUILDERS[0],
+    platforms=None,
 ):
     """Build a collection of docker images
 
@@ -497,6 +532,11 @@ def build_images(
         Example 2:
         - long=False: 0.9.0-n004.hsdfg2345
         - long=True:  0.9.0-n004.hsdfg2345
+
+    builder (str):
+        The container build engine.
+    platforms (list[str]):
+        List of platforms to build for if not the same as the Docker host.
     """
     values_file_modifications = {}
     for name, options in images.items():
@@ -527,7 +567,9 @@ def build_images(
         image_spec = f"{image_name}:{image_tag}"
 
         # build image and optionally push image
-        if force_build or _image_needs_building(image_spec):
+        # Since docker buildx builds for multiple platforms we can't tell whether the
+        # image already exists in the host so always build and rely on caching
+        if builder != BUILDERS[0] or force_build or _image_needs_building(image_spec):
             build_image(
                 image_spec,
                 _get_image_build_context_path(name, options),
@@ -542,6 +584,8 @@ def build_images(
                     },
                 ),
                 push=push or force_push,
+                builder=builder,
+                platforms=platforms,
             )
         else:
             _log(f"Skipping build for {image_spec}, it already exists")
@@ -879,6 +923,24 @@ def main(args=None):
     )
 
     argparser.add_argument(
+        "--builder",
+        choices=BUILDERS,
+        default=BUILDERS[0],
+        help="Container build engine to use, docker-build is the standard Docker build command.",
+    )
+
+    argparser.add_argument(
+        "--platform",
+        nargs="*",
+        help=(
+            "Build the image for this platform, e.g. linux/amd64 or linux/arm64. "
+            "This argument can be used multiple times to build multiple platforms under the same tag. "
+            "Only supported for docker buildx. "
+            "If --push is set or if multiple platforms are passed the image will not be loaded into the local docker engine."
+        ),
+    )
+
+    argparser.add_argument(
         "--list-images",
         action="store_true",
         help="print list of images to stdout. Images will not be built.",
@@ -890,6 +952,9 @@ def main(args=None):
     )
 
     args = argparser.parse_args(args)
+    if args.builder == BUILDERS[0] and args.platform:
+        argparser.error(f"--platform is not supported with {BUILDERS[0]}")
+
     # allow simple checks for whether publish will happen
     if args.force_publish_chart:
         args.publish_chart = True
@@ -942,6 +1007,8 @@ def main(args=None):
                 force_build=args.force_build,
                 skip_build=args.no_build or args.reset,
                 long=args.long,
+                builder=args.builder,
+                platforms=args.platform,
             )
 
             # list images
