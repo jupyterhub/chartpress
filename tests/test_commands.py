@@ -116,6 +116,92 @@ def test_build_images(git_repo, mock_check_call, push, tag):
         assert mock_check_call.commands[1] == (expected_build2, {})
 
 
+@pytest.mark.parametrize("tag", [None, "1.2.3"])
+@pytest.mark.parametrize(
+    ("push", "platforms", "expected_suffix"),
+    [
+        (False, None, ["--load"]),
+        (True, None, ["--push"]),
+        (False, ["linux/amd64"], ["--platform", "linux/amd64", "--load"]),
+        (True, ["linux/amd64"], ["--platform", "linux/amd64", "--push"]),
+        (
+            False,
+            ["linux/amd64", "linux/arm64"],
+            ["--platform", "linux/amd64,linux/arm64"],
+        ),
+        (
+            True,
+            ["linux/amd64", "linux/arm64"],
+            ["--platform", "linux/amd64,linux/arm64", "--push"],
+        ),
+    ],
+)
+def test_buildx_images(
+    git_repo, mock_check_call, tag, push, platforms, expected_suffix
+):
+    prefix = "pre/"
+    images = {
+        "testimage": {
+            "buildArgs": {
+                "arg": "test",
+            },
+            "contextPath": "image",
+            "dockerfilePath": "image/Dockerfile",
+        },
+    }
+    images["imageName"] = {
+        "imageName": "custom-name",
+    }
+
+    chartpress.build_images(
+        prefix,
+        images,
+        tag=tag,
+        force_build=True,
+        push=push,
+        force_push=push,
+        builder="docker-buildx",
+        platforms=platforms,
+    )
+    sha = git_repo.commit(git_repo.head).hexsha
+
+    if tag:
+        expected_tag = tag
+    else:
+        expected_tag = f"0.0.1-n001.h{sha[:7]}"
+
+    expected_build1 = [
+        "docker",
+        "buildx",
+        "build",
+        "--progress",
+        "plain",
+        "-t",
+        f"pre/testimage:{expected_tag}",
+        "image",
+        "-f",
+        "image/Dockerfile",
+        "--build-arg",
+        "arg=test",
+    ] + expected_suffix
+    expected_build2 = [
+        "docker",
+        "buildx",
+        "build",
+        "--progress",
+        "plain",
+        "-t",
+        f"custom-name:{expected_tag}",
+        "images/imageName",
+        "-f",
+        "images/imageName/Dockerfile",
+    ] + expected_suffix
+
+    assert len(mock_check_call.commands) == 2
+    assert mock_check_call.commands[0] == (expected_build1, {})
+    assert mock_check_call.commands[1] == (expected_build2, {})
+
+
 @pytest.mark.parametrize("version", [None, "1.2.3"])
 def test_build_chart(git_repo, mock_check_call, version):
     yaml = YAML()
