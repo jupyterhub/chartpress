@@ -359,7 +359,7 @@ def _get_docker_client():
 
 
 @lru_cache()
-def _image_needs_pushing(image):
+def _image_needs_pushing(image, builder):
     """
     Returns a boolean whether an image needs pushing by checking if the image
     exists on the image registry.
@@ -373,7 +373,14 @@ def _image_needs_pushing(image):
         - jupyterhub/k8s-hub:0.9.0
         - index.docker.io/library/ubuntu:latest
         - eu.gcr.io/my-gcp-project/my-image:0.1.0
+    builder (Builder):
+        The container build engine
     """
+    # docker buildx builds for multiple platforms but we can't tell which
+    # architectures have been pushed to the registry, so always push
+    if builder != Builder.DOCKER_BUILD:
+        return True
+
     d = _get_docker_client()
     try:
         d.images.get_registry_data(image)
@@ -385,7 +392,7 @@ def _image_needs_pushing(image):
 
 
 @lru_cache()
-def _image_needs_building(image):
+def _image_needs_building(image, builder):
     """
     Returns a boolean whether an image needs building by checking if the image
     exists either locally or on the registry.
@@ -399,7 +406,14 @@ def _image_needs_building(image):
         - jupyterhub/k8s-hub:0.9.0
         - index.docker.io/library/ubuntu:latest
         - eu.gcr.io/my-gcp-project/my-image:0.1.0
+    builder (Builder):
+        The container build engine
     """
+    # Since docker buildx builds for multiple platforms we can't tell whether the
+    # image already exists in the host so always build and rely on caching
+    if builder != Builder.DOCKER_BUILD:
+        return True
+
     d = _get_docker_client()
 
     # first, check for locally built image
@@ -413,7 +427,7 @@ def _image_needs_building(image):
         return False
 
     # image may need building if it's not on the registry
-    return _image_needs_pushing(image)
+    return _image_needs_pushing(image, builder)
 
 
 def _get_identifier_from_paths(*paths, long=False):
@@ -578,13 +592,7 @@ def build_images(
         image_spec = f"{image_name}:{image_tag}"
 
         # build image and optionally push image
-        # Since docker buildx builds for multiple platforms we can't tell whether the
-        # image already exists in the host so always build and rely on caching
-        if (
-            builder != Builder.DOCKER_BUILD
-            or force_build
-            or _image_needs_building(image_spec)
-        ):
+        if force_build or _image_needs_building(image_spec, builder):
             build_image(
                 image_spec,
                 _get_image_build_context_path(name, options),
@@ -607,7 +615,7 @@ def build_images(
 
             # push image
             if push or force_push:
-                if force_push or _image_needs_pushing(image_spec):
+                if force_push or _image_needs_pushing(image_spec, builder):
                     _check_call(["docker", "push", image_spec])
                 else:
                     _log(f"Skipping push for {image_spec}, already on registry")

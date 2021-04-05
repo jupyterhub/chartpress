@@ -7,6 +7,7 @@ from chartpress import _get_image_build_args
 from chartpress import _get_latest_commit_tagged_or_modifying_paths
 from chartpress import _image_needs_pushing
 from chartpress import _strip_build_suffix_from_identifier
+from chartpress import Builder
 from chartpress import GITHUB_TOKEN_KEY
 
 # use safe roundtrip yaml loader
@@ -92,8 +93,11 @@ def test_git_token_censoring(monkeypatch, capfd):
 
 
 def test__image_needs_pushing():
-    assert _image_needs_pushing("jupyterhub/image-not-to-be-found:latest")
-    assert not _image_needs_pushing("jupyterhub/k8s-hub:0.8.2")
+    assert _image_needs_pushing(
+        "jupyterhub/image-not-to-be-found:latest", Builder.DOCKER_BUILD
+    )
+    assert not _image_needs_pushing("jupyterhub/k8s-hub:0.8.2", Builder.DOCKER_BUILD)
+    assert _image_needs_pushing("jupyterhub/k8s-hub:0.8.2", Builder.DOCKER_BUILDX)
 
 
 def test__get_latest_commit_tagged_or_modifying_paths(git_repo):
