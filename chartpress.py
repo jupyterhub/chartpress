@@ -935,7 +935,7 @@ def main(args=None):
 
     argparser.add_argument(
         "--platform",
-        nargs="*",
+        action="append",
         help=(
             "Build the image for this platform, e.g. linux/amd64 or linux/arm64. "
             "This argument can be used multiple times to build multiple platforms under the same tag. "
