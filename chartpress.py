@@ -320,6 +320,9 @@ def build_image(
     else:
         raise ValueError(f"Unknown builder: {builder}")
 
+    if not platforms:
+        platforms = []
+
     cmd.extend(["-t", image_spec, context_path])
     if dockerfile_path:
         cmd.extend(["-f", dockerfile_path])
@@ -327,13 +330,14 @@ def build_image(
         cmd += ["--build-arg", f"{k}={v}"]
     if platforms:
         cmd.extend(["--platform", ",".join(platforms)])
+    if builder == "docker-buildx":
         # Limitations of docker buildx 0.5.1:
         # - Can't load into the local Docker host and push to a registry at the
         #   same time
         # - Can't load multiple platforms into the local docker host
         if push:
             cmd.append("--push")
-        elif len(platforms) == 1:
+        elif len(platforms) <= 1:
             cmd.append("--load")
     _check_call(cmd)
 
