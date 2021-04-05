@@ -160,7 +160,7 @@ def test_buildx_images(
         force_build=True,
         push=push,
         force_push=push,
-        builder="docker-buildx",
+        builder=chartpress.Builder.DOCKER_BUILDX,
         platforms=platforms,
     )
     sha = git_repo.commit(git_repo.head).hexsha
