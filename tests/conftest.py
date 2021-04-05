@@ -92,6 +92,12 @@ def mock_check_call(monkeypatch):
     """
     mock_call = MockCheckCall()
     monkeypatch.setattr(chartpress, "_check_call", mock_call)
-    monkeypatch.setattr(chartpress, "lru_cache", lambda func: func)
+
+    # Need to clear @lru_cache since we test multiple temporary repositories
+    chartpress._get_latest_commit_tagged_or_modifying_paths.cache_clear()
+    # Other @lru_cache functions, in case it's needed in future:
+    # chartpress._get_docker_client.cache_clear()
+    # chartpress._image_needs_pushing.cache_clear()
+    # chartpress._image_needs_building.cache_clear()
 
     yield mock_call
