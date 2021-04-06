@@ -3,6 +3,7 @@ import sys
 from subprocess import PIPE
 from subprocess import run
 from urllib.request import urlopen
+from uuid import uuid4
 
 import pytest
 
@@ -36,6 +37,7 @@ def test_list_images(git_repo):
 
 @pytest.mark.registry
 def test_buildx(git_repo):
+    tag = f"1.2.3-{uuid4()}"
     p = run(
         [
             sys.executable,
@@ -53,7 +55,7 @@ def test_buildx(git_repo):
             "--image-prefix",
             "localhost:5000/test-buildx/",
             "--tag",
-            "1.2.3-abc",
+            tag,
         ],
         check=True,
         stdout=PIPE,
@@ -68,10 +70,9 @@ def test_buildx(git_repo):
     assert "[linux/amd64 1/1] FROM docker.io/library/alpine@" in stderr
     assert "[linux/arm64 1/1] FROM docker.io/library/alpine@" in stderr
     assert "[linux/ppc64le 1/1] FROM docker.io/library/alpine@" in stderr
-    assert (
-        "pushing manifest for localhost:5000/test-buildx/testimage:1.2.3-abc" in stderr
-    )
+    assert f"pushing manifest for localhost:5000/test-buildx/testimage:{tag}" in stderr
 
     with urlopen("http://localhost:5000/v2/test-buildx/testimage/tags/list") as h:
         d = json.load(h)
-    assert d == {"name": "test-buildx/testimage", "tags": ["1.2.3-abc"]}
+    assert d["name"] == "test-buildx/testimage"
+    assert tag in d["tags"]
