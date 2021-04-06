@@ -4,6 +4,8 @@ from subprocess import PIPE
 from subprocess import run
 from urllib.request import urlopen
 
+import pytest
+
 
 def test_list_images(git_repo):
     p = run(
@@ -32,6 +34,7 @@ def test_list_images(git_repo):
     assert not p.stdout, "--list-images should not make changes!"
 
 
+@pytest.mark.registry
 def test_buildx(git_repo):
     p = run(
         [

@@ -9,6 +9,12 @@ import pytest
 import chartpress
 
 
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers", "registry: mark a test that modifies a container registry"
+    )
+
+
 @pytest.fixture(scope="function")
 def git_repo(monkeypatch):
     """

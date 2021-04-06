@@ -242,4 +242,6 @@ pre-commit run -a
 
 # run tests
 pytest --verbose --exitfirst
+# some tests push to a local registry, you can skip these
+pytest --verbose --exitfirst -m 'not registry'
 ```
