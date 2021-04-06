@@ -100,4 +100,4 @@ jobs:
 
       - name: Run tests
         run: |
-          pytest --verbose --flake8 --color=yes
+          pytest --verbose --color=yes
