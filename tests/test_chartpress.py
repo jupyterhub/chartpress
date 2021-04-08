@@ -2,6 +2,7 @@ import json
 import sys
 from subprocess import PIPE
 from subprocess import run
+from urllib.request import Request
 from urllib.request import urlopen
 from uuid import uuid4
 
@@ -76,3 +77,20 @@ def test_buildx(git_repo):
         d = json.load(h)
     assert d["name"] == "test-buildx/testimage"
     assert tag in d["tags"]
+
+    # https://docs.docker.com/registry/spec/manifest-v2-2/
+    r = Request(
+        f"http://localhost:5000/v2/test-buildx/testimage/manifests/{tag}",
+        headers={
+            "Accept": (
+                "application/vnd.docker.distribution.manifest.list.v2+json, "
+                "application/vnd.docker.distribution.manifest.v2+json"
+            )
+        },
+    )
+    with urlopen(r) as h:
+        d = json.load(h)
+    architectures = sorted(
+        manifest["platform"]["architecture"] for manifest in d["manifests"]
+    )
+    assert architectures == ["amd64", "arm64", "ppc64le"]
