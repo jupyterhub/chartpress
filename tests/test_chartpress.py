@@ -36,6 +36,33 @@ def test_list_images(git_repo):
     assert not p.stdout, "--list-images should not make changes!"
 
 
+def _get_architectures_from_manifest(name, tag):
+    # https://docs.docker.com/registry/spec/manifest-v2-2/
+    # To debug this with curl:
+    # curl -H 'Accept: application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json' localhost:5000/v2/{name}/manifests/{tag}
+    MANIFEST_LIST = "application/vnd.docker.distribution.manifest.list.v2+json"
+    MANIFEST = "application/vnd.docker.distribution.manifest.v2+json"
+
+    r = Request(
+        f"http://localhost:5000/v2/{name}/manifests/{tag}",
+        headers={"Accept": f"{MANIFEST_LIST}, {MANIFEST}"},
+    )
+    with urlopen(r) as h:
+        d = json.load(h)
+
+    assert d["mediaType"] in (MANIFEST_LIST, MANIFEST)
+    if d["mediaType"] == MANIFEST_LIST:
+        assert "manifests" in d
+        architectures = sorted(
+            manifest["platform"]["architecture"] for manifest in d["manifests"]
+        )
+    else:
+        assert "manifests" not in d
+        architectures = None
+
+    return architectures
+
+
 @pytest.mark.registry
 def test_buildx(git_repo):
     tag = f"1.2.3-{uuid4()}"
@@ -68,29 +95,29 @@ def test_buildx(git_repo):
     sys.stderr.write(stderr)
     sys.stdout.write(stdout)
 
+    # Note: Parsing stderr for these logs may be fragile. We could probably omit
+    # it and just verify the registry manifests instead.
+
     assert "[linux/amd64 1/1] FROM docker.io/library/alpine@" in stderr
     assert "[linux/arm64 1/1] FROM docker.io/library/alpine@" in stderr
     assert "[linux/ppc64le 1/1] FROM docker.io/library/alpine@" in stderr
+
+    # If there's only one platform it doesn't appear in the output logs
+    # assert "[linux/amd64 1/1] FROM docker.io/library/busybox@" in stderr
+    assert "[1/1] FROM docker.io/library/busybox@" in stderr
+    assert "[linux/arm64 1/1] FROM docker.io/library/busybox@" not in stderr
+    assert "[linux/ppc64le 1/1] FROM docker.io/library/busybox@" not in stderr
+
     assert f"pushing manifest for localhost:5000/test-buildx/testimage:{tag}" in stderr
+    assert f"pushing manifest for localhost:5000/test-buildx/amd64only:{tag}" in stderr
 
     with urlopen("http://localhost:5000/v2/test-buildx/testimage/tags/list") as h:
         d = json.load(h)
     assert d["name"] == "test-buildx/testimage"
     assert tag in d["tags"]
 
-    # https://docs.docker.com/registry/spec/manifest-v2-2/
-    r = Request(
-        f"http://localhost:5000/v2/test-buildx/testimage/manifests/{tag}",
-        headers={
-            "Accept": (
-                "application/vnd.docker.distribution.manifest.list.v2+json, "
-                "application/vnd.docker.distribution.manifest.v2+json"
-            )
-        },
-    )
-    with urlopen(r) as h:
-        d = json.load(h)
-    architectures = sorted(
-        manifest["platform"]["architecture"] for manifest in d["manifests"]
-    )
+    architectures = _get_architectures_from_manifest("test-buildx/testimage", tag)
     assert architectures == ["amd64", "arm64", "ppc64le"]
+
+    architectures = _get_architectures_from_manifest("test-buildx/amd64only", tag)
+    assert architectures is None

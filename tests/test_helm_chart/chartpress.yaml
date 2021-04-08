@@ -21,3 +21,8 @@ charts:
           - list.1.image
         paths:
           - extra-image-path.txt
+      amd64only:
+        contextPath: amd64only
+        skipPlatforms:
+          - linux/arm64
+          - linux/ppc64le
