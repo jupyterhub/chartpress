@@ -1,6 +1,12 @@
+import json
 import sys
 from subprocess import PIPE
 from subprocess import run
+from urllib.request import Request
+from urllib.request import urlopen
+from uuid import uuid4
+
+import pytest
 
 
 def test_list_images(git_repo):
@@ -28,3 +34,63 @@ def test_list_images(git_repo):
         stderr=PIPE,
     )
     assert not p.stdout, "--list-images should not make changes!"
+
+
+@pytest.mark.registry
+def test_buildx(git_repo):
+    tag = f"1.2.3-{uuid4()}"
+    p = run(
+        [
+            sys.executable,
+            "-m",
+            "chartpress",
+            "--builder",
+            "docker-buildx",
+            "--platform",
+            "linux/amd64",
+            "--platform",
+            "linux/arm64",
+            "--platform",
+            "linux/ppc64le",
+            "--push",
+            "--image-prefix",
+            "localhost:5000/test-buildx/",
+            "--tag",
+            tag,
+        ],
+        check=True,
+        stdout=PIPE,
+        stderr=PIPE,
+    )
+    stdout = p.stdout.decode("utf8").strip()
+    stderr = p.stderr.decode("utf8").strip()
+    # echo stdout/stderr for debugging
+    sys.stderr.write(stderr)
+    sys.stdout.write(stdout)
+
+    assert "[linux/amd64 1/1] FROM docker.io/library/alpine@" in stderr
+    assert "[linux/arm64 1/1] FROM docker.io/library/alpine@" in stderr
+    assert "[linux/ppc64le 1/1] FROM docker.io/library/alpine@" in stderr
+    assert f"pushing manifest for localhost:5000/test-buildx/testimage:{tag}" in stderr
+
+    with urlopen("http://localhost:5000/v2/test-buildx/testimage/tags/list") as h:
+        d = json.load(h)
+    assert d["name"] == "test-buildx/testimage"
+    assert tag in d["tags"]
+
+    # https://docs.docker.com/registry/spec/manifest-v2-2/
+    r = Request(
+        f"http://localhost:5000/v2/test-buildx/testimage/manifests/{tag}",
+        headers={
+            "Accept": (
+                "application/vnd.docker.distribution.manifest.list.v2+json, "
+                "application/vnd.docker.distribution.manifest.v2+json"
+            )
+        },
+    )
+    with urlopen(r) as h:
+        d = json.load(h)
+    architectures = sorted(
+        manifest["platform"]["architecture"] for manifest in d["manifests"]
+    )
+    assert architectures == ["amd64", "arm64", "ppc64le"]

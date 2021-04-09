@@ -38,6 +38,12 @@ jobs:
           - python: 3.8
           - python: 3.9
 
+    services:
+      local-registry:
+        image: registry:2
+        ports:
+          - 5000:5000
+
     steps:
       - uses: actions/checkout@v2
         with:
@@ -68,9 +74,17 @@ jobs:
         env:
           HELM2: ${{ matrix.helm2 }}
 
+      # https://github.com/docker/setup-buildx-action
+      - name: Setup docker buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          # Allows pushing to registry on localhost:5000
+          driver-opts: network=host
+
       - name: Log environment information
         run: |
           docker version
+          docker buildx ls
           helm version --client
           chartpress --version
           chartpress --help
@@ -86,4 +100,4 @@ jobs:
 
       - name: Run tests
         run: |
-          pytest --verbose --flake8 --color=yes
+          pytest --verbose --color=yes
