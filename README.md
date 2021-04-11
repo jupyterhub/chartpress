@@ -86,11 +86,18 @@ In a directory containing a `chartpress.yaml`, run:
 to build your chart(s) and image(s). Add `--push` to publish images to docker
 hub and `--publish-chart` to publish the chart and index to gh-pages.
 
+<!--
+To update this help output run
+COLUMNS=80 chartpress --help
+-->
+
 ```
 usage: chartpress [-h] [--push] [--force-push] [--publish-chart]
                   [--force-publish-chart] [--extra-message EXTRA_MESSAGE]
                   [--tag TAG | --long] [--image-prefix IMAGE_PREFIX] [--reset]
-                  [--no-build | --force-build] [--list-images] [--version]
+                  [--no-build | --force-build]
+                  [--builder {docker-build,docker-buildx}]
+                  [--platform PLATFORM] [--list-images] [--version]
 
 Automate building and publishing helm charts and associated images. This is
 used as part of the JupyterHub and Binder projects.
@@ -127,6 +134,15 @@ optional arguments:
                         Skip the image build step.
   --force-build         Enforce the image build step, regardless of if the
                         image already is available either locally or remotely.
+  --builder {docker-build,docker-buildx}
+                        Container build engine to use, docker-build is the
+                        standard Docker build command.
+  --platform PLATFORM   Build the image for this platform, e.g. linux/amd64 or
+                        linux/arm64. This argument can be used multiple times
+                        to build multiple platforms under the same tag. Only
+                        supported for docker buildx. If --push is set or if
+                        multiple platforms are passed the image will not be
+                        loaded into the local docker engine.
   --list-images         print list of images to stdout. Images will not be
                         built.
   --version             Print current chartpress version and exit.
@@ -197,6 +213,11 @@ charts:
         # from the contextPath and dockerfilePath for building the image itself.
         paths:
           - assets
+        # If chartpress is used to build images for multiple architectures but
+        # not all of those architectures are supported by an image they can be
+        # skipped
+        skipPlatforms:
+          - linux/arm64
 ```
 
 ## Caveats

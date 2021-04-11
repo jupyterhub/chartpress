@@ -202,6 +202,62 @@ def test_buildx_images(
     assert mock_check_call.commands[1] == (expected_build2, {})
 
 
+@pytest.mark.parametrize(
+    ("platforms", "expected_suffix"),
+    [
+        (None, ["--load"]),
+        (["linux/amd64"], ["--platform", "linux/amd64", "--load"]),
+        (
+            ["linux/amd64", "linux/arm64"],
+            ["--platform", "linux/amd64", "--load"],
+        ),
+        (
+            ["linux/arm64"],
+            None,
+        ),
+    ],
+)
+def test_buildx_images_skipplatforms(
+    git_repo, mock_check_call, platforms, expected_suffix
+):
+    tag = "1.2.3"
+    prefix = "pre/"
+    images = {
+        "testimage": {
+            "contextPath": "image",
+            "skipPlatforms": ["linux/arm64"],
+        },
+    }
+
+    chartpress.build_images(
+        prefix,
+        images,
+        tag=tag,
+        force_build=True,
+        builder=chartpress.Builder.DOCKER_BUILDX,
+        platforms=platforms,
+    )
+
+    if expected_suffix:
+        expected_build = [
+            "docker",
+            "buildx",
+            "build",
+            "--progress",
+            "plain",
+            "-t",
+            f"pre/testimage:{tag}",
+            "image",
+            "-f",
+            "image/Dockerfile",
+        ] + expected_suffix
+
+        assert len(mock_check_call.commands) == 1
+        assert mock_check_call.commands[0] == (expected_build, {})
+    else:
+        assert len(mock_check_call.commands) == 0
+
+
 @pytest.mark.parametrize("version", [None, "1.2.3"])
 def test_build_chart(git_repo, mock_check_call, version):
     yaml = YAML()

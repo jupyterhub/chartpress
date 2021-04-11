@@ -591,6 +591,13 @@ def build_images(
 
         image_spec = f"{image_name}:{image_tag}"
 
+        skip_platforms = options.get("skipPlatforms", [])
+        if platforms and skip_platforms:
+            platforms = set(platforms).difference(skip_platforms)
+            if not platforms:
+                _log(f"Skipping build for {image_spec}, no matching platforms")
+                continue
+
         # build image and optionally push image
         if force_build or _image_needs_building(image_spec, builder):
             build_image(

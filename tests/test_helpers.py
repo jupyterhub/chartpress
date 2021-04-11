@@ -136,7 +136,11 @@ def test__get_image_build_args(git_repo):
                     "TAG": "tag",
                 },
             )
-            assert build_args == {
-                "TEST_STATIC_BUILD_ARG": "test",
-                "TEST_DYNAMIC_BUILD_ARG": "tag-sha",
-            }
+            assert name in ("testimage", "amd64only")
+            if name == "testimage":
+                assert build_args == {
+                    "TEST_STATIC_BUILD_ARG": "test",
+                    "TEST_DYNAMIC_BUILD_ARG": "tag-sha",
+                }
+            else:
+                assert build_args == {}
