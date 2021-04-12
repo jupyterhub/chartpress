@@ -6,19 +6,19 @@
 
 ### [1.1.0] - 2021-04-12
 
-## Enhancements made
+#### Enhancements made
 
 - Optionally use buildx to build for multiple platforms [#123](https://github.com/jupyterhub/chartpress/pull/123) ([@manics](https://github.com/manics))
 - Add skipPlatforms option for multi-platform docker buildx images [#124](https://github.com/jupyterhub/chartpress/pull/124) ([@manics](https://github.com/manics))
 
-## Maintenance and upkeep improvements
+#### Maintenance and upkeep improvements
 
 - Add mock tests for public chartpress methods that call commands [#120](https://github.com/jupyterhub/chartpress/pull/120) ([@manics](https://github.com/manics))
 - Add pre-commit [#119](https://github.com/jupyterhub/chartpress/pull/119) ([@manics](https://github.com/manics))
 - Update readme [#122](https://github.com/jupyterhub/chartpress/pull/122) ([@manics](https://github.com/manics))
 - Fix pytest lru_cache invalidation [#121](https://github.com/jupyterhub/chartpress/pull/121) ([@manics](https://github.com/manics))
 
-## Contributors to this release
+#### Contributors to this release
 
 ([GitHub contributors page for this release](https://github.com/jupyterhub/chartpress/graphs/contributors?from=2021-01-20&to=2021-04-11&type=c))
 
