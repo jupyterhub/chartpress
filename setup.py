@@ -48,6 +48,8 @@ setup(
     install_requires=[
         "ruamel.yaml>=0.15.44",
         "docker>=3.2.0",
+        # workaround https://github.com/docker/docker-py/pull/2844
+        "six",
     ],
     classifiers=[
         "Intended Audience :: Developers",

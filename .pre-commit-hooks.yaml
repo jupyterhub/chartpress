@@ -1,0 +1,13 @@
+# This is a pre-commit hook definition, for more details see:
+# https://pre-commit.com/#new-hooks
+#
+# The purpose of this hook is to restore Chart.yaml and values.yaml files
+# that may have been updated by chartpress.
+#
+- id: chartpress
+  name: chartpress --reset
+  files: (Chart|chartpress|values).ya?ml
+  description: Run `chartpress --reset` to clean up helm charts before committing.
+  entry: chartpress --reset
+  language: python
+  pass_filenames: false
