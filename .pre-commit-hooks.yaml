@@ -3,5 +3,5 @@
   files: (Chart|chartpress|values).ya?ml
   description: Run `chartpress --reset` to clean up helm charts before committing.
   entry: chartpress --reset
-  language: python_venv
+  language: python
   pass_filenames: false
