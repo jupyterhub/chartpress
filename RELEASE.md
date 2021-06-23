@@ -18,7 +18,7 @@ For you to follow along according to these instructions, you need:
 
    To get the foundation of the changelog written, you can install
    [github-activity](https://github.com/choldgraf/github-activity) and run
-   `github-activity --kind pr jupyterhub/chartpress` after setting up
+   `github-activity jupyterhub/chartpress` after setting up
    credentials as described in the project's README.md file.
 
 1. Once the changelog is up to date, checkout main and make sure it is up to date and clean.

@@ -4,6 +4,22 @@
 
 ## [1.0]
 
+### [1.2.0] - 2021-06-23
+
+#### New features added
+
+- Define pre-commit hook [#127](https://github.com/jupyterhub/chartpress/pull/127) ([@minrk](https://github.com/minrk))
+
+#### Maintenance and upkeep improvements
+
+- Rename master to main [#128](https://github.com/jupyterhub/chartpress/pull/128) ([@consideRatio](https://github.com/consideRatio))
+
+#### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/chartpress/graphs/contributors?from=2021-04-12&to=2021-06-23&type=c))
+
+[@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3AconsideRatio+updated%3A2021-04-12..2021-06-23&type=Issues) | [@minrk](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Aminrk+updated%3A2021-04-12..2021-06-23&type=Issues)
+
 ### [1.1.0] - 2021-04-12
 
 #### Enhancements made
