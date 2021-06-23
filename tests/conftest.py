@@ -19,7 +19,7 @@ def pytest_configure(config):
 def git_repo(monkeypatch):
     """
     This fixture provides a temporary git repo with two branches initialized.
-    master contains a test helm chart copied from tests/test_helm_chart, and
+    main contains a test helm chart copied from tests/test_helm_chart, and
     gh-pages that contains the content of tests/test_helm_chart_repo.
     """
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -42,9 +42,9 @@ def git_repo(monkeypatch):
         r.git.add(all=True)
         r.index.commit("initial commit")
 
-        # enter blank branch master
+        # enter blank branch main
         # copy content of tests/test_helm_chart and commit it
-        r.git.checkout("--orphan", "master")
+        r.git.checkout("--orphan", "main")
         copy_tree(test_helm_chart_dir, temp_dir)
         r.git.add(all=True)
         r.index.commit("initial commit")

@@ -21,13 +21,13 @@ For you to follow along according to these instructions, you need:
    `github-activity --kind pr jupyterhub/chartpress` after setting up
    credentials as described in the project's README.md file.
 
-1. Once the changelog is up to date, checkout master and make sure it is up to date and clean.
+1. Once the changelog is up to date, checkout main and make sure it is up to date and clean.
 
    ```bash
    ORIGIN=${ORIGIN:-origin} # set to the canonical remote, e.g. 'upstream' if 'origin' is not the official repo
-   git checkout master
-   git fetch $ORIGIN master
-   git reset --hard $ORIGIN/master
+   git checkout main
+   git fetch $ORIGIN main
+   git reset --hard $ORIGIN/main
    # WARNING! This next command deletes any untracked files in the repo
    git clean -xfd
    ```
@@ -45,11 +45,11 @@ For you to follow along according to these instructions, you need:
    bump2version --no-tag patch
    ```
 
-1. Push your two commits to master along with the annotated tags referencing
-   commits on master.
+1. Push your two commits to main along with the annotated tags referencing
+   commits on main.
 
    ```
-   git push --follow-tags $ORIGIN master
+   git push --follow-tags $ORIGIN main
    ```
 
 ## Manually uploading to PyPI

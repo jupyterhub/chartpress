@@ -127,8 +127,8 @@ def test_chartpress_run(git_repo, capfd):
     automatic_helm_chart_repo_commit = git_repo.commit("HEAD")
     assert "test added --extra-message" in automatic_helm_chart_repo_commit.message
 
-    # return to master
-    git_repo.git.checkout("master")
+    # return to main
+    git_repo.git.checkout("main")
     git_repo.git.stash("pop")
 
     # verify usage of --publish-chart when the chart version exists in the chart
@@ -192,8 +192,8 @@ def test_chartpress_run(git_repo, capfd):
     assert f"version: {tag}" in index_yaml
     assert f"version: {tag}.n001.h{sha}" in index_yaml
 
-    # return to master
-    git_repo.git.checkout("master")
+    # return to main
+    git_repo.git.checkout("main")
     git_repo.git.stash("pop")
 
 
@@ -260,7 +260,7 @@ def test_chartpress_run_bare_minimum(git_repo_bare_minimum, capfd):
     have a images key in the chartpress.yaml configuration for example.
     """
     r = git_repo_bare_minimum
-    sha = r.heads.master.commit.hexsha[:7]
+    sha = r.heads.main.commit.hexsha[:7]
     tag = f"0.0.1-n002.h{sha}"
 
     out = _capture_output([], capfd)
@@ -274,7 +274,7 @@ def test_chartpress_run_alternative(git_repo_alternative, capfd):
     into a single chartpress.yaml file.
     """
     r = git_repo_alternative
-    sha = r.heads.master.commit.hexsha[:7]
+    sha = r.heads.main.commit.hexsha[:7]
 
     # verify usage of --tag with a prefix v
     tag = f"v1.0.0"
