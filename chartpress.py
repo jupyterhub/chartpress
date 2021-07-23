@@ -147,6 +147,7 @@ def _get_latest_tag(**kwargs):
         return (
             _check_output(
                 ["git", "describe", "--tags", "--long"],
+                stderr=subprocess.DEVNULL,  # because we handle errors
                 **kwargs,
             )
             .decode("utf-8")
@@ -438,6 +439,7 @@ def _get_identifier_from_paths(*paths, long=False):
             _check_output(
                 ["git", "describe", "--tags", "--long", latest_commit],
                 echo=False,
+                stderr=subprocess.DEVNULL,  # because we handle errors
             )
             .decode("utf8")
             .strip()
