@@ -24,6 +24,7 @@ __version__ = "1.2.1.dev"
 
 # name of the environment variable with GitHub token
 GITHUB_TOKEN_KEY = "GITHUB_TOKEN"
+GITHUB_ACTOR_KEY = "GITHUB_ACTOR"
 
 # name of possible repository keys used in image value
 IMAGE_REPOSITORY_KEYS = {"name", "repository"}
@@ -114,8 +115,15 @@ def _get_git_remote_url(git_repo):
     if not re.match(r"^[^/]+/[^/]+$", git_repo):
         return git_repo
 
+    github_actor = os.getenv(GITHUB_ACTOR_KEY)
     github_token = os.getenv(GITHUB_TOKEN_KEY)
-    if github_token:
+    if github_actor and github_token:
+        # this format works for a token created for a github
+        # workflow's job, no matter what we pass as github_actor.
+        return f"https://{github_actor}:{github_token}@github.com/{git_repo}"
+    elif github_token:
+        # this format works for personal access token, but
+        # not for a token created for a github workflow's job.
         return f"https://{github_token}@github.com/{git_repo}"
     return f"git@github.com:{git_repo}"
 
