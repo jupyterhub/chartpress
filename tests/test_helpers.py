@@ -8,6 +8,7 @@ from chartpress import _get_latest_commit_tagged_or_modifying_paths
 from chartpress import _image_needs_pushing
 from chartpress import _strip_build_suffix_from_identifier
 from chartpress import Builder
+from chartpress import GITHUB_ACTOR_KEY
 from chartpress import GITHUB_TOKEN_KEY
 
 # use safe roundtrip yaml loader
@@ -67,7 +68,14 @@ def test__get_identifier_from_parts():
 
 
 def test__get_git_remote_url(monkeypatch):
+    monkeypatch.setenv(GITHUB_ACTOR_KEY, "test-github-actor")
     monkeypatch.setenv(GITHUB_TOKEN_KEY, "test-github-token")
+    assert (
+        _get_git_remote_url("jupyterhub/helm-chart")
+        == "https://test-github-actor:test-github-token@github.com/jupyterhub/helm-chart"
+    )
+
+    monkeypatch.delenv(GITHUB_ACTOR_KEY)
     assert (
         _get_git_remote_url("jupyterhub/helm-chart")
         == "https://test-github-token@github.com/jupyterhub/helm-chart"
