@@ -2,7 +2,20 @@
 
 ## Unreleased
 
-## [1.0]
+## [1.2]
+
+### [1.2.1] - 2021-07-23
+
+#### Bugs fixed
+
+- fix: use of github workflow tokens - different from PATs [#134](https://github.com/jupyterhub/chartpress/pull/134) ([@consideRatio](https://github.com/consideRatio))
+- fix: mute handled git error messages [#133](https://github.com/jupyterhub/chartpress/pull/133) ([@consideRatio](https://github.com/consideRatio))
+
+#### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/chartpress/graphs/contributors?from=2021-06-23&to=2021-07-23&type=c))
+
+[@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3AconsideRatio+updated%3A2021-06-23..2021-07-23&type=Issues) | [@yuvipanda](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Ayuvipanda+updated%3A2021-06-23..2021-07-23&type=Issues)
 
 ### [1.2.0] - 2021-06-23
 
@@ -19,6 +32,8 @@
 ([GitHub contributors page for this release](https://github.com/jupyterhub/chartpress/graphs/contributors?from=2021-04-12&to=2021-06-23&type=c))
 
 [@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3AconsideRatio+updated%3A2021-04-12..2021-06-23&type=Issues) | [@minrk](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Aminrk+updated%3A2021-04-12..2021-06-23&type=Issues)
+
+## [1.1]
 
 ### [1.1.0] - 2021-04-12
 
@@ -39,6 +54,8 @@
 ([GitHub contributors page for this release](https://github.com/jupyterhub/chartpress/graphs/contributors?from=2021-01-20&to=2021-04-11&type=c))
 
 [@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3AconsideRatio+updated%3A2021-01-20..2021-04-11&type=Issues) | [@manics](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Amanics+updated%3A2021-01-20..2021-04-11&type=Issues)
+
+## [1.0]
 
 ### [1.0.4] - 2021-01-20
 
