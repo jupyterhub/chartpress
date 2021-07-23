@@ -4,6 +4,11 @@
 
 ## [1.2]
 
+### [1.2.2] - 2021-07-23
+
+The release of 1.2.1 was made incorrectly to PyPI, so this is another release to
+fix the situation.
+
 ### [1.2.1] - 2021-07-23
 
 #### Bugs fixed
