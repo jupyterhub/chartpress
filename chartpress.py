@@ -367,8 +367,15 @@ def _get_docker_client():
     return docker.from_env()
 
 
-@lru_cache()
 def _image_needs_pushing(image, platforms):
+    # @lru_cache won't allow a list as a function parameter
+    if platforms:
+        platforms = frozenset(platforms)
+    return _image_needs_pushing_cached(image, platforms)
+
+
+@lru_cache()
+def _image_needs_pushing_cached(image, platforms):
     """
     Returns a boolean whether an image needs pushing by checking if the image
     exists on the image registry.
@@ -399,7 +406,6 @@ def _image_needs_pushing(image, platforms):
         return False
 
 
-@lru_cache()
 def _image_needs_building(image, platforms):
     """
     Returns a boolean whether an image needs building by checking if the image
@@ -417,6 +423,14 @@ def _image_needs_building(image, platforms):
     platforms (list[str]):
         List of platforms to build for
     """
+    # @lru_cache won't allow a list as a function parameter
+    if platforms:
+        platforms = frozenset(platforms)
+    return _image_needs_building_cached(image, platforms)
+
+
+@lru_cache()
+def _image_needs_building_cached(image, platforms):
     # Since docker buildx builds for multiple platforms we can't tell whether the
     # image already exists in the host so just check remote registry
     if platforms:

@@ -103,7 +103,7 @@ def mock_check_call(monkeypatch):
     chartpress._get_latest_commit_tagged_or_modifying_paths.cache_clear()
     # Other @lru_cache functions, in case it's needed in future:
     # chartpress._get_docker_client.cache_clear()
-    # chartpress._image_needs_pushing.cache_clear()
-    # chartpress._image_needs_building.cache_clear()
+    # chartpress._image_needs_pushing_cached.cache_clear()
+    # chartpress._image_needs_building_cached.cache_clear()
 
     yield mock_call
