@@ -1,3 +1,4 @@
+import pytest
 from ruamel.yaml import YAML
 
 from chartpress import _check_call
@@ -100,12 +101,24 @@ def test_git_token_censoring(monkeypatch, capfd):
     assert "CENSORED_GITHUB_TOKEN" in err
 
 
-def test__image_needs_pushing():
-    assert _image_needs_pushing(
-        "jupyterhub/image-not-to-be-found:latest", Builder.DOCKER_BUILD
-    )
-    assert not _image_needs_pushing("jupyterhub/k8s-hub:0.8.2", Builder.DOCKER_BUILD)
-    assert _image_needs_pushing("jupyterhub/k8s-hub:0.8.2", Builder.DOCKER_BUILDX)
+@pytest.mark.parametrize(
+    "image, platforms, push",
+    [
+        ("jupyterhub/image-not-to-be-found:latest", None, True),
+        ("jupyterhub/k8s-hub:0.8.2", None, False),
+        ("jupyterhub/k8s-hub:0.8.2", ["linux/arm64"], True),
+        ("jupyterhub/k8s-hub:0.8.2", ["linux/amd64", "linux/arm64"], True),
+        ("jupyterhub/k8s-hub:0.8.2", ["linux/amd64"], False),
+        ("jupyterhub/k8s-hub:1.0.0", ["linux/amd64", "linux/arm64"], False),
+        (
+            "jupyterhub/k8s-hub:1.0.0",
+            ["linux/amd64", "linux/arm64", "linux/s390x"],
+            True,
+        ),
+    ],
+)
+def test__image_needs_pushing(image, platforms, push):
+    assert _image_needs_pushing(image, platforms) == push
 
 
 def test__get_latest_commit_tagged_or_modifying_paths(git_repo):
