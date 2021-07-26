@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+## [1.3]
+
+### [1.3.0] - 2021-07-26
+
+This release improve performance significantly when building images for multiple
+platforms. Chartpress can now can now also decide if such images needs to be
+built and pushed, like it can for single platform images.
+
+#### Enhancements made
+
+- _image_needs_\[building|pushing\]: check platforms when using docker buildx [#136](https://github.com/jupyterhub/chartpress/pull/136) ([@manics](https://github.com/manics))
+
+#### Maintenance and upkeep improvements
+
+- remove unused \_strip_build_suffix_from_identifier [#137](https://github.com/jupyterhub/chartpress/pull/137) ([@manics](https://github.com/manics))
+
+#### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/chartpress/graphs/contributors?from=2021-07-23&to=2021-07-26&type=c))
+
+[@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3AconsideRatio+updated%3A2021-07-23..2021-07-26&type=Issues) | [@manics](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Amanics+updated%3A2021-07-23..2021-07-26&type=Issues)
+
 ## [1.2]
 
 ### [1.2.2] - 2021-07-23
