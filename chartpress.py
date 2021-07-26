@@ -325,7 +325,7 @@ def build_image(
         Whether to push the image to a registry
     builder (str):
         The container build engine.
-    platforms (list[str], optional):
+    platforms (iterable[str], optional):
         List of platforms to build for
     """
     if builder == Builder.DOCKER_BUILD:
@@ -345,7 +345,8 @@ def build_image(
     for k, v in (build_args or {}).items():
         cmd += ["--build-arg", f"{k}={v}"]
     if platforms:
-        cmd.extend(["--platform", ",".join(platforms)])
+        # sort platforms to make testing easier
+        cmd.extend(["--platform", ",".join(sorted(platforms))])
     if builder == Builder.DOCKER_BUILDX:
         # Limitations of docker buildx 0.5.1:
         # - Can't load into the local Docker host and push to a registry at the
