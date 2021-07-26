@@ -503,26 +503,6 @@ def _get_identifier_from_parts(tag, n_commits, commit, long):
         return f"{tag}"
 
 
-def _strip_build_suffix_from_identifier(identifier):
-    """
-    Return a stripped chart version or image tag (identifier) without its build
-    suffix (.n005.hasdf1234), leaving it to represent a Semver 2 release or
-    pre-release.
-
-    Example:
-        identifier: "0.1.2-n005.hasdf1234"            returns: "0.1.2"
-        identifier: "0.1.2-alpha.1.n005.hasdf1234"    returns: "0.1.2-alpha.1"
-    """
-    # split away official SemVer 2 build specifications if used
-    if "+" in identifier:
-        return identifier.split("+", maxsplit=1)[0]
-
-    # split away our custom build specification: something ending in either
-    # . or - followed by three or more digits, a dot, an commit sha of four
-    # or more alphanumeric characters.
-    return re.sub(r"[-\.]n\d{3,}\.h\w{4,}\Z", "", identifier)
-
-
 def build_images(
     prefix,
     images,
