@@ -367,15 +367,8 @@ def _get_docker_client():
     return docker.from_env()
 
 
-def _image_needs_pushing(image, platforms):
-    # @lru_cache won't allow a list as a function parameter
-    if platforms:
-        platforms = frozenset(platforms)
-    return _image_needs_pushing_cached(image, platforms)
-
-
 @lru_cache()
-def _image_needs_pushing_cached(image, platforms):
+def _image_needs_pushing(image, platforms):
     """
     Returns a boolean whether an image needs pushing by checking if the image
     exists on the image registry.
@@ -389,8 +382,8 @@ def _image_needs_pushing_cached(image, platforms):
         - jupyterhub/k8s-hub:0.9.0
         - index.docker.io/library/ubuntu:latest
         - eu.gcr.io/my-gcp-project/my-image:0.1.0
-    platforms (list[str]):
-        List of platforms to build for
+    platforms (frozenset[str]):
+        Set of platforms to build for
     """
     d = _get_docker_client()
     try:
@@ -406,6 +399,7 @@ def _image_needs_pushing_cached(image, platforms):
         return False
 
 
+@lru_cache()
 def _image_needs_building(image, platforms):
     """
     Returns a boolean whether an image needs building by checking if the image
@@ -420,17 +414,9 @@ def _image_needs_building(image, platforms):
         - jupyterhub/k8s-hub:0.9.0
         - index.docker.io/library/ubuntu:latest
         - eu.gcr.io/my-gcp-project/my-image:0.1.0
-    platforms (list[str]):
-        List of platforms to build for
+    platforms (frozenset[str]):
+        Set of platforms to build for
     """
-    # @lru_cache won't allow a list as a function parameter
-    if platforms:
-        platforms = frozenset(platforms)
-    return _image_needs_building_cached(image, platforms)
-
-
-@lru_cache()
-def _image_needs_building_cached(image, platforms):
     # Since docker buildx builds for multiple platforms we can't tell whether the
     # image already exists in the host so just check remote registry
     if platforms:
@@ -615,8 +601,10 @@ def build_images(
         image_spec = f"{image_name}:{image_tag}"
 
         skip_platforms = options.get("skipPlatforms", [])
+        if platforms:
+            platforms = frozenset(platforms)
         if platforms and skip_platforms:
-            platforms = set(platforms).difference(skip_platforms)
+            platforms = platforms.difference(skip_platforms)
             if not platforms:
                 _log(f"Skipping build for {image_spec}, no matching platforms")
                 continue

@@ -118,7 +118,10 @@ def test_git_token_censoring(monkeypatch, capfd):
     ],
 )
 def test__image_needs_pushing(image, platforms, push):
-    assert _image_needs_pushing(image, platforms) == push
+    if platforms is None:
+        assert _image_needs_pushing(image, platforms) == push
+    else:
+        assert _image_needs_pushing(image, frozenset(platforms)) == push
 
 
 def test__get_latest_commit_tagged_or_modifying_paths(git_repo):
