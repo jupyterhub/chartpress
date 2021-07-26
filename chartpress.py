@@ -325,7 +325,7 @@ def build_image(
         Whether to push the image to a registry
     builder (str):
         The container build engine.
-    platforms (list[str], optional):
+    platforms (iterable[str], optional):
         List of platforms to build for
     """
     if builder == Builder.DOCKER_BUILD:
@@ -345,7 +345,8 @@ def build_image(
     for k, v in (build_args or {}).items():
         cmd += ["--build-arg", f"{k}={v}"]
     if platforms:
-        cmd.extend(["--platform", ",".join(platforms)])
+        # sort platforms to make testing easier
+        cmd.extend(["--platform", ",".join(sorted(platforms))])
     if builder == Builder.DOCKER_BUILDX:
         # Limitations of docker buildx 0.5.1:
         # - Can't load into the local Docker host and push to a registry at the
@@ -368,7 +369,7 @@ def _get_docker_client():
 
 
 @lru_cache()
-def _image_needs_pushing(image, builder):
+def _image_needs_pushing(image, platforms):
     """
     Returns a boolean whether an image needs pushing by checking if the image
     exists on the image registry.
@@ -382,17 +383,16 @@ def _image_needs_pushing(image, builder):
         - jupyterhub/k8s-hub:0.9.0
         - index.docker.io/library/ubuntu:latest
         - eu.gcr.io/my-gcp-project/my-image:0.1.0
-    builder (Builder):
-        The container build engine
+    platforms (frozenset[str]):
+        Set of platforms to build for
     """
-    # docker buildx builds for multiple platforms but we can't tell which
-    # architectures have been pushed to the registry, so always push
-    if builder != Builder.DOCKER_BUILD:
-        return True
-
     d = _get_docker_client()
     try:
-        d.images.get_registry_data(image)
+        data = d.images.get_registry_data(image)
+        if platforms:
+            for platform in platforms:
+                if not data.has_platform(platform):
+                    return True
     except docker.errors.APIError:
         # image not found on registry, needs pushing
         return True
@@ -401,7 +401,7 @@ def _image_needs_pushing(image, builder):
 
 
 @lru_cache()
-def _image_needs_building(image, builder):
+def _image_needs_building(image, platforms):
     """
     Returns a boolean whether an image needs building by checking if the image
     exists either locally or on the registry.
@@ -415,13 +415,13 @@ def _image_needs_building(image, builder):
         - jupyterhub/k8s-hub:0.9.0
         - index.docker.io/library/ubuntu:latest
         - eu.gcr.io/my-gcp-project/my-image:0.1.0
-    builder (Builder):
-        The container build engine
+    platforms (frozenset[str]):
+        Set of platforms to build for
     """
     # Since docker buildx builds for multiple platforms we can't tell whether the
-    # image already exists in the host so always build and rely on caching
-    if builder != Builder.DOCKER_BUILD:
-        return True
+    # image already exists in the host so just check remote registry
+    if platforms:
+        return _image_needs_pushing(image, platforms)
 
     d = _get_docker_client()
 
@@ -436,7 +436,7 @@ def _image_needs_building(image, builder):
         return False
 
     # image may need building if it's not on the registry
-    return _image_needs_pushing(image, builder)
+    return _image_needs_pushing(image, platforms)
 
 
 def _get_identifier_from_paths(*paths, long=False):
@@ -602,14 +602,16 @@ def build_images(
         image_spec = f"{image_name}:{image_tag}"
 
         skip_platforms = options.get("skipPlatforms", [])
+        if platforms:
+            platforms = frozenset(platforms)
         if platforms and skip_platforms:
-            platforms = set(platforms).difference(skip_platforms)
+            platforms = platforms.difference(skip_platforms)
             if not platforms:
                 _log(f"Skipping build for {image_spec}, no matching platforms")
                 continue
 
         # build image and optionally push image
-        if force_build or _image_needs_building(image_spec, builder):
+        if force_build or _image_needs_building(image_spec, platforms):
             build_image(
                 image_spec,
                 _get_image_build_context_path(name, options),
@@ -632,7 +634,7 @@ def build_images(
 
             # push image
             if push or force_push:
-                if force_push or _image_needs_pushing(image_spec, builder):
+                if force_push or _image_needs_pushing(image_spec, platforms):
                     _check_call(["docker", "push", image_spec])
                 else:
                     _log(f"Skipping push for {image_spec}, already on registry")
