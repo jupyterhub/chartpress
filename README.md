@@ -224,20 +224,23 @@ charts:
 
 ### Shallow clones
 
-Chartpress detects the latest commit which changed a directory or file when
+Chartpress detects the latest commit that changed a directory or file when
 determining the version and tag to use for charts and images. This means that
 shallow clones should not be used because if the last commit that changed a
-relevant file is outside the shallow commit range, the wrong tag will be
-assigned.
+relevant file is outside the shallow commit range, the wrong chart version and
+image tag will be assigned.
 
-TravisCI uses a clone depth of 50 by default, which can result in incorrect
-image tagging. You can [disable this shallow clone
-behavior](https://docs.travis-ci.com/user/customizing-the-build/#Git-Clone-Depth)
-in your `.travis.yml`:
+#### Avoiding shallow clones with GitHub Actions
+
+GitHub Workflow's commonly used GitHub Action called actions/checkout have a
+clone clone-depth of 1 by default, configure it to make a full clone instead.
 
 ```yaml
-git:
-  depth: false
+steps:
+  - uses: actions/checkout@v2
+    with:
+      # chartpress need the git branch's tags and commits
+      fetch-depth: 0
 ```
 
 ### Command caching
