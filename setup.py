@@ -47,9 +47,8 @@ setup(
     python_requires=">=3.6",
     install_requires=[
         "ruamel.yaml>=0.15.44",
-        "docker>=3.2.0",
-        # workaround https://github.com/docker/docker-py/pull/2844
-        "six",
+        # Bug in 5.0.0: https://github.com/docker/docker-py/pull/2844
+        "docker>=3.2.0,!=5.0.0",
     ],
     classifiers=[
         "Intended Audience :: Developers",
