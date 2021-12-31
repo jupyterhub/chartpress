@@ -296,6 +296,7 @@ def build_image(
     context_path,
     dockerfile_path=None,
     build_args=None,
+    extra_options=None,
     *,
     push=False,
     builder=Builder.DOCKER_BUILD,
@@ -321,6 +322,11 @@ def build_image(
         "<context_path>/Dockerfile".
     build_args (dict, optional):
         Dictionary of docker build arguments.
+    extra_options (dict, optional):
+        Dictionary of other docker build options to use. Each key should be a
+        valid option to docker build, like "ssh" for the "--ssh" option. For 
+        flags like "--ssh" which take a key-value pair, make sure to use the
+        "key=value" syntax and not the "key value" syntax.
     push (bool, optional):
         Whether to push the image to a registry
     builder (str):
@@ -344,6 +350,8 @@ def build_image(
         cmd.extend(["-f", dockerfile_path])
     for k, v in (build_args or {}).items():
         cmd += ["--build-arg", f"{k}={v}"]
+    for k, v in (extra_options or {}).items():
+        cmd += [f"--{k}", f"{v}"]
     if platforms:
         # sort platforms to make testing easier
         cmd.extend(["--platform", ",".join(sorted(platforms))])
@@ -605,6 +613,7 @@ def build_images(
                         "TAG": image_tag,
                     },
                 ),
+                extra_options=options.get("extraOptions", {}),
                 push=push or force_push,
                 builder=builder,
                 platforms=platforms,
