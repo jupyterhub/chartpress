@@ -240,14 +240,13 @@ def _get_image_extra_build_command_options(image_options, ns):
     """
     Render extraBuildCommandOptions from chartpress.yaml that could be
     templates, using the provided namespace that contains keys with dynamic
-    values such as LAST_COMMIT or TAG. The rendered options will be converted
-    to a list of strings that can be added to the build command list.
+    values such as LAST_COMMIT or TAG.
 
     Args:
     image_options (dict):
         The dictionary for a given image from chartpress.yaml.
-        Fields in `image_options['extraBuildCommandOptions']` will be rendered
-        and then converted to option strings to add to the build command.
+        Strings in `image_options['extraBuildCommandOptions']` will be rendered
+        and returned.
     ns (dict): the namespace used when rendering templated arguments
     """
     options = image_options.get("extraBuildCommandOptions", [])
@@ -341,9 +340,8 @@ def build_image(
     build_args (dict, optional):
         Dictionary of docker build arguments.
     extra_build_command_options (list, optional):
-        List of other docker build options to use. Each item can be either a
-        string with the option name (e.g. "rm") or a dictionary with the key
-        and value (e.g. "label: 'maintainer=octocat'").
+        List of other docker build options to use. Each item should be a string
+        that gets appended to the build command (e.g. "--label=version=0.1.0").
     push (bool, optional):
         Whether to push the image to a registry
     builder (str):
