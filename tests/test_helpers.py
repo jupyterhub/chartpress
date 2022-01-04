@@ -5,6 +5,7 @@ from chartpress import _check_call
 from chartpress import _get_git_remote_url
 from chartpress import _get_identifier_from_parts
 from chartpress import _get_image_build_args
+from chartpress import _get_image_extra_build_command_options
 from chartpress import _get_latest_commit_tagged_or_modifying_paths
 from chartpress import _image_needs_pushing
 from chartpress import Builder
@@ -156,3 +157,25 @@ def test__get_image_build_args(git_repo):
                 }
             else:
                 assert build_args == {}
+
+
+def test__get_image_extra_build_command_options(git_repo):
+    with open("chartpress.yaml") as f:
+        config = yaml.load(f)
+    for chart in config["charts"]:
+        for name, options in chart["images"].items():
+            extra_build_command_options = _get_image_extra_build_command_options(
+                options,
+                {
+                    "LAST_COMMIT": "sha",
+                    "TAG": "tag",
+                },
+            )
+            assert name in ("testimage", "amd64only")
+            if name == "testimage":
+                assert extra_build_command_options == [
+                    "--label=maintainer=octocat",
+                    "--label",
+                    "ref=tag-sha",
+                    "--rm",
+                ]

@@ -53,6 +53,63 @@ def test_build_image(mock_check_call, with_args):
         )
 
 
+@pytest.mark.parametrize("with_opts", [False, True])
+def test_build_image_with_options(git_repo, mock_check_call, with_opts):
+    image_spec = "index.docker.io/library/ubuntu:latest"
+    context_path = "dir"
+    dockerfile_path = None
+    build_args = None
+    extra_build_command_options = None
+
+    if with_opts:
+        dockerfile_path = "Dockerfile.custom"
+        extra_build_command_options = [
+            "--label=maintainer=octocat",
+            "--label",
+            "ref=tag-sha",
+            "--rm",
+        ]
+
+    chartpress.build_image(
+        image_spec,
+        context_path,
+        dockerfile_path,
+        build_args,
+        extra_build_command_options,
+    )
+
+    assert len(mock_check_call.commands) == 1
+    if with_opts:
+        sha = git_repo.commit(git_repo.head).hexsha
+        assert mock_check_call.commands[0] == (
+            [
+                "docker",
+                "build",
+                "-t",
+                image_spec,
+                context_path,
+                "-f",
+                "Dockerfile.custom",
+                "--label=maintainer=octocat",
+                "--label",
+                "ref=tag-sha",
+                "--rm",
+            ],
+            {},
+        )
+    else:
+        assert mock_check_call.commands[0] == (
+            [
+                "docker",
+                "build",
+                "-t",
+                image_spec,
+                context_path,
+            ],
+            {},
+        )
+
+
 @pytest.mark.parametrize("push", [False, True])
 @pytest.mark.parametrize("tag", [None, "1.2.3"])
 def test_build_images(git_repo, mock_check_call, push, tag):

@@ -192,13 +192,20 @@ charts:
         buildArgs:
           MY_STATIC_BUILD_ARG: "hello world"
           MY_DYNAMIC_BUILD_ARG: "{TAG}-{LAST_COMMIT}"
-        # Build options to be passed to docker build as --<key> <value>. This
-        # allows you to use all available docker options for your build.
-        # The example below adds "--ssh default=secrets/private-key" to the build 
-        # command. Note that for flags like "--ssh" which take a key-value pair,
-        # you must use the "key=value" syntax and not "key value".
-        extraOptions:
-          ssh: default=secrets/private-key
+        # Build options to be passed to the docker build command. Pass a list
+        # of strings to be appended to the end of the build command. These are
+        # passed directly to the command line, so prepend each option with "--"
+        # like in the examples below. TAG and LAST_COMMIT are expandable.
+        extraBuildCommandOptions:
+          - --label=maintainer=octocat
+          - --label=ref={TAG}-{LAST_COMMIT}
+          - --rm
+          # above is equivalent to
+          - --label
+          - maintainer=octocat
+          - --label
+          - ref={TAG}-{LAST_COMMIT}
+          - --rm
         # contextPath is the path to the directory that is to be considered the
         # current working directory during the build process of the Dockerfile.
         # This is by default the folder of the Dockerfile. This path should be

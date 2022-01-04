@@ -236,6 +236,24 @@ def _get_image_build_args(image_options, ns):
     return build_args
 
 
+def _get_image_extra_build_command_options(image_options, ns):
+    """
+    Render extraBuildCommandOptions from chartpress.yaml that could be
+    templates, using the provided namespace that contains keys with dynamic
+    values such as LAST_COMMIT or TAG. The rendered options will be converted
+    to a list of strings that can be added to the build command list.
+
+    Args:
+    image_options (dict):
+        The dictionary for a given image from chartpress.yaml.
+        Fields in `image_options['extraBuildCommandOptions']` will be rendered
+        and then converted to option strings to add to the build command.
+    ns (dict): the namespace used when rendering templated arguments
+    """
+    options = image_options.get("extraBuildCommandOptions", [])
+    return [str(option).format(**ns) for option in options]
+
+
 def _get_image_build_context_path(name, options):
     """
     Return the image's contextPath configuration value, or a default value based
@@ -296,7 +314,7 @@ def build_image(
     context_path,
     dockerfile_path=None,
     build_args=None,
-    extra_options=None,
+    extra_build_command_options=None,
     *,
     push=False,
     builder=Builder.DOCKER_BUILD,
@@ -322,11 +340,10 @@ def build_image(
         "<context_path>/Dockerfile".
     build_args (dict, optional):
         Dictionary of docker build arguments.
-    extra_options (dict, optional):
-        Dictionary of other docker build options to use. Each key should be a
-        valid option to docker build, like "ssh" for the "--ssh" option. For 
-        flags like "--ssh" which take a key-value pair, make sure to use the
-        "key=value" syntax and not the "key value" syntax.
+    extra_build_command_options (list, optional):
+        List of other docker build options to use. Each item can be either a
+        string with the option name (e.g. "rm") or a dictionary with the key
+        and value (e.g. "label: 'maintainer=octocat'").
     push (bool, optional):
         Whether to push the image to a registry
     builder (str):
@@ -350,8 +367,6 @@ def build_image(
         cmd.extend(["-f", dockerfile_path])
     for k, v in (build_args or {}).items():
         cmd += ["--build-arg", f"{k}={v}"]
-    for k, v in (extra_options or {}).items():
-        cmd += [f"--{k}", f"{v}"]
     if platforms:
         # sort platforms to make testing easier
         cmd.extend(["--platform", ",".join(sorted(platforms))])
@@ -364,6 +379,7 @@ def build_image(
             cmd.append("--push")
         elif len(platforms) <= 1:
             cmd.append("--load")
+    cmd.extend((extra_build_command_options or []))
     _check_call(cmd)
 
     if builder == Builder.DOCKER_BUILD and push:
@@ -600,20 +616,20 @@ def build_images(
 
         # build image and optionally push image
         if force_build or _image_needs_building(image_spec, platforms):
+            expansion_namespace = {
+                "LAST_COMMIT": _get_latest_commit_tagged_or_modifying_paths(
+                    *all_image_paths, echo=False
+                ),
+                "TAG": image_tag,
+            }
             build_image(
                 image_spec,
                 _get_image_build_context_path(name, options),
                 dockerfile_path=_get_image_dockerfile_path(name, options),
-                build_args=_get_image_build_args(
-                    options,
-                    {
-                        "LAST_COMMIT": _get_latest_commit_tagged_or_modifying_paths(
-                            *all_image_paths, echo=False
-                        ),
-                        "TAG": image_tag,
-                    },
+                build_args=_get_image_build_args(options, expansion_namespace),
+                extra_build_command_options=_get_image_extra_build_command_options(
+                    options, expansion_namespace
                 ),
-                extra_options=options.get("extraOptions", {}),
                 push=push or force_push,
                 builder=builder,
                 platforms=platforms,
