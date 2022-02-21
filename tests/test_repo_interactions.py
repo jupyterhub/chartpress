@@ -104,10 +104,7 @@ def test_chartpress_run(git_repo, capfd):
     )
 
     # verify output of --publish-chart
-    assert (
-        "Branch 'gh-pages' set up to track remote branch 'gh-pages' from 'origin'."
-        in out
-    )
+    assert "'gh-pages' set up to track" in out
     assert "Successfully packaged chart and saved it to:" in out
     assert f"/testchart-{tag}.tgz" in out
 
@@ -169,10 +166,7 @@ def test_chartpress_run(git_repo, capfd):
     )
 
     # verify output of --publish-chart
-    assert (
-        "Branch 'gh-pages' set up to track remote branch 'gh-pages' from 'origin'."
-        in out
-    )
+    assert "'gh-pages' set up to track" in out
     assert "Successfully packaged chart and saved it to:" in out
     assert f"/testchart-{tag}.n001.h{sha}.tgz" in out
     assert f"Skipping chart publishing" not in out
