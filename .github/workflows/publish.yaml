@@ -6,8 +6,21 @@
 name: Publish
 
 on:
+  pull_request:
+    paths-ignore:
+      - "**.md"
+      - ".github/workflows/*"
+      - "!.github/workflows/publish.yaml"
   push:
-    tags: v?[0-9]+.[0-9]+.[0-9]+*
+    paths-ignore:
+      - "**.md"
+      - ".github/workflows/*"
+      - "!.github/workflows/publish.yaml"
+    branches-ignore:
+      - "dependabot/**"
+      - "pre-commit-ci-update-config"
+    tags:
+      - "**"
 
 jobs:
   publish-to-pypi:
