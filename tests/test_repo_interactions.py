@@ -1,7 +1,12 @@
 import os
-import re
 
 import chartpress
+from chartpress import PRERELEASE_PREFIX
+from chartpress import yaml
+
+
+def check_version(tag):
+    chartpress._fix_chart_version(tag, strict=True)
 
 
 def test_git_repo_fixture(git_repo):
@@ -25,7 +30,8 @@ def test_chartpress_run(git_repo, capfd):
 
     # summarize information from git_repo
     sha = git_repo.commit("HEAD").hexsha[:7]
-    tag = f"0.0.1-n001.h{sha}"
+    tag = f"0.0.1-{PRERELEASE_PREFIX}1.h{sha}"
+    check_version(tag)
 
     # run chartpress
     out = _capture_output([], capfd)
@@ -35,7 +41,7 @@ def test_chartpress_run(git_repo, capfd):
     assert f"Successfully tagged testchart/testimage:{tag}" in out
 
     # verify the passing of static and dynamic --build-args
-    assert f"--build-arg TEST_STATIC_BUILD_ARG=test" in out
+    assert "--build-arg TEST_STATIC_BUILD_ARG=test" in out
     assert f"--build-arg TEST_DYNAMIC_BUILD_ARG={tag}-{sha}" in out
 
     # verify updates of Chart.yaml and values.yaml
@@ -49,9 +55,9 @@ def test_chartpress_run(git_repo, capfd):
 
     # verify usage of chartpress.yaml's resetVersion and resetTag
     out = _capture_output(["--reset"], capfd)
-    assert f"Updating testchart/Chart.yaml: version: 0.0.1-test.reset.version" in out
+    assert "Updating testchart/Chart.yaml: version: 0.0.1-test.reset.version" in out
     assert (
-        f"Updating testchart/values.yaml: image: testchart/testimage:test-reset-tag"
+        "Updating testchart/values.yaml: image: testchart/testimage:test-reset-tag"
         in out
     )
 
@@ -61,16 +67,16 @@ def test_chartpress_run(git_repo, capfd):
 
     # verify that we don't need to rebuild the image
     out = _capture_output([], capfd)
-    assert f"Skipping build" in out
+    assert "Skipping build" in out
 
     # verify usage of --force-build
     out = _capture_output(["--force-build"], capfd)
-    assert f"Successfully tagged" in out
+    assert "Successfully tagged" in out
 
     # verify usage --skip-build and --tag
     tag = "1.2.3-test.tag"
     out = _capture_output(["--skip-build", "--tag", tag], capfd)
-    assert f"Successfully tagged" not in out
+    assert "Successfully tagged" not in out
     assert f"Updating testchart/Chart.yaml: version: {tag}" in out
     assert f"Updating testchart/values.yaml: image: testchart/testimage:{tag}" in out
 
@@ -81,13 +87,16 @@ def test_chartpress_run(git_repo, capfd):
     # that no values required to be updated. No values should be updated as the
     # previous call with a provided --tag updated Chart.yaml and values.yaml
     # already.
-    assert f"Updating" not in out
+    assert "Updating" not in out
 
     # verify usage of --long
     out = _capture_output(["--skip-build", "--long"], capfd)
-    assert f"Updating testchart/Chart.yaml: version: {tag}.n000.h{sha}" in out
     assert (
-        f"Updating testchart/values.yaml: image: testchart/testimage:{tag}.n000.h{sha}"
+        f"Updating testchart/Chart.yaml: version: {tag}.{PRERELEASE_PREFIX}0.h{sha}"
+        in out
+    )
+    assert (
+        f"Updating testchart/values.yaml: image: testchart/testimage:{tag}.{PRERELEASE_PREFIX}0.h{sha}"
         in out
     )
 
@@ -120,9 +129,9 @@ def test_chartpress_run(git_repo, capfd):
     with open("index.yaml", "r") as f:
         index_yaml = f.read()
     print(index_yaml)
-    assert f"version: 1.2.1" in index_yaml
-    assert f"version: 1.2.2" in index_yaml
-    assert f"version: {tag}" in index_yaml
+    assert "version: 1.2.1" in index_yaml
+    assert "version: 1.2.2" in index_yaml
+    assert "version: {tag}" in index_yaml
 
     # verify result of --extra-message
     automatic_helm_chart_repo_commit = git_repo.commit("HEAD")
@@ -142,7 +151,7 @@ def test_chartpress_run(git_repo, capfd):
         capfd,
     )
     # verify output of --publish-chart
-    assert f"Skipping chart publishing" in out
+    assert "Skipping chart publishing" in out
 
     # verify usage of --force-publish-chart when the chart version exists in the
     # chart repo already
@@ -154,7 +163,7 @@ def test_chartpress_run(git_repo, capfd):
         capfd,
     )
     # verify output of --force-publish-chart
-    assert f"already exists, overwriting it" in out
+    assert "already exists, overwriting it" in out
 
     # verify we don't overwrite the previous version when we make dev commits
     # and use --publish-chart and that we don't skip publishing
@@ -172,8 +181,8 @@ def test_chartpress_run(git_repo, capfd):
     # verify output of --publish-chart
     assert "'gh-pages' set up to track" in out
     assert "Successfully packaged chart and saved it to:" in out
-    assert f"/testchart-{tag}.n001.h{sha}.tgz" in out
-    assert f"Skipping chart publishing" not in out
+    assert f"/testchart-{tag}.0.1.h{sha}.tgz" in out
+    assert "Skipping chart publishing" not in out
 
     # checkout gh-pages
     git_repo.git.stash()
@@ -185,10 +194,10 @@ def test_chartpress_run(git_repo, capfd):
     print("index_yaml follows:")
     print(index_yaml)
     print("-------------------")
-    assert f"version: 1.2.1" in index_yaml
-    assert f"version: 1.2.2" in index_yaml
+    assert "version: 1.2.1" in index_yaml
+    assert "version: 1.2.2" in index_yaml
     assert f"version: {tag}" in index_yaml
-    assert f"version: {tag}.n001.h{sha}" in index_yaml
+    assert f"version: {tag}.{PRERELEASE_PREFIX}1.h{sha}" in index_yaml
 
     # return to main
     git_repo.git.checkout("main")
@@ -220,7 +229,8 @@ def test_chartpress_paths_configuration(git_repo, capfd):
     open("not-in-paths.txt", "w").close()
     git_repo.git.add(all=True)
     sha = git_repo.index.commit("Added not-in-paths.txt").hexsha[:7]
-    tag = f"0.0.1-n002.h{sha}"
+    tag = f"0.0.1-{PRERELEASE_PREFIX}2.h{sha}"
+    check_version(tag)
     out = _capture_output(["--skip-build"], capfd)
     assert f"Updating testchart/Chart.yaml: version: {tag}" not in out
     assert (
@@ -233,7 +243,8 @@ def test_chartpress_paths_configuration(git_repo, capfd):
     open("extra-chart-path.txt", "w").close()
     git_repo.git.add(all=True)
     sha = git_repo.index.commit("Added extra-chart-path.txt").hexsha[:7]
-    tag = f"0.0.1-n003.h{sha}"
+    tag = f"0.0.1-{PRERELEASE_PREFIX}3.h{sha}"
+    check_version(tag)
     out = _capture_output(["--skip-build"], capfd)
     assert f"Updating testchart/Chart.yaml: version: {tag}" in out
     assert (
@@ -245,7 +256,8 @@ def test_chartpress_paths_configuration(git_repo, capfd):
     open("extra-image-path.txt", "w").close()
     git_repo.git.add(all=True)
     sha = git_repo.index.commit("Added extra-image-path.txt").hexsha[:7]
-    tag = f"0.0.1-n004.h{sha}"
+    tag = f"0.0.1-{PRERELEASE_PREFIX}4.h{sha}"
+    check_version(tag)
     out = _capture_output(["--skip-build"], capfd)
     assert f"Updating testchart/Chart.yaml: version: {tag}" in out
     assert f"Updating testchart/values.yaml: image: testchart/testimage:{tag}" in out
@@ -259,8 +271,8 @@ def test_chartpress_run_bare_minimum(git_repo_bare_minimum, capfd):
     """
     r = git_repo_bare_minimum
     sha = r.heads.main.commit.hexsha[:7]
-    tag = f"0.0.1-n002.h{sha}"
-
+    tag = f"0.0.1-{PRERELEASE_PREFIX}2.h{sha}"
+    check_version(tag)
     out = _capture_output([], capfd)
     assert f"Updating testchart/Chart.yaml: version: {tag}" in out
 
@@ -275,7 +287,8 @@ def test_chartpress_run_alternative(git_repo_alternative, capfd):
     sha = r.heads.main.commit.hexsha[:7]
 
     # verify usage of --tag with a prefix v
-    tag = f"v1.0.0"
+    tag = "v1.0.0"
+    check_version(tag)
 
     out = _capture_output(["--skip-build", "--tag", tag], capfd)
     assert f"Updating testchart/Chart.yaml: version: {tag[1:]}" in out
@@ -307,23 +320,22 @@ def _capture_output(args, capfd, expect_output=False):
 def test_dev_tag(git_repo_dev_tag, capfd):
     r = git_repo_dev_tag
     out = _capture_output(["--skip-build"], capfd)
-    version_string = re.search(r"version:\s+(.+)", out, re.MULTILINE).group(1)
-    chartpress._fix_chart_version(version_string, strict=True)
-    v, _, pre = version_string.partition("-")
-    # make sure we make a correct prerelease tag
-    # when merging with an existing '-pre' tag
-    # (i.e. join with '.', not multiple '-' separators)
-    assert "-" not in pre
-    assert v == "2.0.0"
-    assert pre.split(".")[:2] == ["dev", "n001"]
+    sha = r.heads.main.commit.hexsha[:7]
+    with open("testchart/Chart.yaml") as f:
+        chart = yaml.load(f)
+
+    tag = f"2.0.0-dev.{PRERELEASE_PREFIX}1.h{sha}"
+    assert chart["version"] == tag
+    check_version(tag)
 
 
 def test_backport_branch(git_repo_backport_branch, capfd):
     r = git_repo_backport_branch
     out = _capture_output(["--skip-build"], capfd)
-    version_string = re.search(r"version:\s+(.+)", out, re.MULTILINE).group(1)
-    chartpress._fix_chart_version(version_string, strict=True)
-    v, _, pre = version_string.partition("-")
-    assert "-" not in pre
-    assert v == "1.0.1"
-    assert pre.split(".")[:1] == ["n001"]
+    sha = r.heads["1.x"].commit.hexsha[:7]
+    with open("testchart/Chart.yaml") as f:
+        chart = yaml.load(f)
+
+    tag = f"1.0.1-{PRERELEASE_PREFIX}1.h{sha}"
+    assert chart["version"] == tag
+    check_version(tag)

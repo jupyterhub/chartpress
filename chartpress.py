@@ -29,6 +29,9 @@ GITHUB_ACTOR_KEY = "GITHUB_ACTOR"
 # name of possible repository keys used in image value
 IMAGE_REPOSITORY_KEYS = {"name", "repository"}
 
+# prefix in prerelease tag for git commit count
+PRERELEASE_PREFIX = "0git."
+
 # Container builders
 class Builder(Enum):
     DOCKER_BUILD = "docker-build"
@@ -481,24 +484,28 @@ def _get_identifier_from_parts(tag, n_commits, commit, long):
     This function should provide valid Helm chart versions, which means they
     need to be valid SemVer 2 version strings. It also needs to return valid
     image tags, which means they need to not contain `+` signs either. We prefix
-    with n and h to ensure we don't get a numerical hash starting with 0 because
+    with h to ensure we don't get a numerical hash starting with 0 because
     those are invalid SemVer 2 versions.
+
+    We lead with '0git.' to ensure our suffixes sort as older than any explicit tags,
+    such as `0.1.2-alpha.1 > 0.1.2-alpha.0git.5.habc > 0.1.2-0git.3.h123`
 
     Example:
         tag="0.1.2", n_commits="5", commit="asdf1234", long=True,
-        should return "0.1.2-n005.hasdf1234".
+        should return "0.1.2-0git.5.hasdf1234".
     """
     n_commits = int(n_commits)
 
     if n_commits > 0 or long:
         if "-" in tag:
-            # append a pre-release tag, with a . separator
-            # 0.1.2-alpha.1 -> 0.1.2-alpha.1.n.h
-            return f"{tag}.n{n_commits:03d}.h{commit}"
+            # add a field to an existing prerelease tag
+            # 0.1.2-alpha.1 -> 0.1.2-{PRERELEASE_PREFIX}5.hsha
+            sep = "."
         else:
-            # append a release tag, with a - separator
-            # 0.1.2 -> 0.1.2-n.h
-            return f"{tag}-n{n_commits:03d}.h{commit}"
+            # create prerelease tag
+            # 0.1.2-alpha.1 -> 0.1.2-{PRERELEASE_PREFIX}5.hsha
+            sep = "-"
+        return f"{tag}{sep}{PRERELEASE_PREFIX}{n_commits}.h{commit}"
     else:
         return f"{tag}"
 
@@ -542,11 +549,11 @@ def build_images(
 
         Example 1:
         - long=False: 0.9.0
-        - long=True:  0.9.0-n000.hasdf1234
+        - long=True:  0.9.0-0git.0.hasdf1234
 
         Example 2:
-        - long=False: 0.9.0-n004.hsdfg2345
-        - long=True:  0.9.0-n004.hsdfg2345
+        - long=False: 0.9.0-0git.4.hsdfg2345
+        - long=True:  0.9.0-0git.4.hsdfg2345
 
     builder (str):
         The container build engine.
@@ -714,11 +721,11 @@ def build_chart(
 
     Example versions constructed:
         - 0.9.0-alpha.1
-        - 0.9.0-alpha.1.n000.hasdf1234 (--long)
-        - 0.9.0-alpha.1.n005.hsdfg2345
-        - 0.9.0-alpha.1.n005.hsdfg2345 (--long)
+        - 0.9.0-alpha.1.0git.0.hasdf1234 (--long)
+        - 0.9.0-alpha.1.0git.5.hsdfg2345
+        - 0.9.0-alpha.1.0git.5.hsdfg2345 (--long)
         - 0.9.0
-        - 0.9.0-n002.hdfgh3456
+        - 0.9.0-0git.2.hdfgh3456
     """
     # read Chart.yaml
     chart_file = os.path.join(name, "Chart.yaml")

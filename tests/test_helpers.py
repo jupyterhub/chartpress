@@ -2,58 +2,34 @@ import pytest
 from ruamel.yaml import YAML
 
 from chartpress import _check_call
+from chartpress import _fix_chart_version
 from chartpress import _get_git_remote_url
 from chartpress import _get_identifier_from_parts
 from chartpress import _get_image_build_args
 from chartpress import _get_latest_commit_tagged_or_modifying_paths
 from chartpress import _image_needs_pushing
-from chartpress import Builder
 from chartpress import GITHUB_ACTOR_KEY
 from chartpress import GITHUB_TOKEN_KEY
-
-# use safe roundtrip yaml loader
-yaml = YAML(typ="rt")
-yaml.preserve_quotes = True  ## avoid mangling of quotes
-yaml.indent(mapping=2, offset=2, sequence=4)
+from chartpress import yaml
 
 
-def test__get_identifier_from_parts():
-    assert (
-        _get_identifier_from_parts(
-            tag="0.1.2", n_commits="0", commit="asdf123", long=True
-        )
-        == "0.1.2-n000.hasdf123"
+@pytest.mark.parametrize(
+    "tag, n_commits, commit, long, expected",
+    [
+        ("0.1.2", "0", "asdf123", True, "0.1.2-0git.0.hasdf123"),
+        ("0.1.2", "0", "asdf123", False, "0.1.2"),
+        ("0.1.2", "5", "asdf123", False, "0.1.2-0git.5.hasdf123"),
+        ("0.1.2-alpha.1", "0", "asdf1234", True, "0.1.2-alpha.1.0git.0.hasdf1234"),
+        ("0.1.2-alpha.1", "0", "asdf1234", False, "0.1.2-alpha.1"),
+        ("0.1.2-alpha.1", "5", "asdf1234", False, "0.1.2-alpha.1.0git.5.hasdf1234"),
+    ],
+)
+def test_get_identifier_from_parts(tag, n_commits, commit, long, expected):
+    tag = _get_identifier_from_parts(
+        tag=tag, n_commits=n_commits, commit=commit, long=long
     )
-    assert (
-        _get_identifier_from_parts(
-            tag="0.1.2", n_commits="0", commit="asdf123", long=False
-        )
-        == "0.1.2"
-    )
-    assert (
-        _get_identifier_from_parts(
-            tag="0.1.2", n_commits="5", commit="asdf123", long=False
-        )
-        == "0.1.2-n005.hasdf123"
-    )
-    assert (
-        _get_identifier_from_parts(
-            tag="0.1.2-alpha.1", n_commits="0", commit="asdf1234", long=True
-        )
-        == "0.1.2-alpha.1.n000.hasdf1234"
-    )
-    assert (
-        _get_identifier_from_parts(
-            tag="0.1.2-alpha.1", n_commits="0", commit="asdf1234", long=False
-        )
-        == "0.1.2-alpha.1"
-    )
-    assert (
-        _get_identifier_from_parts(
-            tag="0.1.2-alpha.1", n_commits="5", commit="asdf1234", long=False
-        )
-        == "0.1.2-alpha.1.n005.hasdf1234"
-    )
+    assert tag == expected
+    _fix_chart_version(tag, strict=True)
 
 
 def test__get_git_remote_url(monkeypatch):
