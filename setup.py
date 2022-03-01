@@ -44,7 +44,7 @@ setup(
     license="BSD",
     platforms="Linux, Mac OS X",
     keywords=["helm", "kubernetes"],
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     install_requires=[
         "ruamel.yaml>=0.15.44",
         # Bug in 5.0.0: https://github.com/docker/docker-py/pull/2844

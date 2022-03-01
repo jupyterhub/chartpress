@@ -1,5 +1,5 @@
 import os
-import sys
+import re
 
 import chartpress
 
@@ -104,10 +104,7 @@ def test_chartpress_run(git_repo, capfd):
     )
 
     # verify output of --publish-chart
-    assert (
-        "Branch 'gh-pages' set up to track remote branch 'gh-pages' from 'origin'."
-        in out
-    )
+    assert "'gh-pages' set up to track" in out
     assert "Successfully packaged chart and saved it to:" in out
     assert f"/testchart-{tag}.tgz" in out
 
@@ -169,10 +166,7 @@ def test_chartpress_run(git_repo, capfd):
     )
 
     # verify output of --publish-chart
-    assert (
-        "Branch 'gh-pages' set up to track remote branch 'gh-pages' from 'origin'."
-        in out
-    )
+    assert "'gh-pages' set up to track" in out
     assert "Successfully packaged chart and saved it to:" in out
     assert f"/testchart-{tag}.n001.h{sha}.tgz" in out
     assert f"Skipping chart publishing" not in out
@@ -304,3 +298,28 @@ def _capture_output(args, capfd, expect_output=False):
         assert out == ""
 
     return err
+
+
+def test_dev_tag(git_repo_dev_tag, capfd):
+    r = git_repo_dev_tag
+    out = _capture_output(["--skip-build"], capfd)
+    version_string = re.search(r"version:\s+(.+)", out, re.MULTILINE).group(1)
+    chartpress._fix_chart_version(version_string, strict=True)
+    v, _, pre = version_string.partition("-")
+    # make sure we make a correct prerelease tag
+    # when merging with an existing '-pre' tag
+    # (i.e. join with '.', not multiple '-' separators)
+    assert "-" not in pre
+    assert v == "2.0.0"
+    assert pre.split(".")[:2] == ["dev", "n001"]
+
+
+def test_backport_branch(git_repo_backport_branch, capfd):
+    r = git_repo_backport_branch
+    out = _capture_output(["--skip-build"], capfd)
+    version_string = re.search(r"version:\s+(.+)", out, re.MULTILINE).group(1)
+    chartpress._fix_chart_version(version_string, strict=True)
+    v, _, pre = version_string.partition("-")
+    assert "-" not in pre
+    assert v == "1.0.1"
+    assert pre.split(".")[:1] == ["n001"]

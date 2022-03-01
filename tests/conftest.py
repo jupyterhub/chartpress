@@ -1,12 +1,20 @@
 import os
 import shutil
+import sys
 import tempfile
-from distutils.dir_util import copy_tree
+from functools import partial
 
 import git
 import pytest
 
 import chartpress
+
+if sys.version_info >= (3, 8):
+    copy_tree = partial(shutil.copytree, dirs_exist_ok=True)
+else:
+    # use deprecated distutils on Python < 3.8
+    # when shutil.copytree added dirs_exist_ok support
+    from distutils.dir_util import copy_tree
 
 
 def pytest_configure(config):
@@ -15,7 +23,7 @@ def pytest_configure(config):
     )
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def git_repo(monkeypatch):
     """
     This fixture provides a temporary git repo with two branches initialized.
@@ -52,7 +60,7 @@ def git_repo(monkeypatch):
         yield r
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def git_repo_bare_minimum(monkeypatch, git_repo):
     """
     This fixture modifies the default git_repo fixture to use another the
@@ -68,7 +76,63 @@ def git_repo_bare_minimum(monkeypatch, git_repo):
     yield r
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
+def git_repo_dev_tag(git_repo):
+    """
+    This fixture modifies the default git_repo fixture
+    to create a repo with a dev tag on the default branch
+    and a '1.x' backport branch
+
+    Both branches have a tag only on that branch,
+    and both branches have one commit since the latest tag:
+
+    main        1.x
+    |           |
+    @2.0.0-dev  @1.0.1
+    |          /
+    @1.0.0
+    """
+    r = git_repo
+    r.git.tag("1.0.0")
+    r.git.branch("1.x")
+    r.git.checkout("1.x")
+    image_file = os.path.join("image", "test.txt")
+
+    with open(image_file, "w") as f:
+        f.write("1.0.1")
+    r.git.add(image_file)
+    r.index.commit("add file for 1.0.1")
+    r.git.tag("1.0.1")
+
+    with open(image_file, "w") as f:
+        f.write("1.x")
+    r.git.add(image_file)
+    r.index.commit("add file for 1.x")
+
+    r.git.checkout("main")
+    with open(image_file, "w") as f:
+        f.write("2.0.0-dev")
+    r.git.add(image_file)
+    r.index.commit("add file for 2.0.0-dev")
+    r.git.tag("2.0.0-dev")
+
+    with open(image_file, "w") as f:
+        f.write("2.x")
+    r.git.add(image_file)
+    r.index.commit("add file for 2.x")
+
+    yield r
+
+
+@pytest.fixture
+def git_repo_backport_branch(git_repo_dev_tag):
+    """Git repo with a backport branch currently checked out"""
+    r = git_repo_dev_tag
+    r.git.checkout("1.x")
+    yield r
+
+
+@pytest.fixture
 def git_repo_alternative(monkeypatch, git_repo):
     """
     This fixture modifies the default git_repo fixture to use another the
