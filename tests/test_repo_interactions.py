@@ -55,6 +55,10 @@ def test_chartpress_run(git_repo, capfd):
         in out
     )
 
+    # --tag overrides resetVersion config
+    out = _capture_output(["--reset", "--tag=1.0.0-dev"], capfd)
+    assert "Updating testchart/Chart.yaml: version: 1.0.0-dev" in out
+
     # verify that we don't need to rebuild the image
     out = _capture_output([], capfd)
     assert f"Skipping build" in out
