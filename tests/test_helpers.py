@@ -1,5 +1,4 @@
 import pytest
-from ruamel.yaml import YAML
 
 from chartpress import _check_call
 from chartpress import _fix_chart_version
@@ -16,12 +15,12 @@ from chartpress import yaml
 @pytest.mark.parametrize(
     "tag, n_commits, commit, long, expected",
     [
-        ("0.1.2", "0", "asdf123", True, "0.1.2-0git.0.hasdf123"),
+        ("0.1.2", "0", "asdf123", True, "0.1.2-0.dev.git.0.hasdf123"),
         ("0.1.2", "0", "asdf123", False, "0.1.2"),
-        ("0.1.2", "5", "asdf123", False, "0.1.2-0git.5.hasdf123"),
-        ("0.1.2-alpha.1", "0", "asdf1234", True, "0.1.2-alpha.1.0git.0.hasdf1234"),
+        ("0.1.2", "5", "asdf123", False, "0.1.2-0.dev.git.5.hasdf123"),
+        ("0.1.2-alpha.1", "0", "asdf1234", True, "0.1.2-alpha.1.git.0.hasdf1234"),
         ("0.1.2-alpha.1", "0", "asdf1234", False, "0.1.2-alpha.1"),
-        ("0.1.2-alpha.1", "5", "asdf1234", False, "0.1.2-alpha.1.0git.5.hasdf1234"),
+        ("0.1.2-alpha.1", "5", "asdf1234", False, "0.1.2-alpha.1.git.5.hasdf1234"),
     ],
 )
 def test_get_identifier_from_parts(tag, n_commits, commit, long, expected):

@@ -8,6 +8,8 @@ from uuid import uuid4
 
 import pytest
 
+from chartpress import PRERELEASE_PREFIX
+
 
 def test_list_images(git_repo):
     p = run(
@@ -25,7 +27,7 @@ def test_list_images(git_repo):
     assert len(images) == 1
     # split hash_suffix which will be different every run
     pre_hash, hash_suffix = images[0].rsplit(".", 1)
-    assert pre_hash == "testchart/testimage:0.0.1-0git.1"
+    assert pre_hash == f"testchart/testimage:0.0.1-{PRERELEASE_PREFIX}.1"
 
     p = run(
         ["git", "status", "--porcelain"],
@@ -64,7 +66,7 @@ def _get_architectures_from_manifest(name, tag):
 
 
 @pytest.mark.registry
-def test_buildx(git_repo):
+def test_buildx(git_repo, capfd):
     tag = f"1.2.3-{uuid4()}"
     p = run(
         [
@@ -86,11 +88,10 @@ def test_buildx(git_repo):
             tag,
         ],
         check=True,
-        stdout=PIPE,
-        stderr=PIPE,
     )
-    stdout = p.stdout.decode("utf8").strip()
-    stderr = p.stderr.decode("utf8").strip()
+    stdout, stderr = capfd.readouterr()
+    # stdout = p.stdout.decode("utf8").strip()
+    # stderr = p.stderr.decode("utf8").strip()
     # echo stdout/stderr for debugging
     sys.stderr.write(stderr)
     sys.stdout.write(stdout)

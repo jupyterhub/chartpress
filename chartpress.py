@@ -29,8 +29,15 @@ GITHUB_ACTOR_KEY = "GITHUB_ACTOR"
 # name of possible repository keys used in image value
 IMAGE_REPOSITORY_KEYS = {"name", "repository"}
 
-# prefix in prerelease tag for git commit count
-PRERELEASE_PREFIX = "0git."
+# prefixes added to prerelease versions
+# these do not include the trailing '.'
+# which makes them valid prerelease fields on their own,
+# but they cannot be empty.
+
+# GIT is always added to start our git info
+GIT_PREFIX = "git"
+# this is the _full_ prefix we add to non-prerelease versions
+PRERELEASE_PREFIX = f"0.dev.{GIT_PREFIX}"
 
 # Container builders
 class Builder(Enum):
@@ -442,7 +449,7 @@ def _image_needs_building(image, platforms):
     return _image_needs_pushing(image, platforms)
 
 
-def _get_identifier_from_paths(*paths, long=False):
+def _get_identifier_from_paths(*paths, long=False, base_version=None):
     latest_commit = _get_latest_commit_tagged_or_modifying_paths(*paths, echo=False)
 
     try:
@@ -456,15 +463,16 @@ def _get_identifier_from_paths(*paths, long=False):
             .strip()
         )
         latest_tag_in_branch, n_commits, sha = git_describe.rsplit("-", maxsplit=2)
+        n_commits = int(n_commits)
+        if base_version is None:
+            base_version = latest_tag_in_branch
         # remove "g" prefix output by the git describe command
         # ref: https://git-scm.com/docs/git-describe#_examples
         sha = sha[1:]
-
-        return _get_identifier_from_parts(latest_tag_in_branch, n_commits, sha, long)
     except subprocess.CalledProcessError:
         # no tags on branch, so assume 0.0.1 and
         # calculate n_commits from latest_commit
-        n_commits = (
+        n_commits = int(
             _check_output(
                 ["git", "rev-list", "--count", latest_commit],
                 echo=False,
@@ -472,8 +480,12 @@ def _get_identifier_from_paths(*paths, long=False):
             .decode("utf-8")
             .strip()
         )
+        sha = latest_commit
 
-        return _get_identifier_from_parts("0.0.1", n_commits, latest_commit, long)
+    if base_version is None:
+        base_version = "0.0.1"
+
+    return _get_identifier_from_parts(base_version, n_commits, sha, long)
 
 
 def _get_identifier_from_parts(tag, n_commits, commit, long):
@@ -487,25 +499,34 @@ def _get_identifier_from_parts(tag, n_commits, commit, long):
     with h to ensure we don't get a numerical hash starting with 0 because
     those are invalid SemVer 2 versions.
 
-    We lead with '0git.' to ensure our suffixes sort as older than any explicit tags,
-    such as `0.1.2-alpha.1 > 0.1.2-alpha.0git.5.habc > 0.1.2-0git.3.h123`
+    If tag is already a prelease, we append fields so we sort later than the prerelease.
+    If the tag is a stable release, we start the prerelease with `-0.dev.` to ensure we sort lower
+    than labeled prereleases such as 'alpha'.
+
+    Typical tags in descending order:
+
+    - 0.1.2
+    - 0.1.2-alpha.2
+    - 0.1.2-alpha.1.git.5.habc
+    - 0.1.2-alpha.1
+    - 0.1.2-0.dev.git.3.habc
 
     Example:
         tag="0.1.2", n_commits="5", commit="asdf1234", long=True,
-        should return "0.1.2-0git.5.hasdf1234".
+        should return "0.1.2-0.dev.git.5.hasdf1234".
     """
     n_commits = int(n_commits)
 
     if n_commits > 0 or long:
         if "-" in tag:
-            # add a field to an existing prerelease tag
-            # 0.1.2-alpha.1 -> 0.1.2-{PRERELEASE_PREFIX}5.hsha
-            sep = "."
+            # add fields to an existing prerelease tag
+            # 0.1.2-alpha.1 -> 0.1.2-alpha.1.git.n.hsha
+            pre = f".{GIT_PREFIX}"
         else:
-            # create prerelease tag
-            # 0.1.2-alpha.1 -> 0.1.2-{PRERELEASE_PREFIX}5.hsha
-            sep = "-"
-        return f"{tag}{sep}{PRERELEASE_PREFIX}{n_commits}.h{commit}"
+            # create a new '-0.dev.' prerelease tag
+            # 0.1.2 -> 0.1.2-0.dev.git.5.hsha
+            pre = f"-{PRERELEASE_PREFIX}"
+        return f"{tag}{pre}.{n_commits}.h{commit}"
     else:
         return f"{tag}"
 
@@ -522,6 +543,7 @@ def build_images(
     *,
     builder=Builder.DOCKER_BUILD,
     platforms=None,
+    base_version=None,
 ):
     """Build a collection of docker images
 
@@ -549,11 +571,11 @@ def build_images(
 
         Example 1:
         - long=False: 0.9.0
-        - long=True:  0.9.0-0git.0.hasdf1234
+        - long=True:  0.9.0-0.dev.git.0.hasdf1234
 
         Example 2:
-        - long=False: 0.9.0-0git.4.hsdfg2345
-        - long=True:  0.9.0-0git.4.hsdfg2345
+        - long=False: 0.9.0-0.dev.git.4.hsdfg2345
+        - long=True:  0.9.0-0.dev.git.4.hsdfg2345
 
     builder (str):
         The container build engine.
@@ -567,7 +589,9 @@ def build_images(
         all_image_paths = _get_all_image_paths(name, options)
 
         if tag is None:
-            image_tag = _get_identifier_from_paths(*all_image_paths, long=long)
+            image_tag = _get_identifier_from_paths(
+                *all_image_paths, long=long, base_version=base_version
+            )
         else:
             image_tag = tag
 
@@ -709,23 +733,44 @@ def _update_values_file_with_modifications(name, modifications):
         yaml.dump(values, f)
 
 
+_suffix_version_pat = re.compile(r"(.*)\.git\.\d+\.h[a-f0-9]+$")
+
+
+def _trim_version_suffix(version):
+    """Trim trailing .git... suffix from a version
+
+    Turns 1.0.0-0.dev.git.5.habc back into 1.0.0-0.dev
+    """
+    m = _suffix_version_pat.match(version)
+    if m:
+        # matches, strip suffix
+        return m.group(1)
+    return version
+
+
 def build_chart(
-    name, version=None, paths=None, long=False, reset=False, strict_version=False
+    name,
+    version=None,
+    paths=None,
+    long=False,
+    reset=False,
+    strict_version=False,
+    use_chart_version=False,
 ):
     """
     Update Chart.yaml's version, using specified version or by constructing one.
 
     Chart versions are constructed using:
-        a) the latest commit that is tagged,
+        a) a base version, derived from either Chart.yaml or the latest tag
         b) the latest commit that modified provided paths
 
     Example versions constructed:
+        - 0.9.0-0.dev.git.2.hdfgh3456
         - 0.9.0-alpha.1
-        - 0.9.0-alpha.1.0git.0.hasdf1234 (--long)
-        - 0.9.0-alpha.1.0git.5.hsdfg2345
-        - 0.9.0-alpha.1.0git.5.hsdfg2345 (--long)
+        - 0.9.0-alpha.1.git.0.hasdf1234 (--long)
+        - 0.9.0-alpha.1.git.5.hsdfg2345
+        - 0.9.0-alpha.1.git.5.hsdfg2345 (--long)
         - 0.9.0
-        - 0.9.0-0git.2.hdfgh3456
     """
     # read Chart.yaml
     chart_file = os.path.join(name, "Chart.yaml")
@@ -734,7 +779,23 @@ def build_chart(
 
     # decide a version string
     if version is None:
-        version = _get_identifier_from_paths(*paths, long=long)
+        if use_chart_version:
+            # avoid adding .git... to chart version multiple times!
+            base_version = _trim_version_suffix(chart["version"])
+            # TODO: trim -set.by.chartpress?
+            # if base_version.endswith("-set.by.chartpress"):
+            #     base_version = base_version.rsplit("-", 1)[0]
+        else:
+            base_version = None
+        if reset:
+            # resetting, use the base version without '.git...'
+            version = base_version
+        else:
+            # derive the full version, with possible '.git...'
+            version = _get_identifier_from_paths(
+                *paths, long=long, base_version=base_version
+            )
+
     if not reset:
         version = _fix_chart_version(version, strict=strict_version)
 
@@ -1008,10 +1069,16 @@ def main(args=None):
     #   - push chart (--publish-chart, --extra-message)
     for chart in config["charts"]:
         forced_version = None
+        # TODO: maybe warn and switch default in the future?
+        use_chart_version = chart.get("useChartVersion", False)
+
         if args.tag:
+            # tag specified, use that version
             forced_version = args.tag
-        elif args.reset:
-            forced_version = chart.get("resetVersion", "0.0.1-set.by.chartpress")
+        elif args.reset and not use_chart_version:
+            # resetting, get version from chrtpress.yaml,
+            # ignoring current version in Chart.yaml
+            forced_version = chart.get("resetVersion", "0.0.1-0.dev")
 
         if not args.list_images:
             # update Chart.yaml with a version
@@ -1022,6 +1089,7 @@ def main(args=None):
                 long=args.long,
                 reset=args.reset,
                 strict_version=args.publish_chart,
+                use_chart_version=use_chart_version,
             )
 
         if "images" in chart:
