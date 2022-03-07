@@ -1003,7 +1003,7 @@ def main(args=None):
         forced_version = None
         if args.tag:
             forced_version = args.tag
-        if args.reset:
+        elif args.reset:
             forced_version = chart.get("resetVersion", "0.0.1-set.by.chartpress")
 
         if not args.list_images:
