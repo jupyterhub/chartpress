@@ -1076,7 +1076,7 @@ def main(args=None):
             # tag specified, use that version
             forced_version = args.tag
         elif args.reset and not use_chart_version:
-            # resetting, get version from chrtpress.yaml,
+            # resetting, get version from chartpress.yaml,
             # ignoring current version in Chart.yaml
             forced_version = chart.get("resetVersion", "0.0.1-0.dev")
 
