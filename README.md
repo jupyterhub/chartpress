@@ -200,12 +200,6 @@ charts:
           - --label=maintainer=octocat
           - --label=ref={TAG}-{LAST_COMMIT}
           - --rm
-          # above is equivalent to
-          - --label
-          - maintainer=octocat
-          - --label
-          - ref={TAG}-{LAST_COMMIT}
-          - --rm
         # contextPath is the path to the directory that is to be considered the
         # current working directory during the build process of the Dockerfile.
         # This is by default the folder of the Dockerfile. This path should be
