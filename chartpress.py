@@ -236,6 +236,23 @@ def _get_image_build_args(image_options, ns):
     return build_args
 
 
+def _get_image_extra_build_command_options(image_options, ns):
+    """
+    Render extraBuildCommandOptions from chartpress.yaml that could be
+    templates, using the provided namespace that contains keys with dynamic
+    values such as LAST_COMMIT or TAG.
+
+    Args:
+    image_options (dict):
+        The dictionary for a given image from chartpress.yaml.
+        Strings in `image_options['extraBuildCommandOptions']` will be rendered
+        and returned.
+    ns (dict): the namespace used when rendering templated arguments
+    """
+    options = image_options.get("extraBuildCommandOptions", [])
+    return [str(option).format(**ns) for option in options]
+
+
 def _get_image_build_context_path(name, options):
     """
     Return the image's contextPath configuration value, or a default value based
@@ -296,6 +313,7 @@ def build_image(
     context_path,
     dockerfile_path=None,
     build_args=None,
+    extra_build_command_options=None,
     *,
     push=False,
     builder=Builder.DOCKER_BUILD,
@@ -321,6 +339,9 @@ def build_image(
         "<context_path>/Dockerfile".
     build_args (dict, optional):
         Dictionary of docker build arguments.
+    extra_build_command_options (list, optional):
+        List of other docker build options to use. Each item should be a string
+        that gets appended to the build command (e.g. "--label=version=0.1.0").
     push (bool, optional):
         Whether to push the image to a registry
     builder (str):
@@ -356,6 +377,8 @@ def build_image(
             cmd.append("--push")
         elif len(platforms) <= 1:
             cmd.append("--load")
+    if extra_build_command_options:
+        cmd.extend(extra_build_command_options)
     _check_call(cmd)
 
     if builder == Builder.DOCKER_BUILD and push:
@@ -592,18 +615,19 @@ def build_images(
 
         # build image and optionally push image
         if force_build or _image_needs_building(image_spec, platforms):
+            expansion_namespace = {
+                "LAST_COMMIT": _get_latest_commit_tagged_or_modifying_paths(
+                    *all_image_paths, echo=False
+                ),
+                "TAG": image_tag,
+            }
             build_image(
                 image_spec,
                 _get_image_build_context_path(name, options),
                 dockerfile_path=_get_image_dockerfile_path(name, options),
-                build_args=_get_image_build_args(
-                    options,
-                    {
-                        "LAST_COMMIT": _get_latest_commit_tagged_or_modifying_paths(
-                            *all_image_paths, echo=False
-                        ),
-                        "TAG": image_tag,
-                    },
+                build_args=_get_image_build_args(options, expansion_namespace),
+                extra_build_command_options=_get_image_extra_build_command_options(
+                    options, expansion_namespace
                 ),
                 push=push or force_push,
                 builder=builder,
