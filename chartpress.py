@@ -377,7 +377,8 @@ def build_image(
             cmd.append("--push")
         elif len(platforms) <= 1:
             cmd.append("--load")
-    cmd.extend((extra_build_command_options or []))
+    if extra_build_command_options:
+        cmd.extend(extra_build_command_options)
     _check_call(cmd)
 
     if builder == Builder.DOCKER_BUILD and push:
