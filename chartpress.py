@@ -830,9 +830,11 @@ def publish_pages(
     if os.path.isfile(os.path.join(checkout_dir, "index.yaml")):
         with open(os.path.join(checkout_dir, "index.yaml")) as f:
             chart_repo_index = yaml.load(f)
-            published_charts = chart_repo_index["entries"].get(chart_name)
+            published_charts = chart_repo_index["entries"].get(chart_name, [])
 
-        if any(c["version"] == chart_version for c in published_charts):
+        if published_charts and any(
+            c["version"] == chart_version for c in published_charts
+        ):
             if force:
                 _log(
                     f"Chart of version {chart_version} already exists, overwriting it."
