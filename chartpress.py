@@ -790,16 +790,23 @@ def build_chart(
             if "set.by.chartpress" in chart["version"]:
                 raise ValueError(
                     f"Chart {chart_file} has placeholder version {chart['version']}, with `useChartVersion: true`."
-                    f"Set the version in the {chart_file} to a base pre-release tag,"
-                    " e.g. `1.0.0-0.dev` or `1.0.0-alpha.1` and run chartpress again."
+                    f" Set the version in the {chart_file} to a base pre-release tag (your _next_ release),"
+                    " e.g. `2.0.0-0.dev` or `2.0.0-alpha.1` and run chartpress again."
                 )
 
             # require starting from a prerelease tag, to ensure correct ordering
             if "-" not in chart["version"]:
+                if reset:
+                    raise ValueError(
+                        "--reset after a release must also specify --tag $VERSION to reset to"
+                        " when using useChartVersion: true."
+                        " This should be your _next_ pre-release version,"
+                        " e.g. `chartpress --reset --tag 1.0.1-0.dev`"
+                    )
                 raise ValueError(
                     f"Chart {chart_file} has non-prerelease version {chart['version']} with `useChartVersion: true`"
-                    f"Set the version in the {chart_file} to a base pre-release tag,"
-                    " e.g. `1.0.0-0.dev` or `1.0.0-alpha.1` and run chartpress again."
+                    f" Set the version in the {chart_file} to a base pre-release tag (your _next_ release),"
+                    " e.g. `2.0.0-0.dev` or `2.0.0-alpha.1` and run chartpress again."
                 )
         else:
             base_version = None
