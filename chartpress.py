@@ -581,6 +581,9 @@ def build_images(
         The container build engine.
     platforms (list[str]):
         List of platforms to build for if not the same as the Docker host.
+    base_version (str):
+        The base version string (before '.git'), used when useChartVersion is True
+        instead of the tag found via `git describe`.
     """
     values_file_modifications = {}
     for name, options in images.items():
@@ -782,9 +785,22 @@ def build_chart(
         if use_chart_version:
             # avoid adding .git... to chart version multiple times!
             base_version = _trim_version_suffix(chart["version"])
-            # TODO: trim -set.by.chartpress?
-            # if base_version.endswith("-set.by.chartpress"):
-            #     base_version = base_version.rsplit("-", 1)[0]
+            # check for default placeholder tags
+            # avoid making weird combination of `1.0.0-set.by.chartpress.git.1.habc`
+            if "set.by.chartpress" in chart["version"]:
+                raise ValueError(
+                    f"Chart {chart_file} has placeholder version {chart['version']}, with `useChartVersion: true`."
+                    f"Set the version in the {chart_file} to a base pre-release tag,"
+                    " e.g. `1.0.0-0.dev` or `1.0.0-alpha.1` and run chartpress again."
+                )
+
+            # require starting from a prerelease tag, to ensure correct ordering
+            if "-" not in chart["version"]:
+                raise ValueError(
+                    f"Chart {chart_file} has non-prerelease version {chart['version']} with `useChartVersion: true`"
+                    f"Set the version in the {chart_file} to a base pre-release tag,"
+                    " e.g. `1.0.0-0.dev` or `1.0.0-alpha.1` and run chartpress again."
+                )
         else:
             base_version = None
         if reset:
@@ -1093,6 +1109,10 @@ def main(args=None):
             )
 
         if "images" in chart:
+            if use_chart_version:
+                base_version = _trim_version_suffix(chart_version)
+            else:
+                base_version = None
             # build images
             values_file_modifications = build_images(
                 prefix=args.image_prefix or chart.get("imagePrefix", ""),
@@ -1104,6 +1124,7 @@ def main(args=None):
                 force_push=args.force_push,
                 force_build=args.force_build,
                 skip_build=args.no_build or args.reset,
+                base_version=base_version,
                 long=args.long,
                 builder=args.builder,
                 platforms=args.platform,
