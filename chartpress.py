@@ -821,7 +821,13 @@ def publish_pages(
         )
     else:
         _check_call(["git", "fetch"], cwd=checkout_dir, echo=True)
-    _check_call(["git", "checkout", "gh-pages"], cwd=checkout_dir, echo=True)
+    try:
+        _check_call(["git", "checkout", "gh-pages"], cwd=checkout_dir, echo=True)
+    except subprocess.CalledProcessError as e:
+        _log("Failed to checkout gh-pages branch, creating new local empty branch.")
+        _check_call(
+            ["git", "switch", "--orphan", "gh-pages"], cwd=checkout_dir, echo=True
+        )
 
     # check if a chart with the same name and version has already been published. If
     # there is, the behaviour depends on `--force-publish-chart`
