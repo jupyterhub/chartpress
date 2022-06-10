@@ -549,7 +549,7 @@ def build_images(
         If unspecified the tag for each image will be the hash of the last commit
         to modify the image's files.
     push (bool):
-        Whether to push the resulting images (default: False).
+        Whether to push the resulting images and chart if published (default: False).
     force_push (bool):
         Whether to push the built images even if they already exist in the image
         registry (default: False).
@@ -773,6 +773,7 @@ def publish_pages(
     chart_repo_url,
     extra_message="",
     force=False,
+    push=True,
 ):
     """
     Update a Helm chart registry hosted in the gh-pages branch of a GitHub git
@@ -886,7 +887,10 @@ def publish_pages(
 
     _check_call(["git", "add", "."], cwd=checkout_dir)
     _check_call(["git", "commit", "-m", message], cwd=checkout_dir)
-    _check_call(["git", "push", "origin", "gh-pages"], cwd=checkout_dir)
+    if push:
+        _check_call(["git", "push", "origin", "gh-pages"], cwd=checkout_dir)
+    else:
+        _log(f"Push disabled. Run `cd {checkout_dir} && git push origin gh-pages`")
 
 
 class ActionStoreDeprecated(argparse.Action):
@@ -1085,6 +1089,7 @@ def main(args=None):
                 chart_repo_url=chart["repo"]["published"],
                 extra_message=args.extra_message,
                 force=args.force_publish_chart,
+                push=args.push,
             )
 
 
