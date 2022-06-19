@@ -61,6 +61,17 @@ def git_repo(monkeypatch):
 
 
 @pytest.fixture
+def git_repo_mainonly(monkeypatch, git_repo):
+    """
+    This fixture provides a temporary git repo with just a main branch
+    """
+    r = git_repo
+    r.delete_head("gh-pages", force=True)
+    assert [b.name for b in r.branches] == ["main"]
+    yield r
+
+
+@pytest.fixture
 def git_repo_bare_minimum(monkeypatch, git_repo):
     """
     This fixture modifies the default git_repo fixture to use another the
@@ -146,12 +157,16 @@ def git_repo_alternative(monkeypatch, git_repo):
     yield r
 
 
-class MockCheckCall:
-    def __init__(self):
+class CheckCallWrapper:
+    def __init__(self, mock):
         self.commands = []
+        self._mock = mock
+        self._check_call = chartpress._check_call
 
     def __call__(self, cmd, **kwargs):
         self.commands.append((cmd, kwargs))
+        if not self._mock:
+            return self._check_call(cmd, **kwargs)
 
 
 @pytest.fixture(scope="function")
@@ -160,7 +175,26 @@ def mock_check_call(monkeypatch):
     Replace chartpress._check_call with a no-op version that records all commands
     Also disable lcu_cache to prevent cached information being kept across test calls
     """
-    mock_call = MockCheckCall()
+    mock_call = CheckCallWrapper(mock=True)
+    monkeypatch.setattr(chartpress, "_check_call", mock_call)
+
+    # Need to clear @lru_cache since we test multiple temporary repositories
+    chartpress._get_latest_commit_tagged_or_modifying_paths.cache_clear()
+    # Other @lru_cache functions, in case it's needed in future:
+    # chartpress._get_docker_client.cache_clear()
+    # chartpress._image_needs_pushing.cache_clear()
+    # chartpress._image_needs_building.cache_clear()
+
+    yield mock_call
+
+
+@pytest.fixture(scope="function")
+def record_check_call(monkeypatch):
+    """
+    Replace chartpress._check_call with a version that records all commands
+    Also disable lcu_cache to prevent cached information being kept across test calls
+    """
+    mock_call = CheckCallWrapper(mock=False)
     monkeypatch.setattr(chartpress, "_check_call", mock_call)
 
     # Need to clear @lru_cache since we test multiple temporary repositories
