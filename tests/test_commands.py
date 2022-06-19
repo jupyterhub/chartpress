@@ -1,6 +1,7 @@
 # Unit tests for some chartpress methods
 from os import mkdir
 
+import git
 import pytest
 from ruamel.yaml import YAML
 
@@ -410,7 +411,7 @@ def test_publish_pages_firsttime(git_repo_mainonly, record_check_call):
     chartpress.publish_pages(
         "testchart",
         "1.2.3",
-        "jupyterhub/chartpress",
+        "https://github.com/jupyterhub/chartpress",
         "https://example.org/chartpress",
         "<foo>",
         push=False,
@@ -423,7 +424,7 @@ def test_publish_pages_firsttime(git_repo_mainonly, record_check_call):
             "git",
             "clone",
             "--no-checkout",
-            "git@github.com:jupyterhub/chartpress",
+            "https://github.com/jupyterhub/chartpress",
             "testchart-1.2.3",
         ],
         {"echo": True},
@@ -477,11 +478,30 @@ def test_publish_pages_firsttime(git_repo_mainonly, record_check_call):
     )
 
     with open("testchart-1.2.3/index.yaml") as f:
-        chart = YAML().load(f)
+        chart = YAML(typ="safe").load(f)
 
-    assert len(chart["entries"]) == 1
-    assert len(chart["entries"]["testchart"]) == 1
-    assert chart["entries"]["testchart"][0]["urls"] == [
-        "https://example.org/chartpress/testchart-0.0.1-test.reset.version.tgz"
-    ]
-    assert chart["entries"]["testchart"][0]["version"] == "0.0.1-test.reset.version"
+    chart["entries"]["testchart"][0]["created"] = "DATETIME"
+    chart["entries"]["testchart"][0]["digest"] = "DIGEST"
+    chart["generated"] = "DATETIME"
+
+    assert chart == {
+        "apiVersion": "v1",
+        "entries": {
+            "testchart": [
+                {
+                    "apiVersion": "v1",
+                    "created": "DATETIME",
+                    "digest": "DIGEST",
+                    "name": "testchart",
+                    "urls": [
+                        "https://example.org/chartpress/testchart-0.0.1-test.reset.version.tgz"
+                    ],
+                    "version": "0.0.1-test.reset.version",
+                }
+            ]
+        },
+        "generated": "DATETIME",
+    }
+
+    r = git.Repo("./testchart-1.2.3")
+    assert sorted(b.name for b in r.branches) == ["gh-pages", "main"]
