@@ -773,6 +773,7 @@ def publish_pages(
     chart_repo_url,
     extra_message="",
     force=False,
+    push=True,
 ):
     """
     Update a Helm chart registry hosted in the gh-pages branch of a GitHub git
@@ -892,7 +893,10 @@ def publish_pages(
 
     _check_call(["git", "add", "."], cwd=checkout_dir)
     _check_call(["git", "commit", "-m", message], cwd=checkout_dir)
-    _check_call(["git", "push", "origin", "gh-pages"], cwd=checkout_dir)
+    if push:
+        _check_call(["git", "push", "origin", "gh-pages"], cwd=checkout_dir)
+    else:
+        _log(f"Push disabled. Run `cd {checkout_dir} && git push origin gh-pages`")
 
 
 class ActionStoreDeprecated(argparse.Action):
