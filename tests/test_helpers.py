@@ -4,7 +4,6 @@ from chartpress import (
     GITHUB_ACTOR_KEY,
     GITHUB_TOKEN_KEY,
     Builder,
-    yaml,
     _check_call,
     _fix_chart_version,
     _get_git_remote_url,
@@ -13,6 +12,7 @@ from chartpress import (
     _get_image_extra_build_command_options,
     _get_latest_commit_tagged_or_modifying_paths,
     _image_needs_pushing,
+    yaml,
 )
 
 

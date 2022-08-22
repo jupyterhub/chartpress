@@ -1,8 +1,7 @@
 import os
 
 import chartpress
-from chartpress import PRERELEASE_PREFIX
-from chartpress import yaml
+from chartpress import PRERELEASE_PREFIX, yaml
 
 
 def check_version(tag):
