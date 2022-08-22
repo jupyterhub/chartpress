@@ -1,15 +1,19 @@
 import pytest
 
-from chartpress import _check_call
-from chartpress import _fix_chart_version
-from chartpress import _get_git_remote_url
-from chartpress import _get_identifier_from_parts
-from chartpress import _get_image_build_args
-from chartpress import _get_latest_commit_tagged_or_modifying_paths
-from chartpress import _image_needs_pushing
-from chartpress import GITHUB_ACTOR_KEY
-from chartpress import GITHUB_TOKEN_KEY
-from chartpress import yaml
+from chartpress import (
+    GITHUB_ACTOR_KEY,
+    GITHUB_TOKEN_KEY,
+    Builder,
+    yaml,
+    _check_call,
+    _fix_chart_version,
+    _get_git_remote_url,
+    _get_identifier_from_parts,
+    _get_image_build_args,
+    _get_image_extra_build_command_options,
+    _get_latest_commit_tagged_or_modifying_paths,
+    _image_needs_pushing,
+)
 
 
 @pytest.mark.parametrize(
@@ -131,3 +135,25 @@ def test__get_image_build_args(git_repo):
                 }
             else:
                 assert build_args == {}
+
+
+def test__get_image_extra_build_command_options(git_repo):
+    with open("chartpress.yaml") as f:
+        config = yaml.load(f)
+    for chart in config["charts"]:
+        for name, options in chart["images"].items():
+            extra_build_command_options = _get_image_extra_build_command_options(
+                options,
+                {
+                    "LAST_COMMIT": "sha",
+                    "TAG": "tag",
+                },
+            )
+            assert name in ("testimage", "amd64only")
+            if name == "testimage":
+                assert extra_build_command_options == [
+                    "--label=maintainer=octocat",
+                    "--label",
+                    "ref=tag-sha",
+                    "--rm",
+                ]
