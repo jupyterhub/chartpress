@@ -1,16 +1,18 @@
 import pytest
 from ruamel.yaml import YAML
 
-from chartpress import _check_call
-from chartpress import _get_git_remote_url
-from chartpress import _get_identifier_from_parts
-from chartpress import _get_image_build_args
-from chartpress import _get_image_extra_build_command_options
-from chartpress import _get_latest_commit_tagged_or_modifying_paths
-from chartpress import _image_needs_pushing
-from chartpress import Builder
-from chartpress import GITHUB_ACTOR_KEY
-from chartpress import GITHUB_TOKEN_KEY
+from chartpress import (
+    GITHUB_ACTOR_KEY,
+    GITHUB_TOKEN_KEY,
+    Builder,
+    _check_call,
+    _get_git_remote_url,
+    _get_identifier_from_parts,
+    _get_image_build_args,
+    _get_image_extra_build_command_options,
+    _get_latest_commit_tagged_or_modifying_paths,
+    _image_needs_pushing,
+)
 
 # use safe roundtrip yaml loader
 yaml = YAML(typ="rt")

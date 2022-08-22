@@ -13,8 +13,7 @@ import subprocess
 import sys
 from collections.abc import MutableMapping
 from enum import Enum
-from functools import lru_cache
-from functools import partial
+from functools import lru_cache, partial
 from tempfile import TemporaryDirectory
 
 import docker
