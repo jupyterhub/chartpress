@@ -117,7 +117,7 @@ def test_chartpress_run(git_repo, capfd):
     git_repo.git.checkout("gh-pages")
 
     # verify result of --publish-chart
-    with open("index.yaml", "r") as f:
+    with open("index.yaml") as f:
         index_yaml = f.read()
     print(index_yaml)
     assert f"version: 1.2.1" in index_yaml
@@ -180,7 +180,7 @@ def test_chartpress_run(git_repo, capfd):
     git_repo.git.checkout("gh-pages")
 
     # verify result of --publish-chart
-    with open("index.yaml", "r") as f:
+    with open("index.yaml") as f:
         index_yaml = f.read()
     print("index_yaml follows:")
     print(index_yaml)

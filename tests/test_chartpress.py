@@ -1,9 +1,7 @@
 import json
 import sys
-from subprocess import PIPE
-from subprocess import run
-from urllib.request import Request
-from urllib.request import urlopen
+from subprocess import PIPE, run
+from urllib.request import Request, urlopen
 from uuid import uuid4
 
 import pytest
@@ -13,8 +11,7 @@ def test_list_images(git_repo):
     p = run(
         [sys.executable, "-m", "chartpress", "--list-images"],
         check=True,
-        stdout=PIPE,
-        stderr=PIPE,
+        capture_output=True,
     )
     stdout = p.stdout.decode("utf8").strip()
     # echo stdout/stderr for debugging
@@ -30,8 +27,7 @@ def test_list_images(git_repo):
     p = run(
         ["git", "status", "--porcelain"],
         check=True,
-        stdout=PIPE,
-        stderr=PIPE,
+        capture_output=True,
     )
     assert not p.stdout, "--list-images should not make changes!"
 
@@ -86,8 +82,7 @@ def test_buildx(git_repo):
             tag,
         ],
         check=True,
-        stdout=PIPE,
-        stderr=PIPE,
+        capture_output=True,
     )
     stdout = p.stdout.decode("utf8").strip()
     stderr = p.stderr.decode("utf8").strip()
