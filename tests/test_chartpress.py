@@ -84,11 +84,8 @@ def test_buildx(git_repo, capfd):
             tag,
         ],
         check=True,
-        capture_output=True,
     )
     stdout, stderr = capfd.readouterr()
-    # stdout = p.stdout.decode("utf8").strip()
-    # stderr = p.stderr.decode("utf8").strip()
     # echo stdout/stderr for debugging
     sys.stderr.write(stderr)
     sys.stdout.write(stdout)
