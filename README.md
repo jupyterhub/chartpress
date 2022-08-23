@@ -33,16 +33,13 @@ information.
       before its set as Helm 3 requires Helm chart versions to be SemVer2
       compliant.
 1. The latest commit modifying content in a _relevant path_ since `tag`.
-   1. `n`: The number of commits since the tagged commit, as an integer.
-   1. `h`: The latest commit's abbreviated hash. which is often 7-8 characters,
+   1. `n`: The number of commits since the latest tagged commit on the branch, as an integer.
+   1. `hash`: The latest commit's abbreviated hash, which is often 7-8 characters,
       prefixed with `h`.
-1. If `tag` (like `0.10.0` or `0.10.0-beta.1`) contains `-`,
-   indicating that it is a prerelease,
-   the chartpress suffix will be added to the prerelease fields,
-   e.g. `0.10.0-beta.1.git.5.habc123`
-   format will be used instead of a `tag-0.dev.git.n.h` format to be SemVer 2 compliant.
+1. If `tag` (like `0.10.0` or `0.10.0-beta.1`) contains a `-`, a `tag.git.n.hash`
+   format will be used, and otherwise a `tag-0.dev.git.n.hash` format will be used.
 1. If `--long` is specified or not. If `--long` is specified, tagged commits
-   will always be written out with the `n.h` part appended to it, looking something
+   will always be written out with the `.git.n.hash` part appended to it, looking something
    like `1.0.0-0.dev.git.0.habcd123`
 
 When producing a development version (with `.git.n.hash` on the end),

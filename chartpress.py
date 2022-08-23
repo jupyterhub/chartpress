@@ -787,8 +787,10 @@ def build_chart(
     Update Chart.yaml's version, using specified version or by constructing one.
 
     Chart versions are constructed using:
-        a) a base version, derived from either Chart.yaml or the latest tag
-        b) the latest commit that modified provided paths
+        a) a base version, derived from either Chart.yaml's version field or the latest git tag on branch
+        b) the latest commit that was tagged on the current branch (n)
+        c) the latest commit that modified provided paths (hash)
+        
 
     Example versions constructed:
         - 0.9.0-0.dev.git.2.hdfgh3456
@@ -1117,7 +1119,6 @@ def main(args=None):
     #   - push chart (--publish-chart, --extra-message)
     for chart in config["charts"]:
         forced_version = None
-        # TODO: maybe warn and switch default in the future?
         use_chart_version = chart.get("useChartVersion", False)
 
         if args.tag:
@@ -1126,7 +1127,7 @@ def main(args=None):
         elif args.reset and not use_chart_version:
             # resetting, get version from chartpress.yaml,
             # ignoring current version in Chart.yaml
-            forced_version = chart.get("resetVersion", "0.0.1-0.dev")
+            forced_version = chart.get("resetVersion", "0.0.1-set.by.chartpress")
 
         if not args.list_images:
             # update Chart.yaml with a version
