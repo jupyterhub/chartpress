@@ -790,7 +790,7 @@ def build_chart(
         a) a base version, derived from either Chart.yaml's version field or the latest git tag on branch
         b) the latest commit that was tagged on the current branch (n)
         c) the latest commit that modified provided paths (hash)
-        
+
 
     Example versions constructed:
         - 0.9.0-0.dev.git.2.hdfgh3456
