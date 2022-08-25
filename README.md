@@ -25,22 +25,27 @@ Chartpress will infer chart versions and image tags using a few key pieces of
 information.
 
 1. `tag`: If not directly set by `--tag`, it will be inferred from most recent
-   commit that is tagged in the _current branch_, or be set to 0.0.1 if no
-   commit is tagged.
+   commit that is tagged in the _current branch_
+   (as determined by `git describe`)
+   or be set to 0.0.1 if no commit is tagged.
    1. If the `tag` has a leading `v` but is otherwise a valid
-      [SemVer2](https://semver.org) version, it will be stripped from Chart.yaml
+      [SemVer2](https://semver.org) version, the `v` will be stripped from Chart.yaml
       before its set as Helm 3 requires Helm chart versions to be SemVer2
       compliant.
 1. The latest commit modifying content in a _relevant path_ since `tag`.
-   1. `n`: The latest commit's distance to the tagged commit, described as 3 or
-      more numbers, prefixed with n.
-   1. `h`: The latest commit's abbreviated hash. which is often 7-8 characters,
-      prefixed with h.
-1. If `tag` (like `0.10.0` or `0.10.0-beta.1`) contains a `-`, a `tag.n.h`
-   format will be used instead of a `tag-n.h` format to be SemVer 2 compliant.
+   1. `n`: The number of commits since the latest tagged commit on the branch, as an integer.
+   1. `hash`: The latest commit's abbreviated hash, which is often 7-8 characters,
+      prefixed with `h`.
+1. If `tag` (like `0.10.0` or `0.10.0-beta.1`) contains a `-`, a `tag.git.n.hash`
+   format will be used, and otherwise a `tag-0.dev.git.n.hash` format will be used.
 1. If `--long` is specified or not. If `--long` is specified, tagged commits
-   will be written out with the `n.h` part appended to it, looking something
-   like `n000.gabcd123`
+   will always be written out with the `.git.n.hash` part appended to it, looking something
+   like `1.0.0-0.dev.git.0.habcd123`
+
+When producing a development version (with `.git.n.hash` on the end),
+The _base_ version can come from one of two places,
+depending on your configuration.
+See [Controlling development version](#controlling-development-versions-in-chart.yaml) for more info.
 
 ### Examples chart versions and image tags
 
@@ -49,13 +54,13 @@ order that could come from using chartpress.
 
 ```
 0.8.0
-0.8.0-n004.hasdf123
-0.8.0-n010.hsdfg234
+0.8.0-0.dev.git.4.hasdf123
+0.8.0-0.dev.git.10.hsdfg234
 0.9.0-beta.1
-0.9.0-beta.1.n001.hdfgh345
-0.9.0-beta.1.n005.hfghj456
+0.9.0-beta.1.git.1.hdfgh345
+0.9.0-beta.1.git.5.hfghj456
 0.9.0-beta.2
-0.9.0-beta.2.n001.hghjk567
+0.9.0-beta.2.git.1.hghjk567
 0.9.0-beta.3
 0.9.0
 ```
@@ -167,6 +172,12 @@ charts:
     # --reset flag. It defaults to "0.0.1-set.by.chartpress". This is a valid
     # SemVer 2 version, which is required for a helm lint command to succeed.
     resetVersion: 1.2.3
+    # Use the version in Chart.yaml for the base version,
+    # instead of the latest tag from `git describe`
+    # This gives you more control over development version tags
+    # and lets you ensure prerelease tags are always sorted in the right order
+    useChartVersion: true
+
     # The git repo whose gh-pages contains the charts. This can be a local
     # path such as "." as well but if matching <organization>/<repo> will be
     # assumed to be a separate GitHub repository.
@@ -227,6 +238,83 @@ charts:
         skipPlatforms:
           - linux/arm64
 ```
+
+### Controlling development versions in Chart.yaml
+
+Like some "package version in version control" tools,
+you don't need to manage versions at all in chartpress except by tagging commits.
+
+However, relying only on tags results in "development versions" (versions published from commits after a release)
+having somewhat confusing prerelease versions.
+
+After publishing e.g. `1.2.3`, the next version will be `1.2.3-0.dev.git.1.habc`.
+According to Semantic Versioning,
+this is a "pre release" (good, it should be excluded from default installation),
+but it means it comes _before_ 1.2.3 (wrong! it's 1 commit _newer_ than 1.2.3).
+This is because prereleases should be defined relative to the _next_ release,
+not the _last_ release. But git tags only store the _last_ release!
+
+Chartpress 2.0 adds an option `chart.useChartVersion`,
+which changes the base version to use when setting the chart version.
+Instead of using the version of the last tag found via `git describe`,
+it uses the version found in Chart.yaml.
+
+The main benefits of this are:
+
+1. ensuring that published prerelease versions show up in the right order, and
+2. giving you control over the version of a prerelease chart (is it 2.0.0-0.dev or 1.3.1-0.dev?)
+
+Instead of publishing the sequence:
+
+- 1.2.3
+- 1.2.3-0.dev.git.1.habc (later than 1.2.3, but sorts _before_ 1.2.3!)
+
+You can publish
+
+- 1.2.3
+- 1.3.0-0.dev.git.1.habc (prerelease based on the _next_ version, not _last_)
+
+where chartpress will use the version in your Chart.yaml as the base version,
+instead of the last tag on the branch.
+
+This takes some extra configuration, and steps in your release process
+to update the version in your Chart.yaml.
+
+1. You must set `useChartVersion: true` in your chartpress.yaml:
+
+   ```yaml
+   charts:
+     - name: mychart
+       useChartVersion: true
+   ```
+
+2. You must control the version in Chart.yaml, especially after making a release.
+
+A release process would generally look like this:
+
+```bash
+V=1.2.3
+chartpress --reset --tag "$V"
+git commit -am "release $V"
+git tag -am "release $V" "$V"
+git push --atomic --follow-tags
+
+# back to development
+NEXT_V=1.3.0-0.dev
+chartpress --reset --tag "$NEXT_V"
+git commit -am "Back to $NEXT_V"
+git push --atomic
+```
+
+Any prerelease fields (such as `-0.dev` above, or `-alpha.1`)
+will be left as-is, with the `.git.n.hash` suffix added.
+
+If the version in Chart.yaml is not a prerelease,
+a prelease version will be constructed with `-0.dev.git.n.hash`.
+
+When you use this configuration,
+`chartpress --reset` strips the `.git...` suffix from the chart version,
+ignoring the `resetVersion` config.
 
 ## Caveats
 

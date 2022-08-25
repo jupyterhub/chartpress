@@ -5,6 +5,7 @@ import pytest
 from ruamel.yaml import YAML
 
 import chartpress
+from chartpress import PRERELEASE_PREFIX
 
 
 @pytest.mark.parametrize("with_args", [False, True])
@@ -135,7 +136,7 @@ def test_build_images(git_repo, mock_check_call, push, tag):
     if tag:
         expected_tag = tag
     else:
-        expected_tag = f"0.0.1-n001.h{sha[:7]}"
+        expected_tag = f"0.0.1-{PRERELEASE_PREFIX}.1.h{sha[:7]}"
 
     expected_build1 = [
         "docker",
@@ -225,7 +226,7 @@ def test_buildx_images(
     if tag:
         expected_tag = tag
     else:
-        expected_tag = f"0.0.1-n001.h{sha[:7]}"
+        expected_tag = f"0.0.1-{PRERELEASE_PREFIX}.1.h{sha[:7]}"
 
     expected_build1 = [
         "docker",
@@ -329,7 +330,7 @@ def test_build_chart(git_repo, mock_check_call, version):
     if version:
         expected_version = version
     else:
-        expected_version = f"0.0.1-n001.h{sha[:7]}"
+        expected_version = f"0.0.1-{PRERELEASE_PREFIX}.1.h{sha[:7]}"
 
     assert rv == expected_version
 
