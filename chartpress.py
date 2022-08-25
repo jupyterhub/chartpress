@@ -1138,7 +1138,13 @@ def main(args=None):
             # tag specified, use that version
             forced_version = args.tag
 
-        if not args.list_images:
+        if args.list_images:
+            # skip build_chart when listing images,
+            # instead read the current version from Chart.yaml
+            chart_file = os.path.join(chart["name"], "Chart.yaml")
+            with open(chart_file) as f:
+                chart_version = yaml.load(f)["version"]
+        else:
             # update Chart.yaml with a version
             chart_version = build_chart(
                 chart["name"],
@@ -1156,13 +1162,22 @@ def main(args=None):
                 base_version = _trim_version_suffix(chart_version)
             else:
                 base_version = None
+
+            # set common image tag if `--tag` specified _or_ resetting
+            common_image_tag = None
+            if args.tag:
+                common_image_tag = args.tag
+            elif args.reset:
+                if use_chart_version:
+                    common_image_tag = chart_version
+                else:
+                    common_image_tag = chart.get("resetTag", "set-by-chartpress")
+
             # build images
             values_file_modifications = build_images(
                 prefix=args.image_prefix or chart.get("imagePrefix", ""),
                 images=chart["images"],
-                tag=args.tag
-                if not args.reset
-                else chart.get("resetTag", "set-by-chartpress"),
+                tag=common_image_tag,
                 push=args.push,
                 force_push=args.force_push,
                 force_build=args.force_build,
