@@ -782,6 +782,7 @@ def build_chart(
     reset=False,
     strict_version=False,
     use_chart_version=False,
+    reset_version="0.0.1-set.by-chartpress",
 ):
     """
     Update Chart.yaml's version, using specified version or by constructing one.
@@ -807,15 +808,16 @@ def build_chart(
 
     # decide a version string
     if version is None:
+        # version unspecified, retrieve base version from Chart.yaml
         if use_chart_version:
-            # avoid adding .git... to chart version multiple times!
+            # extract base version to avoid adding .git... to chart version multiple times!
             base_version = _trim_version_suffix(chart["version"])
             # check for default placeholder tags
             # avoid making weird combination of `1.0.0-set.by.chartpress.git.1.habc`
-            if "set.by.chartpress" in chart["version"]:
+            if reset_version.split("-", 1)[1] in chart["version"]:
                 raise ValueError(
                     f"Chart {chart_file} has placeholder version {chart['version']}, with `useChartVersion: true`."
-                    f" Set the version in the {chart_file} to a base pre-release tag (your _next_ release),"
+                    f" Set the version in {chart_file} to a base pre-release tag (your _next_ release),"
                     " e.g. `2.0.0-0.dev` or `2.0.0-alpha.1` and run chartpress again."
                 )
 
@@ -835,24 +837,35 @@ def build_chart(
                 )
         else:
             base_version = None
+
         if reset:
             # resetting, use the base version without '.git...'
-            version = base_version
+            # This path taken by `chartpress --reset` with no tag
+            if use_chart_version:
+                # get reset version from Chart.yaml
+                version = base_version
+            else:
+                # reset version comes from resetVersion chart config
+                version = reset_version
         else:
             # derive the full version, with possible '.git...'
             version = _get_identifier_from_paths(
                 *paths, long=long, base_version=base_version
             )
 
-    if not reset:
+    if reset:
+        _log(f"{chart_file}: resetting version to {version}")
+    else:
         version = _fix_chart_version(version, strict=strict_version)
 
     # update Chart.yaml
-    if chart["version"] != version:
+    if chart["version"] == version:
+        _log(f"Leaving {chart_file} version unchanged: {version}")
+    else:
         _log(f"Updating {chart_file}: version: {version}")
         chart["version"] = version
-    with open(chart_file, "w") as f:
-        yaml.dump(chart, f)
+        with open(chart_file, "w") as f:
+            yaml.dump(chart, f)
 
     # return version
     return version
@@ -1124,10 +1137,6 @@ def main(args=None):
         if args.tag:
             # tag specified, use that version
             forced_version = args.tag
-        elif args.reset and not use_chart_version:
-            # resetting, get version from chartpress.yaml,
-            # ignoring current version in Chart.yaml
-            forced_version = chart.get("resetVersion", "0.0.1-set.by.chartpress")
 
         if not args.list_images:
             # update Chart.yaml with a version
@@ -1139,6 +1148,7 @@ def main(args=None):
                 reset=args.reset,
                 strict_version=args.publish_chart,
                 use_chart_version=use_chart_version,
+                reset_version=chart.get("resetVersion", "0.0.1-set.by.chartpress"),
             )
 
         if "images" in chart:
