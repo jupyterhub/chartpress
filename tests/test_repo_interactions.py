@@ -109,11 +109,17 @@ def test_chartpress_run(git_repo, capfd, use_chart_version):
     # already.
     assert "Updating" not in out
 
+    # Run again, but from a clean repo (versions in git don't match tag)
+    # Should produce the same result
+    git_repo.git.checkout(tag, "--", "testchart/values.yaml")
+    out = _capture_output(["--skip-build"], capfd)
+    assert f"Updating testchart/values.yaml: image: testchart/testimage:{tag}\n" in out
+
     # verify usage of --long
     out = _capture_output(["--skip-build", "--long"], capfd)
-    assert f"Updating testchart/Chart.yaml: version: {tag}.git.0.h{sha}" in out
+    assert f"Updating testchart/Chart.yaml: version: {tag}.git.1.h{sha}" in out
     assert (
-        f"Updating testchart/values.yaml: image: testchart/testimage:{tag}.git.0.h{sha}"
+        f"Updating testchart/values.yaml: image: testchart/testimage:{tag}.git.1.h{sha}"
         in out
     )
 
@@ -198,7 +204,7 @@ def test_chartpress_run(git_repo, capfd, use_chart_version):
     # verify output of --publish-chart
     assert "'gh-pages' set up to track" in out
     assert "Successfully packaged chart and saved it to:" in out
-    assert f"/testchart-{tag}.git.1.h{sha}.tgz" in out
+    assert f"/testchart-{tag}.git.2.h{sha}.tgz" in out
     assert "Skipping chart publishing" not in out
 
     # checkout gh-pages
@@ -214,7 +220,7 @@ def test_chartpress_run(git_repo, capfd, use_chart_version):
     assert "version: 1.2.1" in index_yaml
     assert "version: 1.2.2" in index_yaml
     assert f"version: {tag}" in index_yaml
-    assert f"version: {tag}.git.1.h{sha}" in index_yaml
+    assert f"version: {tag}.git.2.h{sha}" in index_yaml
 
     # return to main
     git_repo.git.checkout("main")
@@ -341,7 +347,7 @@ def test_dev_tag(git_repo_dev_tag, capfd):
     with open("testchart/Chart.yaml") as f:
         chart = yaml.load(f)
 
-    tag = f"2.0.0-dev.git.1.h{sha}"
+    tag = f"2.0.0-dev.git.3.h{sha}"
     assert chart["version"] == tag
     check_version(tag)
 
@@ -353,7 +359,7 @@ def test_backport_branch(git_repo_backport_branch, capfd):
     with open("testchart/Chart.yaml") as f:
         chart = yaml.load(f)
 
-    tag = f"1.0.1-{PRERELEASE_PREFIX}.1.h{sha}"
+    tag = f"1.0.1-{PRERELEASE_PREFIX}.3.h{sha}"
     assert chart["version"] == tag
     check_version(tag)
 

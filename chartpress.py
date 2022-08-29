@@ -474,6 +474,17 @@ def _image_needs_building(image, platforms):
 def _get_identifier_from_paths(*paths, long=False, base_version=None):
     latest_commit = _get_latest_commit_tagged_or_modifying_paths(*paths, echo=False)
 
+    # always use monotonic counter since the beginning of the branch
+    # avoids counter resets when using explicit base_version
+    n_commits = int(
+        _check_output(
+            ["git", "rev-list", "--count", latest_commit],
+            echo=False,
+        )
+        .decode("utf-8")
+        .strip()
+    )
+
     try:
         git_describe = (
             _check_output(
@@ -484,30 +495,29 @@ def _get_identifier_from_paths(*paths, long=False, base_version=None):
             .decode("utf8")
             .strip()
         )
-        latest_tag_in_branch, n_commits, sha = git_describe.rsplit("-", maxsplit=2)
-        n_commits = int(n_commits)
+        latest_tag_in_branch, n_commits_since_tag, _g_sha = git_describe.rsplit(
+            "-", maxsplit=2
+        )
+        n_commits_since_tag = int(n_commits_since_tag)
+        if n_commits_since_tag == 0:
+            # don't use baseVersion config for development versions
+            # when we are exactly on a tag
+            base_version = latest_tag_in_branch
+            if not long:
+                # set n_commits=0 to ensure exact tag is used without suffix
+                # in _get_identifier_from_parts
+                n_commits = 0
+
         if base_version is None:
             base_version = latest_tag_in_branch
-        # remove "g" prefix output by the git describe command
-        # ref: https://git-scm.com/docs/git-describe#_examples
-        sha = sha[1:]
     except subprocess.CalledProcessError:
-        # no tags on branch, so assume 0.0.1 and
-        # calculate n_commits from latest_commit
-        n_commits = int(
-            _check_output(
-                ["git", "rev-list", "--count", latest_commit],
-                echo=False,
-            )
-            .decode("utf-8")
-            .strip()
-        )
-        sha = latest_commit
+        # no tags on branch
+        pass
 
     if base_version is None:
-        base_version = "0.0.1"
+        base_version = "0.0.1-0.dev"
 
-    return _get_identifier_from_parts(base_version, n_commits, sha, long)
+    return _get_identifier_from_parts(base_version, n_commits, latest_commit, long)
 
 
 def _get_identifier_from_parts(tag, n_commits, commit, long):
