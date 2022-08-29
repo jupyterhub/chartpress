@@ -75,11 +75,6 @@ def test_chartpress_run(git_repo, capfd, base_version):
         f"Updating testchart/values.yaml: image: testchart/testimage:{reset_tag}" in out
     )
 
-    # --tag overrides resetVersion config
-    out = _capture_output(["--reset", "--tag=1.0.0-dev"], capfd)
-    assert "Updating testchart/Chart.yaml: version: 1.0.0-dev" in out
-    assert "Updating testchart/values.yaml: image: testchart/testimage:1.0.0-dev" in out
-
     # verify that we don't need to rebuild the image
     out = _capture_output([], capfd)
     assert "Skipping build" in out
@@ -406,3 +401,10 @@ def test_reset(git_repo, capfd):
     expected_tag = chart_cfg["resetTag"]
 
     assert values["image"] == f"testchart/testimage:{expected_tag}"
+
+
+def test_reset_exclusive(git_repo, capfd):
+    with pytest.raises(SystemExit):
+        chartpress.main(["--reset", "--tag", "1.2.3"])
+    out, err = capfd.readouterr()
+    assert "no additional arguments" in err

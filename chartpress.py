@@ -8,6 +8,7 @@ import argparse
 import os
 import pipes
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -1038,7 +1039,7 @@ class ActionAppendDeprecated(argparse.Action):
         getattr(namespace, self.dest).append(values)
 
 
-def main(args=None):
+def main(argv=None):
     """Run chartpress"""
     argparser = argparse.ArgumentParser(description=__doc__)
 
@@ -1127,24 +1128,33 @@ def main(args=None):
     )
     argparser.add_argument(
         "--version",
-        action="store_true",
-        help="Print current chartpress version and exit.",
+        action="version",
+        version=f"chartpress version {__version__}",
     )
 
-    args = argparser.parse_args(args)
+    args = argparser.parse_args(argv)
     if args.builder == Builder.DOCKER_BUILD and args.platform:
         argparser.error(f"--platform is not supported with {Builder.DOCKER_BUILD}")
+
+    if args.reset:
+        # reset conflicts with everything
+        # this could probably be clearer by using subparsers
+        argv = list(argv or sys.argv[1:])
+        if len(argv) > 1:
+            argv = list(argv)
+            argv.remove("--reset")
+            extra_args = " ".join(shlex.quote(arg) for arg in argv if arg != "--reset")
+            argparser.error(
+                f"`chartpress --reset` takes no additional arguments: {extra_args}"
+            )
 
     # allow simple checks for whether publish will happen
     if args.force_publish_chart:
         args.publish_chart = True
 
-    if args.version:
-        print(f"chartpress version {__version__}")
-        return
-
-    if args.list_images:
+    if args.list_images or args.reset:
         args.no_build = True
+        args.publish_chart = False
 
     with open("chartpress.yaml") as f:
         config = yaml.load(f)
