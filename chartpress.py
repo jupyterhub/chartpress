@@ -81,6 +81,11 @@ def _check_call(cmd, **kwargs):
 _check_output = partial(_run_cmd, subprocess.check_output)
 
 
+_semver2 = re.compile(
+    r"^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
+)
+
+
 def _fix_chart_version(version, strict=False):
     """
     Helm 3 requires published chart versions to follow strict semantic versioning.
@@ -95,14 +100,11 @@ def _fix_chart_version(version, strict=False):
     """
     # semver.org provided this regular expression:
     # https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
-    semver2 = re.compile(
-        r"^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
-    )
 
-    if semver2.fullmatch(version):
+    if _semver2.fullmatch(version):
         return version
 
-    if version.startswith("v") and semver2.fullmatch(version[1:]):
+    if version.startswith("v") and _semver2.fullmatch(version[1:]):
         return version[1:]
 
     message = f"The version in Chart.yaml '{version}' doesn't follow semantic versioning. Helm 3 requires published charts to have strict semantic versions."
@@ -156,23 +158,50 @@ def _get_latest_commit_modifying_path(*paths, **kwargs):
     )
 
 
+@lru_cache()
+def _count_commits(ref):
+    """Return the number of commits for a given ref (branch, commit, etc.)"""
+    return int(
+        _check_output(
+            ["git", "rev-list", "--count", ref],
+            echo=False,
+        )
+        .decode("utf-8")
+        .strip()
+    )
+
+
 def _get_latest_tag(**kwargs):
     """Get the latest tag on a commit in branch or return None."""
+    return _get_latest_tag_and_count(**kwargs)[0]
+
+
+@lru_cache()
+def _get_latest_tag_and_count(ref="HEAD", **kwargs):
+    """Get the latest tag on a commit in branch and the number of commits since then.
+
+    If no tag is found, return (None, total number of commits in the branch).
+    """
+    kwargs.setdefault("echo", False)  # because we handle errors
     try:
         # If the git command output is my-tag-14-g0aed65e,
         # then the return value will become my-tag.
-        return (
+        git_describe = (
             _check_output(
-                ["git", "describe", "--tags", "--long"],
+                ["git", "describe", "--tags", "--long", ref],
                 stderr=subprocess.DEVNULL,  # because we handle errors
                 **kwargs,
             )
             .decode("utf-8")
             .strip()
-            .rsplit("-", maxsplit=2)[0]
         )
+        latest_tag_in_branch, n_commits_since_tag, _g_sha = git_describe.rsplit(
+            "-", maxsplit=2
+        )
+        return latest_tag_in_branch, int(n_commits_since_tag)
     except subprocess.CalledProcessError:
-        return None
+        # no tag found, count all commits
+        return None, _count_commits(ref)
 
 
 def _get_commit_from_tag(tag, **kwargs):
@@ -476,29 +505,10 @@ def _get_identifier_from_paths(*paths, long=False, base_version=None):
 
     # always use monotonic counter since the beginning of the branch
     # avoids counter resets when using explicit base_version
-    n_commits = int(
-        _check_output(
-            ["git", "rev-list", "--count", latest_commit],
-            echo=False,
-        )
-        .decode("utf-8")
-        .strip()
-    )
+    n_commits = _count_commits(latest_commit)
 
-    try:
-        git_describe = (
-            _check_output(
-                ["git", "describe", "--tags", "--long", latest_commit],
-                echo=False,
-                stderr=subprocess.DEVNULL,  # because we handle errors
-            )
-            .decode("utf8")
-            .strip()
-        )
-        latest_tag_in_branch, n_commits_since_tag, _g_sha = git_describe.rsplit(
-            "-", maxsplit=2
-        )
-        n_commits_since_tag = int(n_commits_since_tag)
+    latest_tag_in_branch, n_commits_since_tag = _get_latest_tag_and_count(latest_commit)
+    if latest_tag_in_branch:
         if n_commits_since_tag == 0:
             # don't use baseVersion config for development versions
             # when we are exactly on a tag
@@ -510,9 +520,6 @@ def _get_identifier_from_paths(*paths, long=False, base_version=None):
 
         if base_version is None:
             base_version = latest_tag_in_branch
-    except subprocess.CalledProcessError:
-        # no tags on branch
-        pass
 
     if base_version is None:
         base_version = "0.0.1-0.dev"
@@ -789,10 +796,8 @@ def build_chart(
     version=None,
     paths=None,
     long=False,
-    reset=False,
     strict_version=False,
-    use_chart_version=False,
-    reset_version="0.0.1-set.by-chartpress",
+    base_version=None,
 ):
     """
     Update Chart.yaml's version, using specified version or by constructing one.
@@ -818,55 +823,12 @@ def build_chart(
 
     # decide a version string
     if version is None:
-        # version unspecified, retrieve base version from Chart.yaml
-        if use_chart_version:
-            # extract base version to avoid adding .git... to chart version multiple times!
-            base_version = _trim_version_suffix(chart["version"])
-            # check for default placeholder tags
-            # avoid making weird combination of `1.0.0-set.by.chartpress.git.1.habc`
-            if reset_version.split("-", 1)[1] in chart["version"]:
-                raise ValueError(
-                    f"Chart {chart_file} has placeholder version {chart['version']}, with `useChartVersion: true`."
-                    f" Set the version in {chart_file} to a base pre-release tag (your _next_ release),"
-                    " e.g. `2.0.0-0.dev` or `2.0.0-alpha.1` and run chartpress again."
-                )
+        # derive the full version, with possible '.git...'
+        version = _get_identifier_from_paths(
+            *paths, long=long, base_version=base_version
+        )
 
-            # require starting from a prerelease tag, to ensure correct ordering
-            if "-" not in chart["version"]:
-                if reset:
-                    raise ValueError(
-                        "--reset after a release must also specify --tag $VERSION to reset to"
-                        " when using useChartVersion: true."
-                        " This should be your _next_ pre-release version,"
-                        " e.g. `chartpress --reset --tag 1.0.1-0.dev`"
-                    )
-                raise ValueError(
-                    f"Chart {chart_file} has non-prerelease version {chart['version']} with `useChartVersion: true`"
-                    f" Set the version in the {chart_file} to a base pre-release tag (your _next_ release),"
-                    " e.g. `2.0.0-0.dev` or `2.0.0-alpha.1` and run chartpress again."
-                )
-        else:
-            base_version = None
-
-        if reset:
-            # resetting, use the base version without '.git...'
-            # This path taken by `chartpress --reset` with no tag
-            if use_chart_version:
-                # get reset version from Chart.yaml
-                version = base_version
-            else:
-                # reset version comes from resetVersion chart config
-                version = reset_version
-        else:
-            # derive the full version, with possible '.git...'
-            version = _get_identifier_from_paths(
-                *paths, long=long, base_version=base_version
-            )
-
-    if reset:
-        _log(f"{chart_file}: resetting version to {version}")
-    else:
-        version = _fix_chart_version(version, strict=strict_version)
+    version = _fix_chart_version(version, strict=strict_version)
 
     # update Chart.yaml
     if chart["version"] == version:
@@ -1002,6 +964,60 @@ def publish_pages(
     _check_call(["git", "add", "."], cwd=checkout_dir)
     _check_call(["git", "commit", "-m", message], cwd=checkout_dir)
     _check_call(["git", "push", "origin", "gh-pages"], cwd=checkout_dir)
+
+
+def _check_base_version(base_version):
+    """Verify that a baseVersion config is valid
+
+    If specified, base version needs to:
+
+    1. be a valid semver prerelease
+    2. sort after the latest tag on the branch
+    """
+
+    # check valid value (baseVersion must be semver prerelease)
+    match = _semver2.fullmatch(base_version)
+    if not match:
+        raise ValueError(
+            f"baseVersion: {base_version} must be a valid semver prerelease (e.g. 1.2.3-0.dev), but doesn't appear to be valid."
+        )
+    base_version_groups = match.groupdict()
+    if not base_version_groups["prerelease"]:
+        raise ValueError(
+            f"baseVersion: {base_version} must be a valid semver prerelease (e.g. 1.2.3-0.dev), but is not a prerelease."
+        )
+
+    def _version_number(groups):
+        """Return comparable semver"""
+
+        return (
+            int(groups["major"]),
+            int(groups["minor"]),
+            int(groups["patch"]),
+        )
+
+    # check ordering with latest tag
+    # do not check on a tagged commit
+    tag, count = _get_latest_tag_and_count()
+    if tag and count:
+        tag_match = _semver2.fullmatch(tag.lstrip("v"))
+        sort_error = f"baseVersion {base_version} is not greater than latest tag {tag}. Please update baseVersion config in chartpress.yaml."
+        if tag_match:
+            base_version_number = _version_number(base_version_groups)
+            tag_version_number = _version_number(tag_match.groupdict())
+            if base_version_number < tag_version_number:
+                raise ValueError(sort_error)
+            elif base_version_number == tag_version_number:
+                # numbers equal, need to check prerelease
+                if tag_match["prerelease"]:
+                    # If we want to be pedantic about inter-prerelease ordering (alpha before beta, etc.),
+                    # that would go here. We should import a full semver implementation for that, though.
+                    pass
+                else:
+                    raise ValueError(sort_error)
+        else:
+            # tag not semver. ignore? Not really our problem.
+            _log(f"Latest tag {tag} does not appear to be a semver version")
 
 
 class ActionStoreDeprecated(argparse.Action):
@@ -1142,46 +1158,41 @@ def main(args=None):
     #   - push chart (--publish-chart, --extra-message)
     for chart in config["charts"]:
         forced_version = None
-        use_chart_version = chart.get("useChartVersion", False)
+        base_version = None
 
         if args.tag:
             # tag specified, use that version
             forced_version = args.tag
+        elif args.reset:
+            forced_version = chart.get("resetVersion", "0.0.1-set.by.chartpress")
 
-        if args.list_images:
-            # skip build_chart when listing images,
-            # instead read the current version from Chart.yaml
-            chart_file = os.path.join(chart["name"], "Chart.yaml")
-            with open(chart_file) as f:
-                chart_version = yaml.load(f)["version"]
-        else:
+        if not args.tag:
+            # Load base_version config when building a dev tag
+            # (i.e. not a tagged commit or explicit tag).
+            # add the check here so `--reset` will fail with an invalid baseVersion
+            # (e.g. forgetting to update after release)
+            base_version = chart.get("baseVersion", None)
+            if base_version:
+                _check_base_version(base_version)
+
+        if not args.list_images:
             # update Chart.yaml with a version
             chart_version = build_chart(
                 chart["name"],
                 paths=_get_all_chart_paths(chart),
                 version=forced_version,
+                base_version=base_version,
                 long=args.long,
-                reset=args.reset,
                 strict_version=args.publish_chart,
-                use_chart_version=use_chart_version,
-                reset_version=chart.get("resetVersion", "0.0.1-set.by.chartpress"),
             )
 
         if "images" in chart:
-            if use_chart_version:
-                base_version = _trim_version_suffix(chart_version)
-            else:
-                base_version = None
-
             # set common image tag if `--tag` specified _or_ resetting
             common_image_tag = None
             if args.tag:
                 common_image_tag = args.tag
             elif args.reset:
-                if use_chart_version:
-                    common_image_tag = chart_version
-                else:
-                    common_image_tag = chart.get("resetTag", "set-by-chartpress")
+                common_image_tag = chart.get("resetTag", "set-by-chartpress")
 
             # build images
             values_file_modifications = build_images(
