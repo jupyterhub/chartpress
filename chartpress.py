@@ -511,6 +511,7 @@ def _get_identifier_from_paths(*paths, long=False, base_version=None):
         if base_version is None:
             base_version = latest_tag_in_branch
     except subprocess.CalledProcessError:
+        # no tags on branch
         pass
 
     if base_version is None:
