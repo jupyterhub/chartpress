@@ -57,10 +57,10 @@ order that could come from using chartpress.
 0.8.0-0.dev.git.4.hasdf123
 0.8.0-0.dev.git.10.hsdfg234
 0.9.0-beta.1
-0.9.0-beta.1.git.1.hdfgh345
-0.9.0-beta.1.git.5.hfghj456
+0.9.0-beta.1.git.12.hdfgh345
+0.9.0-beta.1.git.15.hfghj456
 0.9.0-beta.2
-0.9.0-beta.2.git.1.hghjk567
+0.9.0-beta.2.git.20.hghjk567
 0.9.0-beta.3
 0.9.0
 ```
