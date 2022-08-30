@@ -99,4 +99,7 @@ jobs:
 
       - name: Run tests
         run: |
-          pytest --verbose --color=yes
+          pytest --verbose --color=yes --cov chartpress
+
+      - name: Upload coverage report
+        run: codecov
