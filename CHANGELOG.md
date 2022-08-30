@@ -2,6 +2,66 @@
 
 ## Unreleased
 
+## 2.0
+
+### 2.0.0 - 2022-08-30
+
+Make sure to read about the breaking changes and the release highlights below!
+
+#### Breaking changes
+
+If you are using chartpress to publish development releases should be aware that
+the suffix appended to chart versions and image tags is changed to look like
+`1.2.3-0.dev.git.n.hash`, where the following things has changed:
+
+- `-0.dev` is appended by default for non pre-release versions.
+- `n` is the number of commits on the branch, where it previously was the number
+  of commits since the last tag on the branch.
+
+#### Release highlights
+
+- The option `baseVersion` is added to chart configuration in chartpress.yaml,
+  for more details see the [README.md section on controlling development
+  versions](https://github.com/jupyterhub/chartpress#controlling-development-versions).
+
+#### New features added
+
+- use baseVersion config to set the base version for development releases (supersedes useChartVersion config) [#179](https://github.com/jupyterhub/chartpress/pull/179) ([@minrk](https://github.com/minrk))
+- (reverted) Add `useChartVersion` and change appended version suffix (now like `1.2.3-0.dev.git.3.h123`) [#150](https://github.com/jupyterhub/chartpress/pull/150) ([@minrk](https://github.com/minrk))
+
+#### Enhancements made
+
+- (reverted) accept --tag arg in --reset [#152](https://github.com/jupyterhub/chartpress/pull/152) ([@minrk](https://github.com/minrk))
+- Allow extra options to be passed to docker build [#142](https://github.com/jupyterhub/chartpress/pull/142) ([@adamblake](https://github.com/adamblake))
+
+#### Bugs fixed
+
+- fix check for first-time publishing chart [#161](https://github.com/jupyterhub/chartpress/pull/161) ([@minrk](https://github.com/minrk))
+
+#### Maintenance and upkeep improvements
+
+- upload test coverage to codecov [#181](https://github.com/jupyterhub/chartpress/pull/181) ([@minrk](https://github.com/minrk))
+- Enforce that `--reset` is an exclusive argument [#180](https://github.com/jupyterhub/chartpress/pull/180) ([@minrk](https://github.com/minrk))
+- count commits on branch instead of commits since last tag on branch [#178](https://github.com/jupyterhub/chartpress/pull/178) ([@minrk](https://github.com/minrk))
+- pre-commit: add pyupgrade and isort (replaces reorder-python-imports) [#173](https://github.com/jupyterhub/chartpress/pull/173) ([@consideRatio](https://github.com/consideRatio))
+- Add tests with dev tags and backport branches [#145](https://github.com/jupyterhub/chartpress/pull/145) ([@minrk](https://github.com/minrk))
+- Drop support for py36 and misc ci maintenance [#144](https://github.com/jupyterhub/chartpress/pull/144) ([@consideRatio](https://github.com/consideRatio))
+- Remove six (no longer needed by docker) [#140](https://github.com/jupyterhub/chartpress/pull/140) ([@manics](https://github.com/manics))
+
+#### Documentation improvements
+
+- docs: update README about use with GitHub actions [#139](https://github.com/jupyterhub/chartpress/pull/139) ([@consideRatio](https://github.com/consideRatio))
+
+#### Continuous integration improvements
+
+- upload test coverage to codecov [#181](https://github.com/jupyterhub/chartpress/pull/181) ([@minrk](https://github.com/minrk))
+
+#### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/chartpress/graphs/contributors?from=2021-07-26&to=2022-08-30&type=c))
+
+[@adamblake](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Aadamblake+updated%3A2021-07-26..2022-08-30&type=Issues) | [@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3AconsideRatio+updated%3A2021-07-26..2022-08-30&type=Issues) | [@manics](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Amanics+updated%3A2021-07-26..2022-08-30&type=Issues) | [@minrk](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Aminrk+updated%3A2021-07-26..2022-08-30&type=Issues)
+
 ## 1.3
 
 ### 1.3.0 - 2021-07-26
