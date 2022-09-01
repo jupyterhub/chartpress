@@ -150,7 +150,7 @@ optional arguments:
                         loaded into the local docker engine.
   --list-images         print list of images to stdout. Images will not be
                         built.
-  --version             Print current chartpress version and exit.
+  --version             show program's version number and exit
 ```
 
 ## Configuration

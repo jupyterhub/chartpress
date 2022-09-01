@@ -2,9 +2,69 @@
 
 ## Unreleased
 
-## [1.3]
+## 2.0
 
-### [1.3.0] - 2021-07-26
+### 2.0.0 - 2022-08-30
+
+Make sure to read about the breaking changes and the release highlights below!
+
+#### Breaking changes
+
+If you are using chartpress to publish development releases should be aware that
+the suffix appended to chart versions and image tags is changed to look like
+`1.2.3-0.dev.git.n.hash`, where the following things has changed:
+
+- `-0.dev` is appended by default for non pre-release versions.
+- `n` is the number of commits on the branch, where it previously was the number
+  of commits since the last tag on the branch.
+
+#### Release highlights
+
+- The option `baseVersion` is added to chart configuration in chartpress.yaml,
+  for more details see the [README.md section on controlling development
+  versions](https://github.com/jupyterhub/chartpress#controlling-development-versions).
+
+#### New features added
+
+- use baseVersion config to set the base version for development releases (supersedes useChartVersion config) [#179](https://github.com/jupyterhub/chartpress/pull/179) ([@minrk](https://github.com/minrk))
+
+#### Enhancements made
+
+- Allow extra options to be passed to docker build [#142](https://github.com/jupyterhub/chartpress/pull/142) ([@adamblake](https://github.com/adamblake))
+
+#### Bugs fixed
+
+- fix check for first-time publishing chart [#161](https://github.com/jupyterhub/chartpress/pull/161) ([@minrk](https://github.com/minrk))
+
+#### Maintenance and upkeep improvements
+
+- upload test coverage to codecov [#181](https://github.com/jupyterhub/chartpress/pull/181) ([@minrk](https://github.com/minrk))
+- Enforce that `--reset` is an exclusive argument [#180](https://github.com/jupyterhub/chartpress/pull/180) ([@minrk](https://github.com/minrk))
+- count commits on branch instead of commits since last tag on branch [#178](https://github.com/jupyterhub/chartpress/pull/178) ([@minrk](https://github.com/minrk))
+- pre-commit: add pyupgrade and isort (replaces reorder-python-imports) [#173](https://github.com/jupyterhub/chartpress/pull/173) ([@consideRatio](https://github.com/consideRatio))
+- (reverted) accept --tag arg in --reset [#152](https://github.com/jupyterhub/chartpress/pull/152) ([@minrk](https://github.com/minrk))
+- (reverted) Add `useChartVersion` and change appended version suffix (now like `1.2.3-0.dev.git.3.h123`) [#150](https://github.com/jupyterhub/chartpress/pull/150) ([@minrk](https://github.com/minrk))
+- Add tests with dev tags and backport branches [#145](https://github.com/jupyterhub/chartpress/pull/145) ([@minrk](https://github.com/minrk))
+- Drop support for py36 and misc ci maintenance [#144](https://github.com/jupyterhub/chartpress/pull/144) ([@consideRatio](https://github.com/consideRatio))
+- Remove six (no longer needed by docker) [#140](https://github.com/jupyterhub/chartpress/pull/140) ([@manics](https://github.com/manics))
+
+#### Documentation improvements
+
+- docs: update README about use with GitHub actions [#139](https://github.com/jupyterhub/chartpress/pull/139) ([@consideRatio](https://github.com/consideRatio))
+
+#### Continuous integration improvements
+
+- upload test coverage to codecov [#181](https://github.com/jupyterhub/chartpress/pull/181) ([@minrk](https://github.com/minrk))
+
+#### Contributors to this release
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/chartpress/graphs/contributors?from=2021-07-26&to=2022-08-30&type=c))
+
+[@adamblake](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Aadamblake+updated%3A2021-07-26..2022-08-30&type=Issues) | [@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3AconsideRatio+updated%3A2021-07-26..2022-08-30&type=Issues) | [@manics](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Amanics+updated%3A2021-07-26..2022-08-30&type=Issues) | [@minrk](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Aminrk+updated%3A2021-07-26..2022-08-30&type=Issues)
+
+## 1.3
+
+### 1.3.0 - 2021-07-26
 
 This release improve performance significantly when building images for multiple
 platforms. Chartpress can now can now also decide if such images needs to be
@@ -24,14 +84,14 @@ built and pushed, like it can for single platform images.
 
 [@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3AconsideRatio+updated%3A2021-07-23..2021-07-26&type=Issues) | [@manics](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Amanics+updated%3A2021-07-23..2021-07-26&type=Issues)
 
-## [1.2]
+## 1.2
 
-### [1.2.2] - 2021-07-23
+### 1.2.2 - 2021-07-23
 
 The release of 1.2.1 was made incorrectly to PyPI, so this is another release to
 fix the situation.
 
-### [1.2.1] - 2021-07-23
+### 1.2.1 - 2021-07-23
 
 #### Bugs fixed
 
@@ -44,7 +104,7 @@ fix the situation.
 
 [@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3AconsideRatio+updated%3A2021-06-23..2021-07-23&type=Issues) | [@yuvipanda](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Ayuvipanda+updated%3A2021-06-23..2021-07-23&type=Issues)
 
-### [1.2.0] - 2021-06-23
+### 1.2.0 - 2021-06-23
 
 #### New features added
 
@@ -60,9 +120,9 @@ fix the situation.
 
 [@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3AconsideRatio+updated%3A2021-04-12..2021-06-23&type=Issues) | [@minrk](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Aminrk+updated%3A2021-04-12..2021-06-23&type=Issues)
 
-## [1.1]
+## 1.1
 
-### [1.1.0] - 2021-04-12
+### 1.1.0 - 2021-04-12
 
 #### Enhancements made
 
@@ -82,9 +142,9 @@ fix the situation.
 
 [@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3AconsideRatio+updated%3A2021-01-20..2021-04-11&type=Issues) | [@manics](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Amanics+updated%3A2021-01-20..2021-04-11&type=Issues)
 
-## [1.0]
+## 1.0
 
-### [1.0.4] - 2021-01-20
+### 1.0.4 - 2021-01-20
 
 #### Bugs fixed
 
@@ -94,7 +154,7 @@ fix the situation.
 
 - refactor: rename two local variables for readability [#114](https://github.com/jupyterhub/chartpress/pull/114) ([@consideRatio](https://github.com/consideRatio))
 
-### [1.0.3] - 2020-12-14
+### 1.0.3 - 2020-12-14
 
 #### Enhancements made
 
@@ -110,7 +170,7 @@ fix the situation.
 
 [@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3AconsideRatio+updated%3A2020-12-04..2020-12-14&type=Issues) | [@minrk](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Aminrk+updated%3A2020-12-04..2020-12-14&type=Issues)
 
-### [1.0.2] - 2020-12-04
+### 1.0.2 - 2020-12-04
 
 #### Bugs fixed
 
@@ -123,7 +183,7 @@ fix the situation.
 
 [@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3AconsideRatio+updated%3A2020-12-03..2020-12-04&type=Issues) | [@danielnorberg](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Adanielnorberg+updated%3A2020-12-03..2020-12-04&type=Issues) | [@minrk](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Aminrk+updated%3A2020-12-03..2020-12-04&type=Issues)
 
-### [1.0.1] - 2020-12-03
+### 1.0.1 - 2020-12-03
 
 #### Bugs fixed
 
@@ -135,7 +195,7 @@ fix the situation.
 
 [@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3AconsideRatio+updated%3A2020-11-21..2020-12-03&type=Issues)
 
-### [1.0.0] - 2020-11-21
+### 1.0.0 - 2020-11-21
 
 [@betatim](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Abetatim+updated%3A2018-02-23..2020-11-21&type=Issues) | [@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3AconsideRatio+updated%3A2018-02-23..2020-11-21&type=Issues) | [@jacobtomlinson](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Ajacobtomlinson+updated%3A2018-02-23..2020-11-21&type=Issues) | [@jirikuncar](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Ajirikuncar+updated%3A2018-02-23..2020-11-21&type=Issues) | [@leafty](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Aleafty+updated%3A2018-02-23..2020-11-21&type=Issues) | [@manics](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Amanics+updated%3A2018-02-23..2020-11-21&type=Issues) | [@minrk](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Aminrk+updated%3A2018-02-23..2020-11-21&type=Issues) | [@rokroskar](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Arokroskar+updated%3A2018-02-23..2020-11-21&type=Issues) | [@yuvipanda](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Ayuvipanda+updated%3A2018-02-23..2020-11-21&type=Issues)
 
@@ -153,9 +213,9 @@ reliable, thank you everyone for your contributions and work on it!!!
 - Migrate from Travis CI to GitHub Actions [#101](https://github.com/jupyterhub/chartpress/pull/101) ([@consideRatio](https://github.com/consideRatio))
 - CI: fix syntax typo making us not run tests before publish [#100](https://github.com/jupyterhub/chartpress/pull/100) ([@consideRatio](https://github.com/consideRatio))
 
-## [0.7]
+## 0.7
 
-### [0.7.0] - 2020-11-02
+### 0.7.0 - 2020-11-02
 
 #### Enhancements made
 
@@ -174,9 +234,9 @@ reliable, thank you everyone for your contributions and work on it!!!
 
 [@consideRatio](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3AconsideRatio+updated%3A2020-01-12..2020-11-01&type=Issues) | [@manics](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Amanics+updated%3A2020-01-12..2020-11-01&type=Issues) | [@minrk](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Aminrk+updated%3A2020-01-12..2020-11-01&type=Issues)
 
-## [0.6]
+## 0.6
 
-### [0.6.0] - 2020-01-12
+### 0.6.0 - 2020-01-12
 
 0.6.0 include a single fix to avoid breaking SemVer 2 validity, which is
 essential for Helm 3 compatibility. The change is to prefix build number and
@@ -189,9 +249,9 @@ Helm 3 enforce this, while Helm 2 doesn't.
 
 - Prefix build info with n and h to ensure SemVer 2 validity, in order to solve Helm 3 compatibility [#87](https://github.com/jupyterhub/chartpress/pull/87) ([@consideRatio](https://github.com/consideRatio))
 
-## [0.5]
+## 0.5
 
-### [0.5.0] - 2019-12-01
+### 0.5.0 - 2019-12-01
 
 #### Added
 
@@ -208,9 +268,9 @@ Helm 3 enforce this, while Helm 2 doesn't.
 - Setup CD of PyPI releases on git tag pushes [#83](https://github.com/jupyterhub/chartpress/pull/83) ([@consideRatio](https://github.com/consideRatio))
 - Adopt bump2version for automating version bumps [#74](https://github.com/jupyterhub/chartpress/pull/74) ([@minrk](https://github.com/minrk))
 
-## [0.4]
+## 0.4
 
-### [0.4.3] - 2019-10-29 (Breaking changes)
+### 0.4.3 - 2019-10-29 (Breaking changes)
 
 0.4.3 contains important bug fixes for versions `0.4.0` to `0.4.2`. A big bug
 fixed was that charts published using `--publish-chart` replaced previous charts
@@ -260,12 +320,12 @@ commits.
         image: "image:tag" #  <--sets this here
   ```
 
-### [0.4.2] - 2019-10-19 (broken)
+### 0.4.2 - 2019-10-19 (broken)
 
 - --long flag to always output build information in image tags and chart version [#57](https://github.com/jupyterhub/chartpress/pull/57) ([@consideRatio](https://github.com/consideRatio))
 - Refactor publish_pages for comprehensibility [#56](https://github.com/jupyterhub/chartpress/pull/56) ([@consideRatio](https://github.com/consideRatio))
 
-### [0.4.1] - 2019-10-17 (broken)
+### 0.4.1 - 2019-10-17 (broken)
 
 - Deprecate --commit-range [#55](https://github.com/jupyterhub/chartpress/pull/55) ([@consideRatio](https://github.com/consideRatio))
 - Reset Chart.yaml's version to a valid value [#54](https://github.com/jupyterhub/chartpress/pull/54) ([@consideRatio](https://github.com/consideRatio))
@@ -276,41 +336,41 @@ commits.
 - Chart and image versioning, and Chart.yaml's --reset interaction [#52](https://github.com/jupyterhub/chartpress/pull/52) ([@consideRatio](https://github.com/consideRatio))
 - Add --version flag [#45](https://github.com/jupyterhub/chartpress/pull/45) ([@consideRatio](https://github.com/consideRatio))
 
-## [0.3]
+## 0.3
 
-### [0.3.2] - 2019-10-05
+### 0.3.2 - 2019-10-05
 
 - Update chartpress --help output in README.md [#42](https://github.com/jupyterhub/chartpress/pull/42) ([@consideRatio](https://github.com/consideRatio))
 - Add initial setup when starting from scratch [#36](https://github.com/jupyterhub/chartpress/pull/36) ([@manics](https://github.com/manics))
 - avoid mangling of quotes in rendered charts (#1) [#34](https://github.com/jupyterhub/chartpress/pull/34) ([@rokroskar](https://github.com/rokroskar))
 - Add --skip-build and add --reset to reset image tags as well as chart version [#28](https://github.com/jupyterhub/chartpress/pull/28) ([@rokroskar](https://github.com/rokroskar))
 
-### [0.3.1] - 2019-02-07
+### 0.3.1 - 2019-02-07
 
 - Fix conditionals for builds with new tagging scheme,
   by checking if images exist locally or on the registry
   rather than assuming the correct tag was pushed based on commit range.
 - Echo shell commands that are executed during the chartpress process
 
-### [0.3.0] - 2019-02-07
+### 0.3.0 - 2019-02-07
 
 - Add chart version as prefix to image tags (e.g. 0.8-abc123)
 - Fix requires-python metadata to specify that Python 3.6 is required
 
-## [0.2]
+## 0.2
 
-### [0.2.2] - 2018-09-19
+### 0.2.2 - 2018-09-19
 
 - Another ruamel.yaml type fix
 
-### [0.2.1] - 2018-09-10
+### 0.2.1 - 2018-09-10
 
 - Add `--image-prefix` option
 - Workaround ruamel.yaml bug when strings are all-digits
   and start with 0 and contain an 8 or 9.
 - Fix type checking for recent ruamel.yaml
 
-### [0.2.0] - 2018-05-29
+### 0.2.0 - 2018-05-29
 
 - Fix image tagging when building multiple images
 - Make image-building optional
@@ -319,12 +379,12 @@ commits.
 - Include chartpress.yaml when resolving last changed ref
 - Update only necessary fields
 
-## [0.1]
+## 0.1
 
-### [0.1.1] - 2018-02-23
+### 0.1.1 - 2018-02-23
 
 - Add missing dependency on ruamel.yaml
 
-### [0.1.0] - 2018-02-23
+### 0.1.0 - 2018-02-23
 
 first release!
