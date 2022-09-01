@@ -27,11 +27,9 @@ the suffix appended to chart versions and image tags is changed to look like
 #### New features added
 
 - use baseVersion config to set the base version for development releases (supersedes useChartVersion config) [#179](https://github.com/jupyterhub/chartpress/pull/179) ([@minrk](https://github.com/minrk))
-- (reverted) Add `useChartVersion` and change appended version suffix (now like `1.2.3-0.dev.git.3.h123`) [#150](https://github.com/jupyterhub/chartpress/pull/150) ([@minrk](https://github.com/minrk))
 
 #### Enhancements made
 
-- (reverted) accept --tag arg in --reset [#152](https://github.com/jupyterhub/chartpress/pull/152) ([@minrk](https://github.com/minrk))
 - Allow extra options to be passed to docker build [#142](https://github.com/jupyterhub/chartpress/pull/142) ([@adamblake](https://github.com/adamblake))
 
 #### Bugs fixed
@@ -44,6 +42,8 @@ the suffix appended to chart versions and image tags is changed to look like
 - Enforce that `--reset` is an exclusive argument [#180](https://github.com/jupyterhub/chartpress/pull/180) ([@minrk](https://github.com/minrk))
 - count commits on branch instead of commits since last tag on branch [#178](https://github.com/jupyterhub/chartpress/pull/178) ([@minrk](https://github.com/minrk))
 - pre-commit: add pyupgrade and isort (replaces reorder-python-imports) [#173](https://github.com/jupyterhub/chartpress/pull/173) ([@consideRatio](https://github.com/consideRatio))
+- (reverted) accept --tag arg in --reset [#152](https://github.com/jupyterhub/chartpress/pull/152) ([@minrk](https://github.com/minrk))
+- (reverted) Add `useChartVersion` and change appended version suffix (now like `1.2.3-0.dev.git.3.h123`) [#150](https://github.com/jupyterhub/chartpress/pull/150) ([@minrk](https://github.com/minrk))
 - Add tests with dev tags and backport branches [#145](https://github.com/jupyterhub/chartpress/pull/145) ([@minrk](https://github.com/minrk))
 - Drop support for py36 and misc ci maintenance [#144](https://github.com/jupyterhub/chartpress/pull/144) ([@consideRatio](https://github.com/consideRatio))
 - Remove six (no longer needed by docker) [#140](https://github.com/jupyterhub/chartpress/pull/140) ([@manics](https://github.com/manics))
