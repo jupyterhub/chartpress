@@ -843,6 +843,94 @@ def build_chart(
     # return version
     return version
 
+def publish_chart_oci(
+    chart_name,
+    chart_base,
+    chart_version,
+    chart_oci_repo,
+    chart_oci_prefix,
+    force=False,
+):
+    """
+    Update a Helm chart stored in an OCI registry (e.g. ghcr.io).
+
+    The strategy adopted to do this is:
+
+    1. Clone the Helm chart registry as found in the gh-pages branch of a git
+       reposistory.
+    2. If --force-publish-chart isn't specified, then verify that we won't
+       overwrite an existing chart version.
+    3. Create a temporary directory and `helm package` the chart into a file
+       within this temporary directory now only containing the chart .tar file.
+    4. Generate a index.yaml with `helm repo index` based on charts found in the
+       temporary directory folder (a single one), and then merge in the bigger
+       and existing index.yaml from the cloned Helm chart registry using the
+       --merge flag.
+    5. Copy the new index.yaml and packaged Helm chart .tar into the gh-pages
+       branch, commit it, and push it back to the origin remote.
+
+    Note that if we would add the new chart .tar file next to the other .tar
+    files and use `helm repo index` we would recreate `index.yaml` and update
+    all the timestamps etc. which is something we don't want. Using `helm repo
+    index` on a directory with only the new chart .tar file allows us to avoid
+    this issue.
+
+    Also note that the --merge flag will not override existing entries to the
+    fresh index.yaml file with the index.yaml from the --merge flag. Due to
+    this, it is as we would have a --force-publish-chart by default.
+    """
+
+    # clone/fetch the Helm chart repo and checkout its gh-pages branch, note the
+    # use of cwd (current working directory)
+
+    chart_dir = f"{chart_base}/{chart_name}"
+    _check_call(["git", "fetch"], cwd=chart_dir, echo=True)
+
+    # # check if a chart with the same name and version has already been published. If
+    # # there is, the behaviour depends on `--force-publish-chart`
+    # # and chart_version and make a decision based on the --force-publish-chart
+    # # flag if that is the case, but always log what's done
+    # if os.path.isfile(os.path.join(chart_dir, "index.yaml")):
+    #     with open(os.path.join(checkout_dir, "index.yaml")) as f:
+    #         chart_repo_index = yaml.load(f)
+    #         published_charts = chart_repo_index["entries"].get(chart_name, [])
+
+    #     if published_charts and any(
+    #         c["version"] == chart_version for c in published_charts
+    #     ):
+    #         if force:
+    #             _log(
+    #                 f"Chart of version {chart_version} already exists, overwriting it."
+    #             )
+    #         else:
+    #             _log(
+    #                 f"Skipping chart publishing of version {chart_version}, it is already published"
+    #             )
+    #             return
+
+    # package the latest version into a temporary directory
+    # and run helm repo index with --merge to update index.yaml
+    # without refreshing all of the timestamps
+    with TemporaryDirectory() as td:
+        _check_call(
+            [
+                "helm",
+                "package",
+                chart_name,
+                "--dependency-update",
+                "--destination",
+                td + "/",
+            ]
+        )
+
+        _check_call(
+            [
+                "helm",
+                "push",
+                chart_name + ".tgz",
+                "oci://" + chart_oci_repo + "/" + chart_oci_prefix,
+            ]
+        )
 
 def publish_pages(
     chart_name,
@@ -1240,15 +1328,24 @@ def main(argv=None):
 
         # publish chart
         if args.publish_chart:
-            publish_pages(
-                chart_name=chart["name"],
-                chart_version=chart_version,
-                chart_repo_github_path=chart["repo"]["git"],
-                chart_repo_url=chart["repo"]["published"],
-                extra_message=args.extra_message,
-                force=args.force_publish_chart,
-            )
-
+            if "oci" in chart["repo"]:
+                publish_chart_oci(
+                    chart_name=chart["name"],
+                    chart_base=chart["basepath"],
+                    chart_version=chart_version,
+                    chart_oci_repo=chart["repo"]["oci"],
+                    chart_oci_prefix=chart["repo"]["prefix"],
+                    force=args.force_publish_chart,
+                )
+            if "git" in chart["repo"]:
+                publish_pages(
+                    chart_name=chart["name"],
+                    chart_version=chart_version,
+                    chart_repo_github_path=chart["repo"]["git"],
+                    chart_repo_url=chart["repo"]["published"],
+                    extra_message=args.extra_message,
+                    force=args.force_publish_chart,
+                )
 
 if __name__ == "__main__":
     main()
