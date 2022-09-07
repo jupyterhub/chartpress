@@ -169,7 +169,7 @@ def test__get_image_extra_build_command_options(git_repo):
         # don't compare prereleases on the same tag
         ("1.2.3-0.dev", "1.2.3-alpha.1", 10, "1.2.3-0.dev"),
         # invalid baseVersion (not semver)
-        ("x.y.z", "1.2.3", 10, ValueError("valid semver pre")),
+        ("x.y.z", "1.2.3", 10, ValueError("valid semver version")),
         # not prerelease baseVersion
         ("1.2.4", "1.2.3", 10, "1.2.4-0.dev"),
         # check comparison with tag

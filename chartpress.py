@@ -984,7 +984,7 @@ def _check_base_version(base_version):
     match = _semver2.fullmatch(base_version)
     if not match:
         raise ValueError(
-            f"baseVersion: {base_version} must be a valid semver prerelease (e.g. 1.2.3-0.dev), but doesn't appear to be valid."
+            f"baseVersion: {base_version} must be a valid semver version (e.g. 1.2.3-0.dev), but doesn't appear to be valid."
         )
     base_version_groups = match.groupdict()
 
