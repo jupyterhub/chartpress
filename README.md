@@ -178,7 +178,11 @@ charts:
     # This gives you more control over development version tags
     # and lets you ensure prerelease tags are always sorted in the right order.
     # Only useful when publishing development releases.
-    baseVersion: 3.2.1-0.dev
+    # if this is not a prerelease version (no -suffix),
+    # the suffix `-0.dev` will be appended.
+    baseVersion: 3.2.1
+    # which is equivalent to
+    # baseVersion: 3.2.1-0.dev
 
     # The git repo whose gh-pages contains the charts. This can be a local
     # path such as "." as well but if matching <organization>/<repo> will be

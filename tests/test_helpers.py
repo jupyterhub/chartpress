@@ -162,35 +162,36 @@ def test__get_image_extra_build_command_options(git_repo):
 
 
 @pytest.mark.parametrize(
-    "base_version, tag, n_commits, status",
+    "base_version, tag, n_commits, result",
     [
         # OK, normal state
-        ("1.2.4-0.dev", "1.2.3", 10, "ok"),
+        ("1.2.4-0.dev", "1.2.3", 10, "1.2.4-0.dev"),
         # don't compare prereleases on the same tag
-        ("1.2.3-0.dev", "1.2.3-alpha.1", 10, "ok"),
+        ("1.2.3-0.dev", "1.2.3-alpha.1", 10, "1.2.3-0.dev"),
         # invalid baseVersion (not semver)
-        ("x.y.z", "1.2.3", 10, "valid semver prerelease"),
+        ("x.y.z", "1.2.3", 10, ValueError("valid semver pre")),
         # not prerelease baseVersion
-        ("1.2.4", "1.2.3", 10, "valid semver prerelease"),
+        ("1.2.4", "1.2.3", 10, "1.2.4-0.dev"),
         # check comparison with tag
-        ("1.2.2-0.dev", "1.2.3-alpha.1", 10, "is not greater"),
-        ("1.2.3-0.dev", "1.2.3", 10, "is not greater"),
-        ("1.2.3-0.dev", "2.0.0", 10, "is not greater"),
-        ("1.2.3-0.dev", "1.2.4-alpha.1", 10, "is not greater"),
+        ("1.2.2-0.dev", "1.2.3-alpha.1", 10, ValueError("is not greater")),
+        ("1.2.3-0.dev", "1.2.3", 10, ValueError("is not greater")),
+        ("1.2.3-0.dev", "2.0.0", 10, ValueError("is not greater")),
+        ("1.2.3-0.dev", "1.2.4-alpha.1", 10, ValueError("is not greater")),
         # don't check exactly on a tag
-        ("1.2.3-0.dev", "2.0.0", 0, "ok"),
+        ("1.2.3-0.dev", "2.0.0", 0, "1.2.3-0.dev"),
         # ignore invalid semver tags
-        ("1.2.3-0.dev", "x.y.z", 10, "ok"),
+        ("1.2.3-0.dev", "x.y.z", 10, "1.2.3-0.dev"),
     ],
 )
-def test_check_base_version(base_version, tag, n_commits, status):
+def test_check_base_version(base_version, tag, n_commits, result):
     with mock.patch.object(
         chartpress, "_get_latest_tag_and_count", lambda: (tag, n_commits)
     ):
-        if status == "ok":
-            chartpress._check_base_version(base_version)
-        else:
-            with pytest.raises(ValueError) as exc:
+        if isinstance(result, Exception):
+            with pytest.raises(result.__class__) as exc:
                 chartpress._check_base_version(base_version)
-            assert status in str(exc)
+            assert str(result) in str(exc)
             assert base_version in str(exc)
+        else:
+            used_version = chartpress._check_base_version(base_version)
+            assert used_version == result
