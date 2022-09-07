@@ -976,17 +976,17 @@ def _check_base_version(base_version):
     2. sort after the latest tag on the branch
     """
 
+    if "-" not in base_version:
+        # config version is a stable release,
+        # append default '-0.dev' so we always produce a prerelease
+        base_version = f"{base_version}-0.dev"
     # check valid value (baseVersion must be semver prerelease)
     match = _semver2.fullmatch(base_version)
     if not match:
         raise ValueError(
-            f"baseVersion: {base_version} must be a valid semver prerelease (e.g. 1.2.3-0.dev), but doesn't appear to be valid."
+            f"baseVersion: {base_version} must be a valid semver version (e.g. 1.2.3-0.dev), but doesn't appear to be valid."
         )
     base_version_groups = match.groupdict()
-    if not base_version_groups["prerelease"]:
-        raise ValueError(
-            f"baseVersion: {base_version} must be a valid semver prerelease (e.g. 1.2.3-0.dev), but is not a prerelease."
-        )
 
     def _version_number(groups):
         """Return comparable semver"""
@@ -1019,6 +1019,9 @@ def _check_base_version(base_version):
         else:
             # tag not semver. ignore? Not really our problem.
             _log(f"Latest tag {tag} does not appear to be a semver version")
+
+    # return base_version, in case it was modified
+    return base_version
 
 
 class ActionStoreDeprecated(argparse.Action):
@@ -1183,7 +1186,7 @@ def main(argv=None):
             # (e.g. forgetting to update after release)
             base_version = chart.get("baseVersion", None)
             if base_version:
-                _check_base_version(base_version)
+                base_version = _check_base_version(base_version)
 
         if not args.list_images:
             # update Chart.yaml with a version

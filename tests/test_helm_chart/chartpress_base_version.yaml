@@ -1,0 +1,15 @@
+charts:
+  - name: testchart
+    baseVersion: "1.0.0-0.dev"
+    resetTag: test-reset-tag
+    resetVersion: 0.0.1-test.reset.version
+    imagePrefix: testchart/
+    paths:
+      - extra-chart-path.txt
+    images:
+      testimage:
+        dockerfilePath: image/Dockerfile
+        valuesPath:
+          - image
+        paths:
+          - extra-image-path.txt
