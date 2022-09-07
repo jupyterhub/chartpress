@@ -4,3 +4,4 @@ gitpython
 pre-commit
 pytest
 pytest-cov
+tbump

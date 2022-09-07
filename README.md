@@ -178,11 +178,10 @@ charts:
     # This gives you more control over development version tags
     # and lets you ensure prerelease tags are always sorted in the right order.
     # Only useful when publishing development releases.
-    # if this is not a prerelease version (no -suffix),
+    # Recommended together with a version-bumping tool like `tbump`.
+    # if baseVersion is not a prerelease version (no -suffix),
     # the suffix `-0.dev` will be appended.
-    baseVersion: 3.2.1
-    # which is equivalent to
-    # baseVersion: 3.2.1-0.dev
+    baseVersion: 3.2.1-0.dev
 
     # The git repo whose gh-pages contains the charts. This can be a local
     # path such as "." as well but if matching <organization>/<repo> will be
@@ -293,24 +292,31 @@ This takes some extra configuration, and steps in your release process:
    ```
 
 2. You must update baseVersion, especially after making a release.
+   We recommend using a version bumping tool like [tbump][] to keep your baseVersion config and git tags in sync.
+
+[tbump]: https://github.com/your-tools/tbump
 
 A release process would generally look like this:
 
 ```bash
 V=1.2.3
-git tag -am "release $V" "$V"
-git push --atomic --follow-tags
+# tbump updates version, commits changes, tags commit, pushes branch and tag
+tbump "$V"
 
 # back to development
 NEXT_V=1.2.4-0.dev
-# edit chartpress.yaml to set baseVersion: $NEXT_V
-git add chartpress.yaml
-git commit -m "Back to $NEXT_V"
-git push --atomic
+# bump version config, but no tag for starting development
+tbump --no-tag "${NEXT_V}"
 ```
 
 Any prerelease fields (such as `-0.dev` above, or `-alpha.1`)
 will be left as-is, with the `.git.n.hash` suffix added.
+If there is no prerelease (e.g. on the exact commit of a tagged release),
+`-0.dev` will be added to the base version.
+You **must** update baseVersion after making a release,
+or `chartpress --reset` will fail due to incorrect ordering of versions.
+
+A sample tbump config file can be found in [our tests](./tests/test_helm_chart/tbump.toml).
 
 ## Caveats
 

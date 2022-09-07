@@ -1,4 +1,5 @@
 import os
+import subprocess
 import sys
 
 import pytest
@@ -242,6 +243,136 @@ def test_chartpress_run(git_repo, capfd, base_version):
     # return to main
     git_repo.git.checkout("main")
     git_repo.git.stash("pop")
+
+
+def test_tbump_release(git_repo, git_repo_base_version, capfd):
+    """Run through tagging"""
+
+    def get_base_version():
+        """Get baseVersion config from chartpress.yaml"""
+        with open("chartpress.yaml") as f:
+            chartpress_config = yaml.load(f)
+
+        chart = chartpress_config["charts"][0]
+        return chart["baseVersion"]
+
+    def get_chart_version():
+        """Get the current version in Chart.yaml"""
+        with open("testchart/Chart.yaml") as f:
+            chart = yaml.load(f)
+        return chart["version"]
+
+    # run chartpress with --no-build and any additional arguments
+    def run_chartpress(args=None):
+        """run chartpress with --no-build and any additional arguments"""
+        if args is None:
+            args = []
+        if args != ["--reset"]:
+            args = ["--no-build"] + args
+        out = _capture_output(args, capfd)
+        print(out)
+        return out
+
+    def tbump(args):
+        """Run tbump with args"""
+        subprocess.run(["git", "status"])
+        proc = subprocess.run(
+            ["tbump", "--non-interactive", "--no-push"] + args,
+            capture_output=True,
+            text=True,
+        )
+        # echo output before checking return code
+        # so we see it on errors
+        sys.stdout.write(proc.stdout)
+        sys.stderr.write(proc.stderr)
+        assert proc.returncode == 0
+        # increment commit count because tbump makes a commit
+        nonlocal n
+        n += 1
+        return proc.stdout, proc.stderr
+
+    base_version = get_base_version()
+    assert base_version == "1.0.0-0.dev"
+
+    # summarize information from git_repo
+    sha = git_repo.commit("HEAD").hexsha[:7]
+    n = chartpress._count_commits(sha)
+    tag = f"{base_version}.git.{n}.h{sha}"
+    run_chartpress()
+    assert get_chart_version() == tag
+
+    # tag a prerelease
+    run_chartpress(["--reset"])
+    version = "1.0.0-beta.1"
+    with open("chartpress.yaml") as f:
+        print(f.read())
+    tbump([version])
+    base_version = get_base_version()
+    assert base_version == version
+
+    # reset passes
+    run_chartpress(["--reset"])
+    # after chartpress, version is correct (no suffix)
+    run_chartpress()
+    assert get_chart_version() == version
+
+    extra_chart_path = "extra-chart-path.txt"
+    # add a commit
+    with open(extra_chart_path, "w") as f:
+        f.write("first")
+
+    git_repo.git.add(extra_chart_path)
+    sha = git_repo.index.commit("Added commit").hexsha[:7]
+    n += 1  # added a commit
+    tag = f"{base_version}.git.{n}.h{sha}"
+
+    # reset passes
+    run_chartpress(["--reset"])
+    # after chartpress, version is correct (with suffix)
+    run_chartpress()
+    assert get_chart_version() == tag
+
+    # tag a final release
+    run_chartpress(["--reset"])
+    version = "1.0.0"
+    tbump([version])
+    base_version = get_base_version()
+
+    # reset passes
+    run_chartpress(["--reset"])
+
+    # chartpress gets tag version
+    run_chartpress()
+    assert get_chart_version() == version
+
+    # reset before making a commit
+    run_chartpress(["--reset"])
+
+    # Add a commit (without bumping baseVersion)
+    with open(extra_chart_path, "w") as f:
+        f.write("second")
+
+    git_repo.git.add(extra_chart_path)
+    sha = git_repo.index.commit("Added commit").hexsha[:7]
+    n += 1  # added a commit
+
+    # reset balks because baseVersion hasn't been updated
+    with pytest.raises(ValueError, match="not greater than latest tag"):
+        run_chartpress(["--reset"])
+
+    # tbump next dev release (the last step of making a stable release)
+    base_version = "1.1.0-0.dev"
+    tbump(["--no-tag", base_version])
+
+    assert get_base_version() == base_version
+    # reset is happy now
+    run_chartpress(["--reset"])
+
+    # final chartpress render
+    run_chartpress()
+    sha = git_repo.heads.main.commit.hexsha[:7]
+    tag = f"{base_version}.git.{n}.h{sha}"
+    assert get_chart_version() == tag
 
 
 def test_chartpress_paths_configuration(git_repo, capfd):
