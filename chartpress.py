@@ -810,7 +810,7 @@ def build_chart(
     long=False,
     strict_version=False,
     base_version=None,
-    base_path=None,
+    base_path="",
 ):
     """
     Update Chart.yaml's version, using specified version or by constructing one.
