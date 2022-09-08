@@ -4,6 +4,12 @@
 
 ## 2.0
 
+### 2.1.0 - 2022-09-08
+
+#### Enhancements made
+
+- accept non-prerelease baseVersion (append -0.dev) [#184](https://github.com/jupyterhub/chartpress/pull/184) ([@minrk](https://github.com/minrk), [@consideRatio](https://github.com/consideRatio))
+
 ### 2.0.0 - 2022-08-30
 
 Make sure to read about the breaking changes and the release highlights below!
