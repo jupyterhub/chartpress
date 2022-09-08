@@ -844,6 +844,7 @@ def build_chart(
     # return version
     return version
 
+
 def publish_chart_oci(
     chart_name,
     chart_version,
@@ -904,14 +905,10 @@ def publish_chart_oci(
             ]
         )
     except subprocess.CalledProcessError:
-        _log(
-            f"Chart of version {chart_version} not already published, continuing."
-        )
+        _log(f"Chart of version {chart_version} not already published, continuing.")
     else:
         if force:
-            _log(
-                f"Chart of version {chart_version} already exists, overwriting it."
-            )
+            _log(f"Chart of version {chart_version} already exists, overwriting it.")
         else:
             _log(
                 f"Skipping chart publishing of version {chart_version}, it is already published"
@@ -941,6 +938,7 @@ def publish_chart_oci(
                 "oci://" + chart_oci_repo + "/" + chart_oci_prefix,
             ]
         )
+
 
 def publish_pages(
     chart_name,
@@ -1357,6 +1355,7 @@ def main(argv=None):
                     extra_message=args.extra_message,
                     force=args.force_publish_chart,
                 )
+
 
 if __name__ == "__main__":
     main()
