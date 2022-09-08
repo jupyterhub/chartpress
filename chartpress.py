@@ -334,13 +334,13 @@ def _get_all_image_paths(name, options):
 
 def _get_chart_base_path(options):
     """
-    Return the image's contextPath configuration value, or a default value based
-    on the image name.
+    Return the basePath which will be prepended to the chart name when loading the chart directory,
+    or an empty value, meaning the chart directory is assumed to be in the same root as `chartpress.yaml`.
     """
     if options.get("basePath"):
         return options["basePath"]
     else:
-        return "./"
+        return ""
 
 
 def _get_all_chart_paths(options):
