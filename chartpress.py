@@ -331,6 +331,15 @@ def _get_all_image_paths(name, options):
     paths.extend(options.get("paths", []))
     return list(set(paths))
 
+def _get_chart_base_path(options):
+    """
+    Return the image's contextPath configuration value, or a default value based
+    on the image name.
+    """
+    if options.get("basePath"):
+        return options["basePath"]
+    else:
+        return "./"
 
 def _get_all_chart_paths(options):
     """
@@ -697,7 +706,7 @@ def build_images(
     return values_file_modifications
 
 
-def _update_values_file_with_modifications(name, modifications, base_path="./"):
+def _update_values_file_with_modifications(name, modifications, base_path):
     """
     Update <name>/values.yaml file with a dictionary of modifications with its
     root level keys representing a path within the values.yaml file.
@@ -799,7 +808,7 @@ def build_chart(
     long=False,
     strict_version=False,
     base_version=None,
-    base_path="./",
+    base_path,
 ):
     """
     Update Chart.yaml's version, using specified version or by constructing one.
@@ -1284,6 +1293,8 @@ def main(argv=None):
             if base_version:
                 base_version = _check_base_version(base_version)
 
+
+        chart_base_path = _get_chart_base_path(chart)
         if not args.list_images:
             # update Chart.yaml with a version
             chart_version = build_chart(
@@ -1293,7 +1304,7 @@ def main(argv=None):
                 base_version=base_version,
                 long=args.long,
                 strict_version=args.publish_chart,
-                base_path=chart["basePath"],
+                base_path=chart_base_path,
             )
 
         if "images" in chart:
@@ -1332,7 +1343,7 @@ def main(argv=None):
 
             # update values.yaml
             _update_values_file_with_modifications(
-                chart["name"], values_file_modifications, chart["basePath"]
+                chart["name"], values_file_modifications, chart_base_path
             )
 
         # publish chart
@@ -1344,7 +1355,7 @@ def main(argv=None):
                     chart_oci_repo=chart["repo"]["oci"],
                     chart_oci_prefix=chart["repo"]["prefix"],
                     force=args.force_publish_chart,
-                    chart_base=chart["basePath"],
+                    chart_base=chart_base_path,
                 )
             if "git" in chart["repo"]:
                 publish_pages(
