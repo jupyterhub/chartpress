@@ -808,7 +808,7 @@ def build_chart(
     long=False,
     strict_version=False,
     base_version=None,
-    base_path,
+    base_path=None,
 ):
     """
     Update Chart.yaml's version, using specified version or by constructing one.
@@ -857,10 +857,10 @@ def build_chart(
 def publish_chart_oci(
     chart_name,
     chart_version,
+    chart_base,
     chart_oci_repo,
     chart_oci_prefix,
     force=False,
-    chart_base="./",
 ):
     """
     Update a Helm chart stored in an OCI registry (e.g. ghcr.io).
@@ -1352,10 +1352,10 @@ def main(argv=None):
                 publish_chart_oci(
                     chart_name=chart["name"],
                     chart_version=chart_version,
+                    chart_base=chart_base_path,
                     chart_oci_repo=chart["repo"]["oci"],
                     chart_oci_prefix=chart["repo"]["prefix"],
                     force=args.force_publish_chart,
-                    chart_base=chart_base_path,
                 )
             if "git" in chart["repo"]:
                 publish_pages(
