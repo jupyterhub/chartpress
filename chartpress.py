@@ -331,6 +331,7 @@ def _get_all_image_paths(name, options):
     paths.extend(options.get("paths", []))
     return list(set(paths))
 
+
 def _get_chart_base_path(options):
     """
     Return the image's contextPath configuration value, or a default value based
@@ -340,6 +341,7 @@ def _get_chart_base_path(options):
         return options["basePath"]
     else:
         return "./"
+
 
 def _get_all_chart_paths(options):
     """
@@ -1292,7 +1294,6 @@ def main(argv=None):
             base_version = chart.get("baseVersion", None)
             if base_version:
                 base_version = _check_base_version(base_version)
-
 
         chart_base_path = _get_chart_base_path(chart)
         if not args.list_images:
