@@ -697,7 +697,7 @@ def build_images(
     return values_file_modifications
 
 
-def _update_values_file_with_modifications(name, base_path, modifications):
+def _update_values_file_with_modifications(name, modifications, base_path="./"):
     """
     Update <name>/values.yaml file with a dictionary of modifications with its
     root level keys representing a path within the values.yaml file.
@@ -799,7 +799,7 @@ def build_chart(
     long=False,
     strict_version=False,
     base_version=None,
-    base_path=None,
+    base_path="./",
 ):
     """
     Update Chart.yaml's version, using specified version or by constructing one.
@@ -846,11 +846,11 @@ def build_chart(
 
 def publish_chart_oci(
     chart_name,
-    chart_base,
     chart_version,
     chart_oci_repo,
     chart_oci_prefix,
     force=False,
+    chart_base="./",
 ):
     """
     Update a Helm chart stored in an OCI registry (e.g. ghcr.io).
@@ -1334,7 +1334,7 @@ def main(argv=None):
 
             # update values.yaml
             _update_values_file_with_modifications(
-                chart["name"], chart["basePath"], values_file_modifications
+                chart["name"], values_file_modifications, chart["basePath"]
             )
 
         # publish chart
@@ -1342,11 +1342,11 @@ def main(argv=None):
             if "oci" in chart["repo"]:
                 publish_chart_oci(
                     chart_name=chart["name"],
-                    chart_base=chart["basePath"],
                     chart_version=chart_version,
                     chart_oci_repo=chart["repo"]["oci"],
                     chart_oci_prefix=chart["repo"]["prefix"],
                     force=args.force_publish_chart,
+                    chart_base=chart["basePath"],
                 )
             if "git" in chart["repo"]:
                 publish_pages(
