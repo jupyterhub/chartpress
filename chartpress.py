@@ -264,9 +264,8 @@ def _get_current_branchname(**kwargs):
         _check_output(
             [
                 "git",
-                "symbolic-ref",
-                "--short",
-                "HEAD",
+                "branch",
+                "--show-current",
             ],
             **kwargs,
         )
