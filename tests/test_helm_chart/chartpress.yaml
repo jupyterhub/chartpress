@@ -12,11 +12,11 @@ charts:
       testimage:
         buildArgs:
           TEST_STATIC_BUILD_ARG: "test"
-          TEST_DYNAMIC_BUILD_ARG: "{TAG}-{LAST_COMMIT}"
+          TEST_DYNAMIC_BUILD_ARG: "{TAG}-{LAST_COMMIT}-{BRANCH}"
         extraBuildCommandOptions:
           - --label=maintainer=octocat
           - --label
-          - ref={TAG}-{LAST_COMMIT}
+          - ref={TAG}-{LAST_COMMIT}-{BRANCH}
           - --rm
         contextPath: image
         dockerfilePath: image/Dockerfile

@@ -45,6 +45,7 @@ def test_chartpress_run(git_repo, capfd, base_version):
     # summarize information from git_repo
     sha = git_repo.commit("HEAD").hexsha[:7]
     tag = f"0.0.1-{PRERELEASE_PREFIX}.1.h{sha}"
+    branch = "main"
     check_version(tag)
 
     # run chartpress
@@ -56,7 +57,7 @@ def test_chartpress_run(git_repo, capfd, base_version):
 
     # verify the passing of static and dynamic --build-args
     assert "--build-arg TEST_STATIC_BUILD_ARG=test" in out
-    assert f"--build-arg TEST_DYNAMIC_BUILD_ARG={tag}-{sha}" in out
+    assert f"--build-arg TEST_DYNAMIC_BUILD_ARG={tag}-{sha}-{branch}" in out
 
     # verify updates of Chart.yaml and values.yaml
     assert f"Updating testchart/Chart.yaml: version: {tag}" in out

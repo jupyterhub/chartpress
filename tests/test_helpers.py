@@ -127,13 +127,14 @@ def test__get_image_build_args(git_repo):
                 {
                     "LAST_COMMIT": "sha",
                     "TAG": "tag",
+                    "BRANCH": "branch",
                 },
             )
             assert name in ("testimage", "amd64only")
             if name == "testimage":
                 assert build_args == {
                     "TEST_STATIC_BUILD_ARG": "test",
-                    "TEST_DYNAMIC_BUILD_ARG": "tag-sha",
+                    "TEST_DYNAMIC_BUILD_ARG": "tag-sha-branch",
                 }
             else:
                 assert build_args == {}
@@ -149,6 +150,7 @@ def test__get_image_extra_build_command_options(git_repo):
                 {
                     "LAST_COMMIT": "sha",
                     "TAG": "tag",
+                    "BRANCH": "branch",
                 },
             )
             assert name in ("testimage", "amd64only")
@@ -156,7 +158,7 @@ def test__get_image_extra_build_command_options(git_repo):
                 assert extra_build_command_options == [
                     "--label=maintainer=octocat",
                     "--label",
-                    "ref=tag-sha",
+                    "ref=tag-sha-branch",
                     "--rm",
                 ]
 
