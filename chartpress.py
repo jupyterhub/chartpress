@@ -256,6 +256,24 @@ def _get_latest_commit_tagged_or_modifying_paths(*paths, **kwargs):
         return latest_commit_modifying_path
 
 
+def _get_current_branchname(**kwargs):
+    """
+    Get the current branch name from Git.
+    """
+    return (
+        _check_output(
+            [
+                "git",
+                "branch",
+                "--show-current",
+            ],
+            **kwargs,
+        )
+        .decode("utf-8")
+        .strip()
+    )
+
+
 def _get_image_build_args(image_options, ns):
     """
     Render buildArgs from chartpress.yaml that could be templates, using
@@ -663,7 +681,6 @@ def build_images(
             if not platforms:
                 _log(f"Skipping build for {image_spec}, no matching platforms")
                 continue
-
         # build image and optionally push image
         if force_build or _image_needs_building(image_spec, platforms):
             expansion_namespace = {
@@ -671,6 +688,7 @@ def build_images(
                     *all_image_paths, echo=False
                 ),
                 "TAG": image_tag,
+                "BRANCH": _get_current_branchname(echo=False),
             }
             build_image(
                 image_spec,
