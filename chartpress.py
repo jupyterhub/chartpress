@@ -643,6 +643,10 @@ def build_images(
         The base version string (before '.git'), used when useChartVersion is True
         instead of the tag found via `git describe`.
     """
+    if platforms:
+        # for later use of set operations like .difference()
+        platforms = frozenset(platforms)
+
     values_file_modifications = {}
     for name, options in images.items():
         # include chartpress.yaml in the image paths to inspect as
@@ -674,11 +678,10 @@ def build_images(
         image_spec = f"{image_name}:{image_tag}"
 
         skip_platforms = options.get("skipPlatforms", [])
-        if platforms:
-            platforms = frozenset(platforms)
+        image_platforms = platforms
         if platforms and skip_platforms:
-            platforms = platforms.difference(skip_platforms)
-            if not platforms:
+            image_platforms = platforms.difference(skip_platforms)
+            if not image_platforms:
                 _log(f"Skipping build for {image_spec}, no matching platforms")
                 continue
         # build image and optionally push image
@@ -700,7 +703,7 @@ def build_images(
                 ),
                 push=push or force_push,
                 builder=builder,
-                platforms=platforms,
+                platforms=image_platforms,
             )
         else:
             _log(f"Skipping build for {image_spec}, it already exists")
