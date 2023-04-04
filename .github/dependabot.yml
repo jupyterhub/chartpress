@@ -5,16 +5,13 @@
 #   https://github.com/jupyterhub/chartpress/network/updates.
 # - YAML anchors are not supported here or in GitHub Workflows.
 #
-
 version: 2
 updates:
   # Maintain dependencies in our GitHub Workflows
-  - package-ecosystem: "github-actions"
-    directory: "/" # This should be / rather than .github/workflows
+  - package-ecosystem: github-actions
+    directory: /
+    labels: [ci]
     schedule:
-      interval: daily
+      interval: monthly
       time: "05:00"
-      timezone: "Etc/UTC"
-    labels:
-      - maintenance
-      - dependencies
+      timezone: Etc/UTC
