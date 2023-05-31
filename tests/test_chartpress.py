@@ -35,27 +35,51 @@ def test_list_images(git_repo):
 
 
 def _get_architectures_from_manifest(name, tag):
+    """
+    Asks the registry about the pushed image and inspects the manifests
+    associated with it. The manifests can represents the image for different
+    platforms, but can also be an attestation manifest with a platform of
+    "unknown".
+
+    If docker buildx 0.10.0 or later (released Jan 10, 2023) is used, the built
+    image is an OCI image with a attestation by default because `docker buildx
+    build` comes with `--provenance=true` by default.
+
+    To debug this with curl:
+
+        NAME=image_name
+        TAG=image_tag
+        curl -H 'Accept: application/vnd.docker.distribution.manifest.v2+json, application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json' localhost:5000/v2/$NAME/manifests/$TAG
+    """
     # https://docs.docker.com/registry/spec/manifest-v2-2/
-    # To debug this with curl:
-    # curl -H 'Accept: application/vnd.docker.distribution.manifest.list.v2+json, application/vnd.docker.distribution.manifest.v2+json' localhost:5000/v2/{name}/manifests/{tag}
-    MANIFEST_LIST = "application/vnd.docker.distribution.manifest.list.v2+json"
-    MANIFEST = "application/vnd.docker.distribution.manifest.v2+json"
+    DOCKER_INDEX = "application/vnd.docker.distribution.manifest.list.v2+json"
+    DOCKER_MANIFEST = "application/vnd.docker.distribution.manifest.v2+json"
+
+    # https://github.com/opencontainers/image-spec/blob/main/image-index.md
+    OCI_INDEX = "application/vnd.oci.image.index.v1+json"
+    OCI_MANIFEST = "application/vnd.oci.image.manifest.v1+json"
 
     r = Request(
         f"http://localhost:5000/v2/{name}/manifests/{tag}",
-        headers={"Accept": f"{MANIFEST_LIST}, {MANIFEST}"},
+        headers={
+            "Accept": f"{DOCKER_INDEX}, {DOCKER_MANIFEST}, {OCI_INDEX}, {OCI_MANIFEST}"
+        },
     )
     with urlopen(r) as h:
         d = json.load(h)
 
-    assert d["mediaType"] in (MANIFEST_LIST, MANIFEST)
-    if d["mediaType"] == MANIFEST_LIST:
+    assert d["mediaType"] in (DOCKER_INDEX, DOCKER_MANIFEST, OCI_INDEX, OCI_MANIFEST)
+
+    if d["mediaType"] in (OCI_INDEX, DOCKER_INDEX):
         assert "manifests" in d
         architectures = sorted(
-            manifest["platform"]["architecture"] for manifest in d["manifests"]
+            manifest["platform"]["architecture"]
+            for manifest in d["manifests"]
+            if manifest["platform"]["architecture"] != "unknown"
         )
     else:
-        assert "manifests" not in d
+        # A DOCKER_MANIFEST has likely been sent, possibly a OCI_MANIFEST but
+        # that hasn't been observed happening.
         architectures = None
 
     return architectures
@@ -115,4 +139,4 @@ def test_buildx(git_repo, capfd):
     assert architectures == ["amd64", "arm64", "ppc64le"]
 
     architectures = _get_architectures_from_manifest("test-buildx/amd64only", tag)
-    assert architectures is None
+    assert architectures is None or architectures == ["amd64"]
