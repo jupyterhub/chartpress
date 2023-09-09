@@ -1,5 +1,4 @@
 bump2version
-codecov
 gitpython
 pre-commit
 pytest
