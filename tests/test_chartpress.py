@@ -117,15 +117,15 @@ def test_buildx(git_repo, capfd):
     # Note: Parsing stderr for these logs may be fragile. We could probably omit
     # it and just verify the registry manifests instead.
 
-    assert "[linux/amd64 1/1] FROM docker.io/library/alpine@" in stderr
-    assert "[linux/arm64 1/1] FROM docker.io/library/alpine@" in stderr
-    assert "[linux/ppc64le 1/1] FROM docker.io/library/alpine@" in stderr
+    assert "[linux/amd64 1/1] FROM docker.io/library/alpine" in stderr
+    assert "[linux/arm64 1/1] FROM docker.io/library/alpine" in stderr
+    assert "[linux/ppc64le 1/1] FROM docker.io/library/alpine" in stderr
 
     # If there's only one platform it doesn't appear in the output logs
-    # assert "[linux/amd64 1/1] FROM docker.io/library/busybox@" in stderr
-    assert "[1/1] FROM docker.io/library/busybox@" in stderr
-    assert "[linux/arm64 1/1] FROM docker.io/library/busybox@" not in stderr
-    assert "[linux/ppc64le 1/1] FROM docker.io/library/busybox@" not in stderr
+    # assert "[linux/amd64 1/1] FROM docker.io/library/busybox" in stderr
+    assert "[1/1] FROM docker.io/library/busybox" in stderr
+    assert "[linux/arm64 1/1] FROM docker.io/library/busybox" not in stderr
+    assert "[linux/ppc64le 1/1] FROM docker.io/library/busybox" not in stderr
 
     assert f"pushing manifest for localhost:5000/test-buildx/testimage:{tag}" in stderr
     assert f"pushing manifest for localhost:5000/test-buildx/amd64only:{tag}" in stderr
