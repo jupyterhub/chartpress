@@ -1,5 +1,5 @@
 # This is a GitHub workflow defining a set of jobs with a set of steps.
-# ref: https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions
+# ref: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions
 #
 name: Test
 
@@ -21,7 +21,7 @@ on:
 
 jobs:
   chart-tests:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     strategy:
       # Keep running even if one variation of the job fail
@@ -36,6 +36,7 @@ jobs:
           - python: "3.8"
           - python: "3.9"
           - python: "3.10"
+          - python: "3.11"
 
     services:
       local-registry:
@@ -101,5 +102,5 @@ jobs:
         run: |
           pytest --verbose --color=yes --cov chartpress
 
-      - name: Upload coverage report
-        run: codecov
+      # GitHub action reference: https://github.com/codecov/codecov-action
+      - uses: codecov/codecov-action@v3

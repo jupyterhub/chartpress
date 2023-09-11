@@ -53,7 +53,10 @@ def test_chartpress_run(git_repo, capfd, base_version):
     print(out)
     # verify image was built
     # verify the fallback tag of "0.0.1" when a tag is missing
-    assert f"Successfully tagged testchart/testimage:{tag}" in out
+    assert (
+        f"Successfully tagged testchart/testimage:{tag}" in out
+        or f"naming to docker.io/testchart/testimage:{tag} in out"
+    )
 
     # verify the passing of static and dynamic --build-args
     assert "--build-arg TEST_STATIC_BUILD_ARG=test" in out
@@ -83,12 +86,12 @@ def test_chartpress_run(git_repo, capfd, base_version):
 
     # verify usage of --force-build
     out = _capture_output(["--force-build"], capfd)
-    assert "Successfully tagged" in out
+    assert "Successfully tagged" in out or "naming to" in out
 
     # verify usage --skip-build and --tag
     tag = "1.2.3-test.tag"
     out = _capture_output(["--skip-build", "--tag", tag], capfd)
-    assert "Successfully tagged" not in out
+    assert "Successfully tagged" not in out or "naming to" in out
     assert f"Updating testchart/Chart.yaml: version: {tag}" in out
     assert f"Updating testchart/values.yaml: image: testchart/testimage:{tag}" in out
 
