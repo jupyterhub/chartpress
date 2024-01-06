@@ -6,3 +6,6 @@ charts:
         imageName: alternativeimage
         contextPath: image
         valuesPath: image
+    repo:
+      git: "."
+      published: https://test.local

@@ -452,6 +452,7 @@ def test_chartpress_run_bare_minimum(git_repo_bare_minimum, capfd):
     assert f"Updating testchart/Chart.yaml: version: {tag}" in out
 
 
+@pytest.mark.skipif(os.environ.get("HELM2") == "helm2", reason="Skipping helm 2")
 def test_chartpress_run_alternative(git_repo_alternative, capfd):
     """
     Ensures that chartpress will run with an alternative configuration. This
@@ -466,9 +467,13 @@ def test_chartpress_run_alternative(git_repo_alternative, capfd):
     tag = "v1.0.0"
     check_version(tag)
 
-    out = _capture_output(["--skip-build", "--tag", tag], capfd)
+    out = _capture_output(["--skip-build", "--tag", tag, "--publish-chart"], capfd)
     assert f"Updating subdir/chart/Chart.yaml: version: {tag[1:]}" in out
     assert f"Updating subdir/chart/values.yaml: image: alternativeimage:{tag}" in out
+
+    gh_pages = r.heads["gh-pages"].commit.tree
+    expected_files = sorted(b.name for b in gh_pages.blobs)
+    assert expected_files == ["alternative-1.0.0.tgz", "index.yaml"]
 
 
 def _capture_output(args, capfd, expect_output=False):
