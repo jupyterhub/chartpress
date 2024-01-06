@@ -358,7 +358,7 @@ def _get_all_chart_paths(options):
     """
     paths = []
     paths.append("chartpress.yaml")
-    paths.append(options["name"])
+    paths.append(options["chartPath"])
     paths.extend(options.get("paths", []))
     if "images" in options:
         for image_name, image_config in options["images"].items():
@@ -719,9 +719,9 @@ def build_images(
     return values_file_modifications
 
 
-def _update_values_file_with_modifications(name, modifications):
+def _update_values_file_with_modifications(chart_path, modifications):
     """
-    Update <name>/values.yaml file with a dictionary of modifications with its
+    Update <chart_path>/values.yaml file with a dictionary of modifications with its
     root level keys representing a path within the values.yaml file.
 
     Example of a modifications dictionary:
@@ -737,7 +737,7 @@ def _update_values_file_with_modifications(name, modifications):
             }
         }
     """
-    values_file = os.path.join(name, "values.yaml")
+    values_file = os.path.join(chart_path, "values.yaml")
 
     with open(values_file) as f:
         values = yaml.load(f)
@@ -815,7 +815,7 @@ def _trim_version_suffix(version):
 
 
 def build_chart(
-    name,
+    chart_path,
     version=None,
     paths=None,
     long=False,
@@ -840,7 +840,7 @@ def build_chart(
         - 0.9.0
     """
     # read Chart.yaml
-    chart_file = os.path.join(name, "Chart.yaml")
+    chart_file = os.path.join(chart_path, "Chart.yaml")
     with open(chart_file) as f:
         chart = yaml.load(f)
 
@@ -873,6 +873,7 @@ def publish_pages(
     chart_repo_url,
     extra_message="",
     force=False,
+    chart_path=None,
 ):
     """
     Update a Helm chart registry hosted in the gh-pages branch of a GitHub git
@@ -903,6 +904,9 @@ def publish_pages(
     fresh index.yaml file with the index.yaml from the --merge flag. Due to
     this, it is as we would have a --force-publish-chart by default.
     """
+
+    if chart_path is None:
+        chart_path = chart_name
 
     # clone/fetch the Helm chart repo and checkout its gh-pages branch, note the
     # use of cwd (current working directory)
@@ -953,7 +957,7 @@ def publish_pages(
             [
                 "helm",
                 "package",
-                chart_name,
+                chart_path,
                 "--dependency-update",
                 "--destination",
                 td + "/",
@@ -1195,6 +1199,9 @@ def main(argv=None):
         forced_version = None
         base_version = None
 
+        if not chart.get("chartPath"):
+            chart["chartPath"] = chart["name"]
+
         if args.tag:
             # tag specified, use that version
             forced_version = args.tag
@@ -1213,7 +1220,7 @@ def main(argv=None):
         if not args.list_images:
             # update Chart.yaml with a version
             chart_version = build_chart(
-                chart["name"],
+                chart["chartPath"],
                 paths=_get_all_chart_paths(chart),
                 version=forced_version,
                 base_version=base_version,
@@ -1257,7 +1264,7 @@ def main(argv=None):
 
             # update values.yaml
             _update_values_file_with_modifications(
-                chart["name"], values_file_modifications
+                chart["chartPath"], values_file_modifications
             )
 
         # publish chart
@@ -1269,6 +1276,7 @@ def main(argv=None):
                 chart_repo_url=chart["repo"]["published"],
                 extra_message=args.extra_message,
                 force=args.force_publish_chart,
+                chart_path=chart["chartPath"],
             )
 
 

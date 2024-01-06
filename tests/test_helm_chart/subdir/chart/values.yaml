@@ -1,0 +1,4 @@
+image: alternative/alternative:set-by-chartpress
+list:
+  - "alternative/alternative:set-by-chartpress"
+  - image: "alternative/alternative:set-by-chartpress"

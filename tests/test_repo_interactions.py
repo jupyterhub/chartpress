@@ -456,7 +456,8 @@ def test_chartpress_run_alternative(git_repo_alternative, capfd):
     """
     Ensures that chartpress will run with an alternative configuration. This
     allow us to test against more kinds of configurations than we could squeeze
-    into a single chartpress.yaml file.
+    into a single chartpress.yaml file, including:
+    - chart name != chart directory name
     """
     r = git_repo_alternative
     sha = r.heads.main.commit.hexsha[:7]
@@ -466,8 +467,8 @@ def test_chartpress_run_alternative(git_repo_alternative, capfd):
     check_version(tag)
 
     out = _capture_output(["--skip-build", "--tag", tag], capfd)
-    assert f"Updating testchart/Chart.yaml: version: {tag[1:]}" in out
-    assert f"Updating testchart/values.yaml: image: testimage:{tag}" in out
+    assert f"Updating subdir/chart/Chart.yaml: version: {tag[1:]}" in out
+    assert f"Updating subdir/chart/values.yaml: image: alternativeimage:{tag}" in out
 
 
 def _capture_output(args, capfd, expect_output=False):
