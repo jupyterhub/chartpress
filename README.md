@@ -181,6 +181,9 @@ charts:
     # Recommended together with a version-bumping tool like `tbump`.
     # if baseVersion is not a prerelease version (no -suffix),
     # the suffix `-0.dev` will be appended.
+    #
+    # Alternatively this can be "major", "minor", or "patch", which will set
+    # baseVersion by incrementing the latest tag in the specified component.
     baseVersion: 3.2.1-0.dev
 
     # The git repo whose gh-pages contains the charts. This can be a local
