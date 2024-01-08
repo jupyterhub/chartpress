@@ -161,8 +161,12 @@ for each chart. Below is an example `chartpress.yaml` file.
 ```yaml
 charts:
   # list of charts by name
-  # each name should be a directory containing a helm chart
+  # each name should be the name of a Helm chart
   - name: binderhub
+    # Directory containing the chart, relative to chartpress.yaml.
+    # Can be omitted if the directory is the same as the chart name.
+    chartPath: helm-charts/binderhub
+
     # the prefix to use for built images
     imagePrefix: jupyterhub/k8s-
     # tag to use when resetting the chart values
