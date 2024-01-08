@@ -351,6 +351,17 @@ def _get_all_image_paths(name, options):
     return list(set(paths))
 
 
+def _get_chart_base_path(options):
+    """
+    Return the basePath which will be prepended to the chart name when loading the chart directory,
+    or an empty value, meaning the chart directory is assumed to be in the same root as `chartpress.yaml`.
+    """
+    if options.get("basePath"):
+        return options["basePath"]
+    else:
+        return ""
+
+
 def _get_all_chart_paths(options):
     """
     Returns the unique paths that when changed should trigger a version update
@@ -719,7 +730,7 @@ def build_images(
     return values_file_modifications
 
 
-def _update_values_file_with_modifications(name, modifications):
+def _update_values_file_with_modifications(name, modifications, base_path):
     """
     Update <name>/values.yaml file with a dictionary of modifications with its
     root level keys representing a path within the values.yaml file.
@@ -737,7 +748,7 @@ def _update_values_file_with_modifications(name, modifications):
             }
         }
     """
-    values_file = os.path.join(name, "values.yaml")
+    values_file = os.path.join(base_path, name, "values.yaml")
 
     with open(values_file) as f:
         values = yaml.load(f)
@@ -821,6 +832,7 @@ def build_chart(
     long=False,
     strict_version=False,
     base_version=None,
+    base_path="",
 ):
     """
     Update Chart.yaml's version, using specified version or by constructing one.
@@ -840,7 +852,7 @@ def build_chart(
         - 0.9.0
     """
     # read Chart.yaml
-    chart_file = os.path.join(name, "Chart.yaml")
+    chart_file = os.path.join(base_path, name, "Chart.yaml")
     with open(chart_file) as f:
         chart = yaml.load(f)
 
@@ -864,6 +876,101 @@ def build_chart(
 
     # return version
     return version
+
+
+def publish_chart_oci(
+    chart_name,
+    chart_version,
+    chart_base,
+    chart_oci_repo,
+    chart_oci_prefix,
+    force=False,
+):
+    """
+    Update a Helm chart stored in an OCI registry (e.g. ghcr.io).
+
+    The strategy adopted to do this is:
+
+    1. Clone the Helm chart registry as found in the gh-pages branch of a git
+       reposistory.
+    2. If --force-publish-chart isn't specified, then verify that we won't
+       overwrite an existing chart version.
+    3. Create a temporary directory and `helm package` the chart into a file
+       within this temporary directory now only containing the chart .tar file.
+    4. Generate a index.yaml with `helm repo index` based on charts found in the
+       temporary directory folder (a single one), and then merge in the bigger
+       and existing index.yaml from the cloned Helm chart registry using the
+       --merge flag.
+    5. Copy the new index.yaml and packaged Helm chart .tar into the gh-pages
+       branch, commit it, and push it back to the origin remote.
+
+    Note that if we would add the new chart .tar file next to the other .tar
+    files and use `helm repo index` we would recreate `index.yaml` and update
+    all the timestamps etc. which is something we don't want. Using `helm repo
+    index` on a directory with only the new chart .tar file allows us to avoid
+    this issue.
+
+    Also note that the --merge flag will not override existing entries to the
+    fresh index.yaml file with the index.yaml from the --merge flag. Due to
+    this, it is as we would have a --force-publish-chart by default.
+    """
+
+    # clone/fetch the Helm chart repo and checkout its gh-pages branch, note the
+    # use of cwd (current working directory)
+
+    chart_dir = f"{chart_base}/{chart_name}"
+    _check_call(["git", "fetch"], cwd=chart_dir, echo=True)
+
+    # check if a chart with the same name and version has already been published. If
+    # there is, the behaviour depends on `--force-publish-chart`
+    # and chart_version and make a decision based on the --force-publish-chart
+    # flag if that is the case, but always log what's done
+
+    try:
+        _check_call(
+            [
+                "helm",
+                "show",
+                "chart",
+                "oci://" + chart_oci_repo + "/" + chart_oci_prefix + "/" + chart_name,
+                "--version",
+                chart_version,
+            ]
+        )
+    except subprocess.CalledProcessError:
+        _log(f"Chart of version {chart_version} not already published, continuing.")
+    else:
+        if force:
+            _log(f"Chart of version {chart_version} already exists, overwriting it.")
+        else:
+            _log(
+                f"Skipping chart publishing of version {chart_version}, it is already published"
+            )
+            return
+
+    # package the latest version into a temporary directory
+    # and run helm repo index with --merge to update index.yaml
+    # without refreshing all of the timestamps
+    with TemporaryDirectory() as td:
+        _check_call(
+            [
+                "helm",
+                "package",
+                chart_dir,
+                "--dependency-update",
+                "--destination",
+                td + "/",
+            ]
+        )
+
+        _check_call(
+            [
+                "helm",
+                "push",
+                os.path.join(td, chart_name + "-" + chart_version + ".tgz"),
+                "oci://" + chart_oci_repo + "/" + chart_oci_prefix,
+            ]
+        )
 
 
 def publish_pages(
@@ -1210,6 +1317,7 @@ def main(argv=None):
             if base_version:
                 base_version = _check_base_version(base_version)
 
+        chart_base_path = _get_chart_base_path(chart)
         if not args.list_images:
             # update Chart.yaml with a version
             chart_version = build_chart(
@@ -1219,6 +1327,7 @@ def main(argv=None):
                 base_version=base_version,
                 long=args.long,
                 strict_version=args.publish_chart,
+                base_path=chart_base_path,
             )
 
         if "images" in chart:
@@ -1257,19 +1366,29 @@ def main(argv=None):
 
             # update values.yaml
             _update_values_file_with_modifications(
-                chart["name"], values_file_modifications
+                chart["name"], values_file_modifications, chart_base_path
             )
 
         # publish chart
         if args.publish_chart:
-            publish_pages(
-                chart_name=chart["name"],
-                chart_version=chart_version,
-                chart_repo_github_path=chart["repo"]["git"],
-                chart_repo_url=chart["repo"]["published"],
-                extra_message=args.extra_message,
-                force=args.force_publish_chart,
-            )
+            if "oci" in chart["repo"]:
+                publish_chart_oci(
+                    chart_name=chart["name"],
+                    chart_version=chart_version,
+                    chart_base=chart_base_path,
+                    chart_oci_repo=chart["repo"]["oci"],
+                    chart_oci_prefix=chart["repo"]["prefix"],
+                    force=args.force_publish_chart,
+                )
+            if "git" in chart["repo"]:
+                publish_pages(
+                    chart_name=chart["name"],
+                    chart_version=chart_version,
+                    chart_repo_github_path=chart["repo"]["git"],
+                    chart_repo_url=chart["repo"]["published"],
+                    extra_message=args.extra_message,
+                    force=args.force_publish_chart,
+                )
 
 
 if __name__ == "__main__":

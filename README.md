@@ -172,6 +172,9 @@ charts:
     # --reset flag. It defaults to "0.0.1-set.by.chartpress". This is a valid
     # SemVer 2 version, which is required for a helm lint command to succeed.
     resetVersion: 1.2.3-dev
+    # Base path, relative to `chartpress.yaml`, where named charts are kept.
+    # Default is same directory as `chartpress.yaml`
+    basePath: ./helmcharts
 
     # baseVersion sets the base version for development tags,
     # instead of using the latest tag from `git describe`.
@@ -189,6 +192,15 @@ charts:
     repo:
       git: jupyterhub/helm-chart
       published: https://jupyterhub.github.io/helm-chart
+
+    # Publishing Helm charts to OCI registries (with a custom path prefix) is also supported,
+    # via defining an `oci` key under `repo`.
+    # For example, the following will push a chart named `binderhub` to Github's OCI registry under the path
+    # `ghcr.io/jupyterhub/helm-charts/binderhub`
+    # repo:
+    #   oci: ghcr.io/jupyterhub
+    #   prefix: helm-charts
+
     # Additional paths that when modified should lead to an updated Chart.yaml
     # version, other than the chart directory in <chart name> or any path that
     # influence the images of the chart. These paths should be set relative to
