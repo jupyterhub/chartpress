@@ -194,6 +194,7 @@ def test__get_image_extra_build_command_options(git_repo):
             10,
             ValueError("not valid when latest tag x.y.z is not semver"),
         ),
+        ("patch", "1.2.3-beta.1", 10, "1.2.3-beta.1"),
     ],
 )
 def test_check_or_get_base_version(base_version, tag, n_commits, result):

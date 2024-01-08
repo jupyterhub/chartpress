@@ -1031,6 +1031,9 @@ def _check_or_get_base_version(base_version):
             raise ValueError(
                 f"baseVersion {base_version} is not valid when latest tag {tag} is not semver"
             )
+        if "-" in tag:
+            # If this is a prerelease we shouldn't need to increment anything
+            return tag
         new_base_version = _increment_semver(tag_version_number, base_version)
         return "{}.{}.{}-0.dev".format(*new_base_version)
 
