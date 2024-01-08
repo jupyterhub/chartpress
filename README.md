@@ -182,8 +182,10 @@ charts:
     # if baseVersion is not a prerelease version (no -suffix),
     # the suffix `-0.dev` will be appended.
     #
-    # Alternatively this can be "major", "minor", or "patch", which will set
-    # baseVersion by incrementing the latest tag in the specified component.
+    # Alternatively baseVersion can be set to "major", "minor", or "patch", then
+    # baseVersion will be calculated based on the latest version tag from `git
+    # describe`, but have its "major", "minor", or "patch" version increment if
+    # the version isn't a pre-release.
     baseVersion: 3.2.1-0.dev
 
     # The git repo whose gh-pages contains the charts. This can be a local
