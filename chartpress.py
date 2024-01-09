@@ -989,14 +989,53 @@ def publish_pages(
     _check_call(["git", "push", "origin", "gh-pages"], cwd=checkout_dir)
 
 
-def _check_base_version(base_version):
+def _increment_semver(version, field):
+    """Increment a semver (major,minor,patch) tuple in the specified field"""
+    if field == "major":
+        return (version[0] + 1, 0, 0)
+    if field == "minor":
+        return (version[0], version[1] + 1, 0)
+    if field == "patch":
+        return (version[0], version[1], version[2] + 1)
+    raise ValueError(f"field must be one of major, minor, patch, not {field}")
+
+
+def _check_or_get_base_version(base_version):
     """Verify that a baseVersion config is valid
 
-    If specified, base version needs to:
-
-    1. be a valid semver prerelease
-    2. sort after the latest tag on the branch
+    If specified, base version needs to be either:
+      - a valid semver prerelease that sorts after the latest tag on the branch
+      - a string "major" "minor" "patch" to indicate the base version is the latest
+        tag incremented in the specified field
     """
+
+    def _version_number(groups):
+        """Return comparable semver"""
+
+        return (
+            int(groups["major"]),
+            int(groups["minor"]),
+            int(groups["patch"]),
+        )
+
+    tag, count = _get_latest_tag_and_count()
+    if tag:
+        tag_match = _semver2.fullmatch(tag.lstrip("v"))
+        if tag_match:
+            tag_version_number = _version_number(tag_match.groupdict())
+
+    if base_version in ("major", "minor", "patch"):
+        if not tag:
+            return "0.0.1-0.dev"
+        if not tag_match:
+            raise ValueError(
+                f"baseVersion {base_version} is not valid when latest tag {tag} is not semver"
+            )
+        if "-" in tag:
+            # If this is a prerelease we shouldn't need to increment anything
+            return tag
+        new_base_version = _increment_semver(tag_version_number, base_version)
+        return "{}.{}.{}-0.dev".format(*new_base_version)
 
     if "-" not in base_version:
         # config version is a stable release,
@@ -1010,24 +1049,12 @@ def _check_base_version(base_version):
         )
     base_version_groups = match.groupdict()
 
-    def _version_number(groups):
-        """Return comparable semver"""
-
-        return (
-            int(groups["major"]),
-            int(groups["minor"]),
-            int(groups["patch"]),
-        )
-
     # check ordering with latest tag
     # do not check on a tagged commit
-    tag, count = _get_latest_tag_and_count()
     if tag and count:
-        tag_match = _semver2.fullmatch(tag.lstrip("v"))
         sort_error = f"baseVersion {base_version} is not greater than latest tag {tag}. Please update baseVersion config in chartpress.yaml."
         if tag_match:
             base_version_number = _version_number(base_version_groups)
-            tag_version_number = _version_number(tag_match.groupdict())
             if base_version_number < tag_version_number:
                 raise ValueError(sort_error)
             elif base_version_number == tag_version_number:
@@ -1208,7 +1235,7 @@ def main(argv=None):
             # (e.g. forgetting to update after release)
             base_version = chart.get("baseVersion", None)
             if base_version:
-                base_version = _check_base_version(base_version)
+                base_version = _check_or_get_base_version(base_version)
 
         if not args.list_images:
             # update Chart.yaml with a version

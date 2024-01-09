@@ -183,17 +183,29 @@ def test__get_image_extra_build_command_options(git_repo):
         ("1.2.3-0.dev", "2.0.0", 0, "1.2.3-0.dev"),
         # ignore invalid semver tags
         ("1.2.3-0.dev", "x.y.z", 10, "1.2.3-0.dev"),
+        # autoincrement latest tag
+        ("major", "1.2.3", 10, "2.0.0-0.dev"),
+        ("minor", "1.2.3", 10, "1.3.0-0.dev"),
+        ("patch", "1.2.3", 10, "1.2.4-0.dev"),
+        ("patch", None, 10, "0.0.1-0.dev"),
+        (
+            "patch",
+            "x.y.z",
+            10,
+            ValueError("not valid when latest tag x.y.z is not semver"),
+        ),
+        ("patch", "1.2.3-beta.1", 10, "1.2.3-beta.1"),
     ],
 )
-def test_check_base_version(base_version, tag, n_commits, result):
+def test_check_or_get_base_version(base_version, tag, n_commits, result):
     with mock.patch.object(
         chartpress, "_get_latest_tag_and_count", lambda: (tag, n_commits)
     ):
         if isinstance(result, Exception):
             with pytest.raises(result.__class__) as exc:
-                chartpress._check_base_version(base_version)
+                chartpress._check_or_get_base_version(base_version)
             assert str(result) in str(exc)
             assert base_version in str(exc)
         else:
-            used_version = chartpress._check_base_version(base_version)
+            used_version = chartpress._check_or_get_base_version(base_version)
             assert used_version == result
