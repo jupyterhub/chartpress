@@ -1,7 +1,11 @@
 charts:
-  - name: testchart
+  - name: alternative
+    chartPath: subdir/chart
     images:
       testimage:
-        imageName: testimage
+        imageName: alternativeimage
         contextPath: image
         valuesPath: image
+    repo:
+      git: "."
+      published: https://test.local
