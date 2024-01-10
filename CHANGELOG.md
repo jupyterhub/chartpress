@@ -27,7 +27,7 @@
 
 See [full changelog](https://github.com/jupyterhub/chartpress/compare/2.1.0...2.2.0) for dependabot and pre-commit.ci updates.
 
-## Contributors to this release
+#### Contributors to this release
 
 The following people contributed discussions, new ideas, code and documentation contributions, and review.
 See [our definition of contributors](https://github-activity.readthedocs.io/en/latest/#how-does-this-tool-define-contributions-in-the-reports).
