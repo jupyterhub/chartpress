@@ -25,38 +25,7 @@
 
 #### Other merged PRs
 
-- build(deps): bump actions/setup-python from 4 to 5 [#228](https://github.com/jupyterhub/chartpress/pull/228) ([@consideRatio](https://github.com/consideRatio))
-- [pre-commit.ci] pre-commit autoupdate [#227](https://github.com/jupyterhub/chartpress/pull/227) ([@consideRatio](https://github.com/consideRatio))
-- [pre-commit.ci] pre-commit autoupdate [#226](https://github.com/jupyterhub/chartpress/pull/226) ([@minrk](https://github.com/minrk))
-- [pre-commit.ci] pre-commit autoupdate [#225](https://github.com/jupyterhub/chartpress/pull/225) ([@consideRatio](https://github.com/consideRatio))
-- build(deps): bump actions/checkout from 3 to 4 [#224](https://github.com/jupyterhub/chartpress/pull/224) ([@consideRatio](https://github.com/consideRatio))
-- build(deps): bump docker/setup-buildx-action from 2 to 3 [#223](https://github.com/jupyterhub/chartpress/pull/223) ([@consideRatio](https://github.com/consideRatio))
-- [pre-commit.ci] pre-commit autoupdate [#221](https://github.com/jupyterhub/chartpress/pull/221) ([@consideRatio](https://github.com/consideRatio))
-- [pre-commit.ci] pre-commit autoupdate [#220](https://github.com/jupyterhub/chartpress/pull/220) ([@consideRatio](https://github.com/consideRatio))
-- [pre-commit.ci] pre-commit autoupdate [#219](https://github.com/jupyterhub/chartpress/pull/219) ([@consideRatio](https://github.com/consideRatio))
-- Bump pypa/gh-action-pypi-publish from 1.8.6 to release/v1 (edited) [#218](https://github.com/jupyterhub/chartpress/pull/218) ([@consideRatio](https://github.com/consideRatio))
-- [pre-commit.ci] pre-commit autoupdate [#217](https://github.com/jupyterhub/chartpress/pull/217) ([@minrk](https://github.com/minrk))
-- Bump pypa/gh-action-pypi-publish from 1.8.5 to 1.8.6 [#216](https://github.com/jupyterhub/chartpress/pull/216) ([@consideRatio](https://github.com/consideRatio))
-- [pre-commit.ci] pre-commit autoupdate [#214](https://github.com/jupyterhub/chartpress/pull/214) ([@consideRatio](https://github.com/consideRatio))
-- dependabot: monthly updates of github actions [#213](https://github.com/jupyterhub/chartpress/pull/213) ([@consideRatio](https://github.com/consideRatio))
-- [pre-commit.ci] pre-commit autoupdate [#212](https://github.com/jupyterhub/chartpress/pull/212) ([@consideRatio](https://github.com/consideRatio))
-- Bump pypa/gh-action-pypi-publish from 1.8.1 to 1.8.5 [#211](https://github.com/jupyterhub/chartpress/pull/211) ([@minrk](https://github.com/minrk))
-- Bump pypa/gh-action-pypi-publish from 1.8.0 to 1.8.1 [#208](https://github.com/jupyterhub/chartpress/pull/208) ([@consideRatio](https://github.com/consideRatio))
-- Bump pypa/gh-action-pypi-publish from 1.7.1 to 1.8.0 [#207](https://github.com/jupyterhub/chartpress/pull/207) ([@consideRatio](https://github.com/consideRatio))
-- Bump pypa/gh-action-pypi-publish from 1.6.4 to 1.7.1 [#206](https://github.com/jupyterhub/chartpress/pull/206) ([@minrk](https://github.com/minrk))
-- [pre-commit.ci] pre-commit autoupdate [#204](https://github.com/jupyterhub/chartpress/pull/204) ([@consideRatio](https://github.com/consideRatio))
-- [pre-commit.ci] pre-commit autoupdate [#202](https://github.com/jupyterhub/chartpress/pull/202) ([@consideRatio](https://github.com/consideRatio))
-- [pre-commit.ci] pre-commit autoupdate [#201](https://github.com/jupyterhub/chartpress/pull/201) ([@consideRatio](https://github.com/consideRatio))
-- [pre-commit.ci] pre-commit autoupdate [#200](https://github.com/jupyterhub/chartpress/pull/200) ([@consideRatio](https://github.com/consideRatio))
-- Bump pypa/gh-action-pypi-publish from 1.6.1 to 1.6.4 [#199](https://github.com/jupyterhub/chartpress/pull/199) ([@consideRatio](https://github.com/consideRatio))
-- Bump pypa/gh-action-pypi-publish from 1.5.2 to 1.6.1 [#198](https://github.com/jupyterhub/chartpress/pull/198) ([@consideRatio](https://github.com/consideRatio))
-- [pre-commit.ci] pre-commit autoupdate [#197](https://github.com/jupyterhub/chartpress/pull/197) ([@consideRatio](https://github.com/consideRatio))
-- Bump pypa/gh-action-pypi-publish from 1.5.1 to 1.5.2 [#196](https://github.com/jupyterhub/chartpress/pull/196) ([@consideRatio](https://github.com/consideRatio))
-- [pre-commit.ci] pre-commit autoupdate [#195](https://github.com/jupyterhub/chartpress/pull/195) ([@consideRatio](https://github.com/consideRatio))
-- [pre-commit.ci] pre-commit autoupdate [#194](https://github.com/jupyterhub/chartpress/pull/194) ([@minrk](https://github.com/minrk))
-- [pre-commit.ci] pre-commit autoupdate [#192](https://github.com/jupyterhub/chartpress/pull/192) ([@consideRatio](https://github.com/consideRatio))
-- [pre-commit.ci] pre-commit autoupdate [#188](https://github.com/jupyterhub/chartpress/pull/188) ([@minrk](https://github.com/minrk))
-- [pre-commit.ci] pre-commit autoupdate [#183](https://github.com/jupyterhub/chartpress/pull/183) ([@consideRatio](https://github.com/consideRatio))
+See [full changelog](https://github.com/jupyterhub/chartpress/compare/2.1.0...2.2.0) for dependabot and pre-commit.ci updates.
 
 ## Contributors to this release
 
