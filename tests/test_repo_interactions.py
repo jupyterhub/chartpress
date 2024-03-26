@@ -1,12 +1,23 @@
+import contextlib
 import os
 import subprocess
 import sys
+import tempfile
 
 import pytest
 from conftest import cache_clear
 
 import chartpress
 from chartpress import PRERELEASE_PREFIX, yaml
+
+
+@contextlib.contextmanager
+def temporary_copy(file_path):
+    with tempfile.NamedTemporaryFile(dir=".") as temp:
+        with open(file_path) as src:
+            temp.write(src.read().encode())
+            temp.flush()
+        yield temp.name
 
 
 def check_version(tag):
@@ -79,6 +90,23 @@ def test_chartpress_run(git_repo, capfd, base_version):
     assert (
         f"Updating testchart/values.yaml: image: testchart/testimage:{reset_tag}" in out
     )
+
+    # verify usage of --config
+    with temporary_copy("chartpress.yaml") as temp:
+        temp_reset_version = "set-with-temp-config"
+
+        with open(temp) as f:
+            temp_config = yaml.load(f)
+        temp_chart = temp_config["charts"][0]
+        temp_chart["resetVersion"] = temp_reset_version
+        with open(temp, "w") as f:
+            yaml.dump(temp_config, f)
+
+        with open(temp) as f:
+            temp_config = yaml.load(f)
+        temp_chart = temp_config["charts"][0]
+        out = _capture_output(["--reset", "--config", temp], capfd)
+        assert f"Updating testchart/Chart.yaml: version: {temp_reset_version}" in out
 
     # verify that we don't need to rebuild the image
     out = _capture_output([], capfd)
@@ -549,3 +577,15 @@ def test_reset_exclusive(git_repo, capfd):
         chartpress.main(["--reset", "--tag", "1.2.3"])
     out, err = capfd.readouterr()
     assert "no additional arguments" in err
+
+    with pytest.raises(SystemExit):
+        chartpress.main(["--reset", "--config=chartpress.yaml", "--tag", "1.2.3"])
+    out, err = capfd.readouterr()
+    assert "no additional arguments" in err
+    assert "chartpress.yaml" not in err
+
+    with pytest.raises(SystemExit):
+        chartpress.main(["--reset", "--config", "chartpress.yaml", "--tag", "1.2.3"])
+    out, err = capfd.readouterr()
+    assert "no additional arguments" in err
+    assert "chartpress.yaml" not in err
