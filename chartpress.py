@@ -1214,7 +1214,7 @@ def main(argv=None):
         # this could probably be clearer by using subparsers
         argv = list(argv or sys.argv[1:])
         argv.remove("--reset")
-        remove_config_arg(argv)
+        argv = _remove_config_arg(argv)
         if len(argv) > 1:
             extra_args = " ".join(shlex.quote(arg) for arg in argv)
             argparser.error(
@@ -1324,7 +1324,9 @@ def main(argv=None):
             )
 
 
-def remove_config_arg(argv):
+def _remove_config_arg(argv):
+    argv = [*argv]
+
     # get the index for --config, --config=something, or None
     config_idx = next(
         (i for i, arg in enumerate(argv) if arg.startswith("--config")),
@@ -1336,6 +1338,8 @@ def remove_config_arg(argv):
         if not argv[config_idx].startswith("--") and config_idx < len(argv):
             # remove the value of the --config argument if it was passed separately
             argv.pop(config_idx)
+
+    return argv
 
 
 if __name__ == "__main__":
