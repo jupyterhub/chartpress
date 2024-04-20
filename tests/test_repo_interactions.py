@@ -128,7 +128,9 @@ def test_chartpress_run(git_repo, capfd, base_version, config_name):
     )
 
     # verify usage of --image-prefix
-    out = _capture_output([*args, "--skip-build", "--image-prefix", "test-prefix/"], capfd)
+    out = _capture_output(
+        [*args, "--skip-build", "--image-prefix", "test-prefix/"], capfd
+    )
     assert f"Updating testchart/Chart.yaml: version: {tag}" in out
     assert f"Updating testchart/values.yaml: image: test-prefix/testimage:{tag}" in out
 
