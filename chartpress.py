@@ -4,6 +4,7 @@ Automate building and publishing helm charts and associated images.
 
 This is used as part of the JupyterHub and Binder projects.
 """
+
 import argparse
 import os
 import pipes
@@ -277,13 +278,13 @@ def _get_current_branchname(**kwargs):
 
 def _get_image_build_args(image_options, ns):
     """
-    Render buildArgs from chartpress.yaml that could be templates, using
+    Render buildArgs from the config file that could be templates, using
     provided namespace that contains keys with dynamic values such as
     LAST_COMMIT or TAG.
 
     Args:
     image_options (dict):
-        The dictionary for a given image from chartpress.yaml.
+        The dictionary for a given image from the config file.
         Fields in `image_options['buildArgs']` will be rendered
         and returned, if defined.
     ns (dict): the namespace used when rendering templated arguments
@@ -296,13 +297,13 @@ def _get_image_build_args(image_options, ns):
 
 def _get_image_extra_build_command_options(image_options, ns):
     """
-    Render extraBuildCommandOptions from chartpress.yaml that could be
+    Render extraBuildCommandOptions from the config file that could be
     templates, using the provided namespace that contains keys with dynamic
     values such as LAST_COMMIT or TAG.
 
     Args:
     image_options (dict):
-        The dictionary for a given image from chartpress.yaml.
+        The dictionary for a given image from the config file.
         Strings in `image_options['extraBuildCommandOptions']` will be rendered
         and returned.
     ns (dict): the namespace used when rendering templated arguments
@@ -333,7 +334,7 @@ def _get_image_dockerfile_path(name, options):
         return os.path.join(_get_image_build_context_path(name, options), "Dockerfile")
 
 
-def _get_all_image_paths(name, options):
+def _get_all_image_paths(name, options, config_path):
     """
     Returns the unique paths that when changed should trigger a rebuild of a
     chart's image. This includes the Dockerfile itself and the context of the
@@ -343,7 +344,7 @@ def _get_all_image_paths(name, options):
     Dockerfile path, and the optional others for extra paths.
     """
     paths = []
-    paths.append("chartpress.yaml")
+    paths.append(config_path)
     if options.get("rebuildOnContextPathChanges", True):
         paths.append(_get_image_build_context_path(name, options))
     paths.append(_get_image_dockerfile_path(name, options))
@@ -351,18 +352,18 @@ def _get_all_image_paths(name, options):
     return list(set(paths))
 
 
-def _get_all_chart_paths(options):
+def _get_all_chart_paths(options, config_path):
     """
     Returns the unique paths that when changed should trigger a version update
     of the chart. These paths includes all the chart's images' paths as well.
     """
     paths = []
-    paths.append("chartpress.yaml")
+    paths.append(config_path)
     paths.append(options["chartPath"])
     paths.extend(options.get("paths", []))
     if "images" in options:
         for image_name, image_config in options["images"].items():
-            paths.extend(_get_all_image_paths(image_name, image_config))
+            paths.extend(_get_all_image_paths(image_name, image_config, config_path))
     return list(set(paths))
 
 
@@ -393,7 +394,7 @@ def build_image(
         directory during the build process of the Dockerfile. This is typically
         the same folder as the Dockerfile resides in.
     dockerfile_path (str, optional):
-        Path to Dockerfile relative to chartpress.yaml's directory if not
+        Path to Dockerfile relative to the config file's directory if not
         "<context_path>/Dockerfile".
     build_args (dict, optional):
         Dictionary of docker build arguments.
@@ -603,12 +604,13 @@ def build_images(
     builder=Builder.DOCKER_BUILD,
     platforms=None,
     base_version=None,
+    config_path="chartpress.yaml",
 ):
     """Build a collection of docker images
 
     Args:
     prefix (str): the prefix to add to image names
-    images (dict): dict of image-specs from chartpress.yaml
+    images (dict): dict of image-specs from config file.
     tag (str):
         Specific tag to use instead of the last modified commit.
         If unspecified the tag for each image will be the hash of the last commit
@@ -643,6 +645,8 @@ def build_images(
     base_version (str):
         The base version string (before '.git'), used when useChartVersion is True
         instead of the tag found via `git describe`.
+    config_path (str):
+        Path to the chartpress config file (default: "chartpress.yaml").
     """
     if platforms:
         # for later use of set operations like .difference()
@@ -650,9 +654,9 @@ def build_images(
 
     values_file_modifications = {}
     for name, options in images.items():
-        # include chartpress.yaml in the image paths to inspect as
-        # chartpress.yaml can contain build args influencing the image
-        all_image_paths = _get_all_image_paths(name, options)
+        # include config file in the image paths to inspect as
+        # it can contain build args influencing the image
+        all_image_paths = _get_all_image_paths(name, options, config_path)
 
         if tag is None:
             image_tag = _get_identifier_from_paths(
@@ -1056,7 +1060,7 @@ def _check_or_get_base_version(base_version):
     # check ordering with latest tag
     # do not check on a tagged commit
     if tag and count:
-        sort_error = f"baseVersion {base_version} is not greater than latest tag {tag}. Please update baseVersion config in chartpress.yaml."
+        sort_error = f"baseVersion {base_version} is not greater than latest tag {tag}. Please update baseVersion in config."
         if tag_match:
             base_version_number = _version_number(base_version_groups)
             if base_version_number < tag_version_number:
@@ -1143,7 +1147,7 @@ def main(argv=None):
     argparser.add_argument(
         "--reset",
         action="store_true",
-        help="Skip image build step and reset Chart.yaml's version field and values.yaml's image tags. What it resets to can be configured in chartpress.yaml with the resetTag and resetVersion configurations.",
+        help="Skip image build step and reset Chart.yaml's version field and values.yaml's image tags. What it resets to can be configured in your config file with the resetTag and resetVersion configurations.",
     )
     skip_or_force_build_group = argparser.add_mutually_exclusive_group()
     skip_or_force_build_group.add_argument(
@@ -1182,6 +1186,14 @@ def main(argv=None):
         action="store_true",
         help="print list of images to stdout. Images will not be built.",
     )
+
+    argparser.add_argument(
+        "--config",
+        type=str,
+        default="chartpress.yaml",
+        help="Path to the configuration file",
+    )
+
     argparser.add_argument(
         "--version",
         action="version",
@@ -1192,16 +1204,21 @@ def main(argv=None):
     if args.builder == Builder.DOCKER_BUILD and args.platform:
         argparser.error(f"--platform is not supported with {Builder.DOCKER_BUILD}")
 
+    if args.config:
+        # check that config exists and is readable
+        with open(args.config):
+            pass
+
     if args.reset:
-        # reset conflicts with everything
+        # reset conflicts with everything except the configuration file
         # this could probably be clearer by using subparsers
         argv = list(argv or sys.argv[1:])
+        argv.remove("--reset")
+        argv = _remove_config_arg(argv)
         if len(argv) > 1:
-            argv = list(argv)
-            argv.remove("--reset")
-            extra_args = " ".join(shlex.quote(arg) for arg in argv if arg != "--reset")
+            extra_args = " ".join(shlex.quote(arg) for arg in argv)
             argparser.error(
-                f"`chartpress --reset` takes no additional arguments: {extra_args}"
+                f"`chartpress --reset` can only be used with `--config` and no additional arguments: {extra_args}"
             )
 
     # allow simple checks for whether publish will happen
@@ -1212,11 +1229,11 @@ def main(argv=None):
         args.no_build = True
         args.publish_chart = False
 
-    with open("chartpress.yaml") as f:
+    with open(args.config) as f:
         config = yaml.load(f)
 
     # main logic
-    # - loop through each chart listed in chartpress.yaml
+    # - loop through each chart listed in the config file
     #   - build chart.yaml (--reset)
     #   - build images (--skip-build | --reset)
     #     - push images (--push)
@@ -1248,7 +1265,7 @@ def main(argv=None):
             # update Chart.yaml with a version
             chart_version = build_chart(
                 chart["chartPath"],
-                paths=_get_all_chart_paths(chart),
+                paths=_get_all_chart_paths(chart, args.config),
                 version=forced_version,
                 base_version=base_version,
                 long=args.long,
@@ -1305,6 +1322,24 @@ def main(argv=None):
                 force=args.force_publish_chart,
                 chart_path=chart["chartPath"],
             )
+
+
+def _remove_config_arg(argv):
+    argv = [*argv]
+
+    # get the index for --config, --config=something, or None
+    config_idx = next(
+        (i for i, arg in enumerate(argv) if arg.startswith("--config")),
+        None,
+    )
+    if config_idx is not None:
+        # remove the --config argument (and its value if passed with =)
+        argv.pop(config_idx)
+        if not argv[config_idx].startswith("--") and config_idx < len(argv):
+            # remove the value of the --config argument if it was passed separately
+            argv.pop(config_idx)
+
+    return argv
 
 
 if __name__ == "__main__":
