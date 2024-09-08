@@ -45,7 +45,7 @@ information.
 When producing a development version (with `.git.n.hash` on the end),
 The _base_ version can come from one of two places,
 depending on your configuration.
-See [Controlling development version](#controlling-development-versions-in-chart.yaml) for more info.
+See [Controlling development versions](#controlling-development-versions) for more info.
 
 ### Examples chart versions and image tags
 
