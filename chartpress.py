@@ -7,7 +7,6 @@ This is used as part of the JupyterHub and Binder projects.
 
 import argparse
 import os
-import pipes
 import re
 import shlex
 import shutil
@@ -68,7 +67,7 @@ def _log(message):
 def _run_cmd(call, cmd, *, echo=True, **kwargs):
     """Run a command and echo it first with censoring of GITHUB_TOKEN."""
     if echo:
-        cmd_string = " ".join(map(pipes.quote, cmd))
+        cmd_string = " ".join(map(shlex.quote, cmd))
         github_token = os.getenv(GITHUB_TOKEN_KEY)
         if github_token:
             cmd_string = cmd_string.replace(github_token, "CENSORED_GITHUB_TOKEN")

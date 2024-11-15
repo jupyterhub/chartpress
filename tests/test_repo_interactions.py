@@ -1,8 +1,6 @@
-import contextlib
 import os
 import subprocess
 import sys
-import tempfile
 
 import pytest
 from conftest import cache_clear
