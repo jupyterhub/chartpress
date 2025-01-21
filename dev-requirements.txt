@@ -1,6 +1,0 @@
-bump2version
-gitpython
-pre-commit
-pytest
-pytest-cov
-tbump

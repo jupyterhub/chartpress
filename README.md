@@ -363,12 +363,10 @@ testing, see [tests/README.md](tests/README.md).
 
 ```bash
 # install chartpress locally
-pip install  -e .
-
-# install dev dependencies
-pip install -r dev-requirements.txt
+pip install  -e ".[test]"
 
 # format and lint code
+pip install pre-commit
 pre-commit run -a
 
 # run tests

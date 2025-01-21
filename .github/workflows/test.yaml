@@ -61,8 +61,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           pip install --upgrade pip
-          pip install .
-          pip install -r dev-requirements.txt
+          pip install ".[test]"
           pip freeze
 
       - name: Install helm
@@ -102,7 +101,7 @@ jobs:
 
       - name: Run tests
         run: |
-          pytest --verbose --color=yes --cov chartpress
+          pytest
         env:
           HELM2: ${{ matrix.helm2 }}
 
