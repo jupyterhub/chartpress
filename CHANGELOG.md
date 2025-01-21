@@ -2,6 +2,39 @@
 
 ## Unreleased
 
+## 2.3
+
+### 2.3.0 - 2025-01-21
+
+#### New features added
+
+- Allow specifying config file with cli option (#170) [#234](https://github.com/jupyterhub/chartpress/pull/234) ([@adamblake](https://github.com/adamblake), [@manics](https://github.com/manics))
+
+#### Maintenance and upkeep improvements
+
+- Remove `pipes` for compatibility with Python 3.13 [#242](https://github.com/jupyterhub/chartpress/pull/242) ([@adamblake](https://github.com/adamblake), [@minrk](https://github.com/minrk))
+
+#### Documentation improvements
+
+- Fix link to "Controlling development versions" section [#239](https://github.com/jupyterhub/chartpress/pull/239) ([@sunu](https://github.com/sunu), [@consideRatio](https://github.com/consideRatio))
+
+#### Continuous integration improvements
+
+- ci: test against python 3.12 and 3.13 [#245](https://github.com/jupyterhub/chartpress/pull/245) ([@consideRatio](https://github.com/consideRatio))
+
+#### Other merged PRs
+
+See [full changelog](https://github.com/jupyterhub/chartpress/compare/2.2.0...2.3.0) for dependabot and pre-commit.ci updates.
+
+#### Contributors to this release
+
+The following people contributed discussions, new ideas, code and documentation contributions, and review.
+See [our definition of contributors](https://github-activity.readthedocs.io/en/latest/#how-does-this-tool-define-contributions-in-the-reports).
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/chartpress/graphs/contributors?from=2024-01-11&to=2025-01-21&type=c))
+
+@adamblake ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Aadamblake+updated%3A2024-01-11..2025-01-21&type=Issues)) | @consideRatio ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3AconsideRatio+updated%3A2024-01-11..2025-01-21&type=Issues)) | @manics ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Amanics+updated%3A2024-01-11..2025-01-21&type=Issues)) | @minrk ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Aminrk+updated%3A2024-01-11..2025-01-21&type=Issues)) | @sunu ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Asunu+updated%3A2024-01-11..2025-01-21&type=Issues))
+
 ## 2.0
 
 ### 2.2.0 - 2024-01-11
@@ -36,11 +69,15 @@ See [our definition of contributors](https://github-activity.readthedocs.io/en/l
 
 @bleggett ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Ableggett+updated%3A2022-09-08..2024-01-10&type=Issues)) | @consideRatio ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3AconsideRatio+updated%3A2022-09-08..2024-01-10&type=Issues)) | @manics ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Amanics+updated%3A2022-09-08..2024-01-10&type=Issues)) | @minrk ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Aminrk+updated%3A2022-09-08..2024-01-10&type=Issues))
 
+## 2.1
+
 ### 2.1.0 - 2022-09-08
 
 #### Enhancements made
 
 - accept non-prerelease baseVersion (append -0.dev) [#184](https://github.com/jupyterhub/chartpress/pull/184) ([@minrk](https://github.com/minrk), [@consideRatio](https://github.com/consideRatio))
+
+## 2.0
 
 ### 2.0.0 - 2022-08-30
 
