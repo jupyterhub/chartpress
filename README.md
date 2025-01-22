@@ -1,7 +1,7 @@
 # [chartpress](https://github.com/jupyterhub/chartpress)
 
 [![Latest PyPI version](https://img.shields.io/pypi/v/chartpress?logo=pypi)](https://pypi.python.org/pypi/chartpress)
-[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/jupyterhub/chartpress/Test?logo=github)](https://github.com/jupyterhub/chartpress/actions)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/jupyterhub/chartpress/test.yaml?logo=github)](https://github.com/jupyterhub/chartpress/actions)
 [![GitHub](https://img.shields.io/badge/issue_tracking-github-blue?logo=github)](https://github.com/jupyterhub/chartpress/issues)
 [![Discourse](https://img.shields.io/badge/help_forum-discourse-blue?logo=discourse)](https://discourse.jupyter.org/c/jupyterhub)
 [![Gitter](https://img.shields.io/badge/social_chat-gitter-blue?logo=gitter)](https://gitter.im/jupyterhub/jupyterhub)
@@ -363,12 +363,10 @@ testing, see [tests/README.md](tests/README.md).
 
 ```bash
 # install chartpress locally
-pip install  -e .
-
-# install dev dependencies
-pip install -r dev-requirements.txt
+pip install  -e ".[test]"
 
 # format and lint code
+pip install pre-commit
 pre-commit run -a
 
 # run tests

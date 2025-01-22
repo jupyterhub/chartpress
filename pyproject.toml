@@ -1,0 +1,117 @@
+# build-system
+# - ref: https://peps.python.org/pep-0517/
+#
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+
+# project
+# - ref 1: https://peps.python.org/pep-0621/
+# - ref 2: https://setuptools.pypa.io/en/latest/userguide/pyproject_config.html
+#
+[project]
+name = "chartpress"
+version = "2.3.1.dev"
+authors = [
+    {name = "Jupyter Development Team", email = "jupyter@googlegroups.com"},
+]
+description = "ChartPress: render and publish helm charts and images"
+keywords = ["helm", "kubernetes"]
+dynamic = ["readme"]
+license = {file = "LICENSE"}
+requires-python = ">=3.7"
+classifiers = [
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS :: MacOS X",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "ruamel.yaml>=0.15.44",
+    # Bug in 5.0.0: https://github.com/docker/docker-py/pull/2844
+    "docker>=3.2.0,!=5.0.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "gitpython",
+    "pytest",
+    "pytest-cov",
+    "tbump",
+]
+
+[project.urls]
+Documentation = "https://github.com/jupyterhub/chartpress#readme"
+Source = "https://github.com/jupyterhub/chartpress"
+Issues = "https://github.com/jupyterhub/chartpress/issues"
+
+[project.scripts]
+chartpress = "chartpress:main"
+
+
+# setuptools
+# - ref: https://setuptools.pypa.io/en/latest/userguide/pyproject_config.html#setuptools-specific-configuration
+#
+[tool.setuptools]
+py-modules = ["chartpress"]
+
+[tool.setuptools.dynamic]
+readme = { file = "README.md", content-type = "text/markdown" }
+
+
+# black is used for autoformatting Python code
+#
+# ref: https://black.readthedocs.io/en/stable/
+#
+[tool.black]
+skip-string-normalization = false
+
+
+# isort is used for autoformatting Python code
+#
+# ref: https://pycqa.github.io/isort/
+#
+[tool.isort]
+profile = "black"
+
+
+# pytest is used for running Python based tests
+#
+# ref: https://docs.pytest.org/en/stable/
+#
+[tool.pytest.ini_options]
+addopts = "--verbose --color=yes --durations=10 --cov=chartpress"
+testpaths = ["tests"]
+
+
+# tbump is used to simplify and standardize the release process when updating
+# the version, making a git commit and tag, and pushing changes.
+#
+# ref: https://github.com/your-tools/tbump#readme
+#
+[tool.tbump]
+github_url = "https://github.com/jupyterhub/chartpress"
+
+[tool.tbump.version]
+current = "2.3.1.dev"
+regex = '''
+    (?P<major>\d+)
+    \.
+    (?P<minor>\d+)
+    \.
+    (?P<patch>\d+)
+    (?P<pre>((a|b|rc)\d+)|)
+    \.?
+    (?P<dev>(?<=\.)dev\d*|)
+'''
+
+[tool.tbump.git]
+message_template = "Bump to {new_version}"
+tag_template = "{new_version}"
+
+[[tool.tbump.file]]
+src = "chartpress.py"
