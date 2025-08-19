@@ -1,0 +1,4 @@
+charts:
+  - name: minimal-working-example
+    chartPath: helm/minimal-working-example
+    imagePrefix: chartpress/
