@@ -49,7 +49,7 @@ During development, it is recommended to configure the [Docker context](https://
 
 ## Installing
 
-```{note}
+:::{note}
 Remember to verify the Kubernetes context that you are using with
 
 ```bash
@@ -63,7 +63,7 @@ kubectl config use-context CONTEXT_NAME
 ```
 
 where `CONTEXT_NAME` is the name of the correct context.
-```
+:::
 
 Installing is a step that does **not** involve `chartpress`. To install, run
 
