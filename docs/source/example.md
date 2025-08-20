@@ -36,6 +36,7 @@ During building, `chartpress` will
 
 - re-write the Helm chart version
 - create a new container image
+- re-write the Helm values with the new container image tag
 
 To build, run
 
@@ -76,12 +77,27 @@ helm upgrade \
     --install
 ```
 
+If the installation goes well, you will have a pod running.
+
+```bash
+kubectl get pods
+```
+
+```
+NAME                                       READY   STATUS    RESTARTS   AGE
+minimal-working-example-78b6b8b87c-lhbl9   1/1     Running   0          2m52s
+```
+
 ## Cleaning
+
+First, uninstall the Helm release.
 
 ```bash
 helm uninstall \
     minimal-working-example
 ```
+
+Last, undo the changes in the Helm chart.
 
 ```bash
 chartpress --reset
