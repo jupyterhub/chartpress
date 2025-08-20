@@ -2,3 +2,7 @@ charts:
   - name: minimal-working-example
     chartPath: helm/minimal-working-example
     imagePrefix: chartpress/
+    images:
+      minimal-working-example:
+        contextPath: .
+        dockerfilePath: ./Dockerfile

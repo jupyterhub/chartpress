@@ -1,0 +1,6 @@
+replicaCount: 1
+
+image:
+  repository: chartpress/minimal-working-example
+  pullPolicy: IfNotPresent
+  tag: "set-by-chartpress"
