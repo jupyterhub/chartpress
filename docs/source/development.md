@@ -1,8 +1,8 @@
-## Development
+# Development
 
 Testing of this python package can be done using
 [`pytest`](https://github.com/pytest-dev/pytest). For more details on the
-testing, see [tests/README.md](tests/README.md).
+testing, see [tests/README.md](https://github.com/jupyterhub/chartpress/blob/main/tests/README.md).
 
 ```bash
 # install chartpress locally

@@ -1,4 +1,4 @@
-## Usage
+# Usage
 
 In a directory containing a `chartpress.yaml`, run:
 

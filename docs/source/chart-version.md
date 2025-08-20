@@ -24,7 +24,7 @@ information.
 When producing a development version (with `.git.n.hash` on the end),
 The _base_ version can come from one of two places,
 depending on your configuration.
-See [Controlling development versions](#controlling-development-versions) for more info.
+See {ref}`controlling-development-version` for more info.
 
 ## Examples chart versions and image tags
 

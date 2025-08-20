@@ -98,6 +98,8 @@ charts:
           - linux/arm64
 ```
 
+(controlling-development-versions)=
+
 ## Controlling development versions
 
 Like some "package version in version control" tools,
@@ -170,7 +172,7 @@ If there is no prerelease (e.g. on the exact commit of a tagged release),
 You **must** update baseVersion after making a release,
 or `chartpress --reset` will fail due to incorrect ordering of versions.
 
-A sample tbump config file can be found in [our tests](./tests/test_helm_chart/tbump.toml).
+A sample tbump config file can be found in [our tests](https://github.com/jupyterhub/chartpress/blob/main/tests/test_helm_chart/tbump.toml).
 
 ## Caveats
 
