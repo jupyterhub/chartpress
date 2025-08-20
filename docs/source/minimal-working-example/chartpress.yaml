@@ -6,3 +6,5 @@ charts:
       minimal-working-example:
         contextPath: .
         dockerfilePath: ./Dockerfile
+        valuesPath:
+          - image
