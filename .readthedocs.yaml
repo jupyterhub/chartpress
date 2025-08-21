@@ -10,5 +10,4 @@ build:
     python: "3.13"
   jobs:
     pre_build:
-      - cd docs
-      - ./create-zip.sh
+      - cd docs && create-zip.sh
