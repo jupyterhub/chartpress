@@ -52,9 +52,9 @@ jobs:
           # chartpress requires the full history
           fetch-depth: 0
 
-      # NOTE: actions/setup-python@v5 make use of a cache within the GitHub base
+      # NOTE: actions/setup-python@v6 make use of a cache within the GitHub base
       #       environment and setup in a fraction of a second.
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "${{ matrix.python }}"
 
