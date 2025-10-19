@@ -1292,6 +1292,7 @@ def main(argv=None):
                 long=args.long,
                 builder=args.builder,
                 platforms=args.platform,
+                config_path=args.config,
             )
 
             # list images
