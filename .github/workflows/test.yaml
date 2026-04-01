@@ -77,7 +77,7 @@ jobs:
 
       # https://github.com/docker/setup-buildx-action
       - name: Setup docker buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
         with:
           # Allows pushing to registry on localhost:5000
           driver-opts: network=host
