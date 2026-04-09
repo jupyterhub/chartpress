@@ -15,6 +15,7 @@ import sys
 from collections.abc import MutableMapping
 from enum import Enum
 from functools import lru_cache, partial
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import docker
@@ -1294,10 +1295,14 @@ def main(argv=None):
     if args.builder == Builder.DOCKER_BUILD and args.platform:
         argparser.error(f"--platform is not supported with {Builder.DOCKER_BUILD}")
 
-    if args.config:
-        # check that config exists and is readable
-        with open(args.config):
-            pass
+    # check that config exists and is readable
+    with open(args.config) as f:
+        config = yaml.load(f)
+    # if config file is anything but a basename, chdir to parent
+    # so that paths resolve relative to config file
+    config_path = Path(args.config).absolute()
+    if args.config != config_path.name:
+        os.chdir(config_path.parent)
 
     if args.reset:
         # reset conflicts with everything except the configuration file
@@ -1318,9 +1323,6 @@ def main(argv=None):
     if args.list_images or args.reset:
         args.no_build = True
         args.publish_chart = False
-
-    with open(args.config) as f:
-        config = yaml.load(f)
 
     # main logic
     # - loop through each chart listed in the config file
@@ -1355,7 +1357,7 @@ def main(argv=None):
             # update Chart.yaml with a version
             chart_version = build_chart(
                 chart["chartPath"],
-                paths=_get_all_chart_paths(chart, args.config),
+                paths=_get_all_chart_paths(chart, config_path.name),
                 version=forced_version,
                 base_version=base_version,
                 long=args.long,
@@ -1383,7 +1385,7 @@ def main(argv=None):
                 long=args.long,
                 builder=args.builder,
                 platforms=args.platform,
-                config_path=args.config,
+                config_path=config_path.name,
             )
 
             # list images
