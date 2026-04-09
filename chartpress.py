@@ -15,6 +15,7 @@ import sys
 from collections.abc import MutableMapping
 from enum import Enum
 from functools import lru_cache, partial
+from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import docker
@@ -1190,10 +1191,7 @@ def main(argv=None):
         "--config",
         type=str,
         default="chartpress.yaml",
-        help=(
-            "Filename of the config file to use, which must be in the current "
-            "working directory. The default value is %(default)s."
-        ),
+        help="Path to the configuration file",
     )
 
     argparser.add_argument(
@@ -1206,19 +1204,14 @@ def main(argv=None):
     if args.builder == Builder.DOCKER_BUILD and args.platform:
         argparser.error(f"--platform is not supported with {Builder.DOCKER_BUILD}")
 
-    # resolve and validate config path and the current constraint of it being in
-    # the current working directory
-    abs_config_path = os.path.realpath(args.config)
-    rel_config_path = os.path.relpath(abs_config_path)
-    config_file_name = os.path.basename(rel_config_path)
-    if config_file_name != rel_config_path:
-        argparser.error(
-            f"--config's value must resolve to a file in the current working "
-            f"directory, but instead resolved '{rel_config_path}'."
-        )
     # check that config exists and is readable
-    with open(config_file_name):
-        pass
+    with open(args.config) as f:
+        config = yaml.load(f)
+    # if config file is anything but a basename, chdir to parent
+    # so that paths resolve relative to config file
+    config_path = Path(args.config).absolute()
+    if args.config != config_path.name:
+        os.chdir(config_path.parent)
 
     if args.reset:
         # reset conflicts with everything except the configuration file
@@ -1239,9 +1232,6 @@ def main(argv=None):
     if args.list_images or args.reset:
         args.no_build = True
         args.publish_chart = False
-
-    with open(config_file_name) as f:
-        config = yaml.load(f)
 
     # main logic
     # - loop through each chart listed in the config file
@@ -1276,7 +1266,7 @@ def main(argv=None):
             # update Chart.yaml with a version
             chart_version = build_chart(
                 chart["chartPath"],
-                paths=_get_all_chart_paths(chart, config_file_name),
+                paths=_get_all_chart_paths(chart, config_path.name),
                 version=forced_version,
                 base_version=base_version,
                 long=args.long,
@@ -1304,6 +1294,7 @@ def main(argv=None):
                 long=args.long,
                 builder=args.builder,
                 platforms=args.platform,
+                config_path=config_path.name,
             )
 
             # list images
