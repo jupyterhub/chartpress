@@ -83,7 +83,7 @@ jobs:
         run: |
           docker version
           docker buildx ls
-          helm version --client
+          helm version
           chartpress --version
           chartpress --help
 
