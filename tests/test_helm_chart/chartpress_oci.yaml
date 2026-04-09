@@ -4,8 +4,8 @@ charts:
     resetTag: test-reset-tag
     resetVersion: 0.0.1-test.reset.version
     repo:
-      git: "."
-      published: https://test.local
+      oci: localhost:5000/testing
+      published: http://localhost:5000
     paths:
       - extra-chart-path.txt
     images:
@@ -26,8 +26,3 @@ charts:
           - list.1.image
         paths:
           - extra-image-path.txt
-      amd64only:
-        contextPath: amd64only
-        skipPlatforms:
-          - linux/arm64
-          - linux/ppc64le

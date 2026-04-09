@@ -1,71 +1,60 @@
 # How to make a release
 
-`chartpress` is a package [available on
-PyPI](https://pypi.org/project/chartpress/). These are instructions on how to
-make a release on PyPI. The PyPI release is packaged and published automatically
-by a GitHub workflow when a git tag is pushed.
+`chartpress` is a package available on [PyPI] and [conda-forge].
 
-For you to follow along according to these instructions, you need:
+These are the instructions on how to make a release.
 
-- To have push rights to the [chartpress GitHub
-  repository](https://github.com/jupyterhub/chartpress).
+## Pre-requisites
+
+- Push rights to this GitHub repository
 
 ## Steps to make a release
 
-1. Update [CHANGELOG.md](CHANGELOG.md) if it is not up to date, and verify
-   [README.md](README.md) has an updated output of running `--help`. Make a PR
-   to review the CHANGELOG notes.
+1. Create a PR updating `CHANGELOG.md` with [github-activity] and continue when
+   its merged. For details about this, see the [team-compass documentation]
+   about it.
 
-   To get the foundation of the changelog written, you can install
-   [github-activity](https://github.com/choldgraf/github-activity) and run
-   `github-activity jupyterhub/chartpress` after setting up
-   credentials as described in the project's README.md file.
+   [team-compass documentation]: https://jupyterhub-team-compass.readthedocs.io/en/latest/practices/releases.html
 
-1. Once the changelog is up to date, checkout main and make sure it is up to date and clean.
+2. Checkout main and make sure it is up to date.
 
-   ```bash
-   ORIGIN=${ORIGIN:-origin} # set to the canonical remote, e.g. 'upstream' if 'origin' is not the official repo
+   ```shell
    git checkout main
-   git fetch $ORIGIN main
-   git reset --hard $ORIGIN/main
-   # WARNING! This next command deletes any untracked files in the repo
-   git clean -xfd
+   git fetch origin main
+   git reset --hard origin/main
    ```
 
-1. Update the version with `bump2version` (can be installed with `pip install -r dev-requirements.txt`)
+3. Update the version, make commits, and push a git tag with `tbump`.
 
-   ```bash
-   VERSION=...  # e.g. 1.2.3
-   bump2version --tag --new-version $VERSION -
+   ```shell
+   pip install tbump
    ```
 
-1. Reset the version to the next development version with `bump2version`
+   `tbump` will ask for confirmation before doing anything.
 
-   ```bash
-   bump2version --no-tag patch
+   ```shell
+   # Example versions to set: 1.0.0, 1.0.0b1
+   VERSION=
+   tbump ${VERSION}
    ```
 
-1. Push your two commits to main along with the annotated tags referencing
-   commits on main.
+   Following this, the [CI system] will build and publish a release.
 
-   ```
-   git push --follow-tags $ORIGIN main
-   ```
+4. Reset the version back to dev, e.g. `1.0.1.dev` after releasing `1.0.0`.
 
-## Manually uploading to PyPI
-
-We are using CI with GitHub workflows to automatically publish to PyPI, but if
-you want to do it manually when you are on a tagged commit in a otherwise
-cleaned repository, you can do this.
-
-1. Package the release
-
-   ```bash
-   python3 setup.py sdist bdist_wheel
+   ```shell
+   # Example version to set: 1.0.1.dev
+   NEXT_VERSION=
+   tbump --no-tag ${NEXT_VERSION}.dev
    ```
 
-1. Upload it to PyPI
+5. Following the release to PyPI, an automated PR should arrive within 24 hours
+   to [conda-forge/chartpress-feedstock] with instructions
+   on releasing to conda-forge. You are welcome to volunteer doing this, but
+   aren't required as part of making this release to PyPI.
 
-   ```bash
-   twine upload dist/*
-   ```
+[github-activity]: https://github.com/executablebooks/github-activity
+[pypi]: https://pypi.org/project/chartpress/
+[conda-forge]: https://anaconda.org/conda-forge/chartpress
+[conda-forge/chartpress-feedstock]: https://github.com/conda-forge/chartpress-feedstock
+[ci system]: https://github.com/jupyterhub/chartpress/actions/workflows/release.yaml

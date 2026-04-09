@@ -146,13 +146,41 @@ def git_repo_backport_branch(git_repo_dev_tag):
 @pytest.fixture
 def git_repo_alternative(monkeypatch, git_repo):
     """
-    This fixture modifies the default git_repo fixture to use another the
+    This fixture modifies the default git_repo fixture to use
     chartpress_alternative.yaml as chartpress.yaml.
     """
     r = git_repo
     shutil.move("chartpress_alternative.yaml", "chartpress.yaml")
     r.git.add(all=True)
     r.index.commit("chartpress_alternative.yaml initial commit")
+
+    yield r
+
+
+@pytest.fixture
+def git_repo_oci(monkeypatch, git_repo):
+    """
+    This fixture modifies the default git_repo fixture to use
+    chartpress_alternative.yaml as chartpress.yaml.
+    """
+    r = git_repo
+    shutil.move("chartpress_oci.yaml", "chartpress.yaml")
+    r.git.add(all=True)
+    r.index.commit("chartpress_oci.yaml initial commit")
+
+    yield r
+
+
+@pytest.fixture
+def git_repo_base_version(monkeypatch, git_repo):
+    """
+    This fixture modifies the default git_repo fixture to use
+    chartpress_base_version.yaml as chartpress.yaml.
+    """
+    r = git_repo
+    shutil.move("chartpress_base_version.yaml", "chartpress.yaml")
+    r.git.add(all=True)
+    r.index.commit("chartpress_base_version.yaml initial commit")
 
     yield r
 
@@ -169,11 +197,27 @@ class CheckCallWrapper:
             return self._check_call(cmd, **kwargs)
 
 
+def cache_clear():
+    """Clear lru cache to better mimic CLI behavior"""
+    # Need to clear @lru_cache since we test multiple temporary repositories
+    for name in dir(chartpress):
+        obj = getattr(chartpress, name)
+        if hasattr(obj, "cache_clear"):
+            obj.cache_clear()
+
+
+@pytest.fixture(autouse=True)
+def _cache_clear():
+    cache_clear()
+    # return it so it can be re-used mid-test
+    return cache_clear
+
+
 @pytest.fixture(scope="function")
-def mock_check_call(monkeypatch):
+def mock_check_call(monkeypatch, _cache_clear):
     """
     Replace chartpress._check_call with a no-op version that records all commands
-    Also disable lcu_cache to prevent cached information being kept across test calls
+    Also disable lru_cache to prevent cached information being kept across test calls
     """
     mock_call = CheckCallWrapper(mock=True)
     monkeypatch.setattr(chartpress, "_check_call", mock_call)
@@ -196,12 +240,5 @@ def record_check_call(monkeypatch):
     """
     mock_call = CheckCallWrapper(mock=False)
     monkeypatch.setattr(chartpress, "_check_call", mock_call)
-
-    # Need to clear @lru_cache since we test multiple temporary repositories
-    chartpress._get_latest_commit_tagged_or_modifying_paths.cache_clear()
-    # Other @lru_cache functions, in case it's needed in future:
-    # chartpress._get_docker_client.cache_clear()
-    # chartpress._image_needs_pushing.cache_clear()
-    # chartpress._image_needs_building.cache_clear()
 
     yield mock_call

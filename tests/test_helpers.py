@@ -1,60 +1,40 @@
+from unittest import mock
+
 import pytest
-from ruamel.yaml import YAML
 
-from chartpress import _check_call
-from chartpress import _get_git_remote_url
-from chartpress import _get_identifier_from_parts
-from chartpress import _get_image_build_args
-from chartpress import _get_image_extra_build_command_options
-from chartpress import _get_latest_commit_tagged_or_modifying_paths
-from chartpress import _image_needs_pushing
-from chartpress import Builder
-from chartpress import GITHUB_ACTOR_KEY
-from chartpress import GITHUB_TOKEN_KEY
-
-# use safe roundtrip yaml loader
-yaml = YAML(typ="rt")
-yaml.preserve_quotes = True  ## avoid mangling of quotes
-yaml.indent(mapping=2, offset=2, sequence=4)
+import chartpress
+from chartpress import (
+    GITHUB_ACTOR_KEY,
+    GITHUB_TOKEN_KEY,
+    _check_call,
+    _fix_chart_version,
+    _get_git_remote_url,
+    _get_identifier_from_parts,
+    _get_image_build_args,
+    _get_image_extra_build_command_options,
+    _get_latest_commit_tagged_or_modifying_paths,
+    _image_needs_pushing,
+    yaml,
+)
 
 
-def test__get_identifier_from_parts():
-    assert (
-        _get_identifier_from_parts(
-            tag="0.1.2", n_commits="0", commit="asdf123", long=True
-        )
-        == "0.1.2-n000.hasdf123"
+@pytest.mark.parametrize(
+    "tag, n_commits, commit, long, expected",
+    [
+        ("0.1.2", "0", "asdf123", True, "0.1.2-0.dev.git.0.hasdf123"),
+        ("0.1.2", "0", "asdf123", False, "0.1.2"),
+        ("0.1.2", "5", "asdf123", False, "0.1.2-0.dev.git.5.hasdf123"),
+        ("0.1.2-alpha.1", "0", "asdf1234", True, "0.1.2-alpha.1.git.0.hasdf1234"),
+        ("0.1.2-alpha.1", "0", "asdf1234", False, "0.1.2-alpha.1"),
+        ("0.1.2-alpha.1", "5", "asdf1234", False, "0.1.2-alpha.1.git.5.hasdf1234"),
+    ],
+)
+def test_get_identifier_from_parts(tag, n_commits, commit, long, expected):
+    tag = _get_identifier_from_parts(
+        tag=tag, n_commits=n_commits, commit=commit, long=long
     )
-    assert (
-        _get_identifier_from_parts(
-            tag="0.1.2", n_commits="0", commit="asdf123", long=False
-        )
-        == "0.1.2"
-    )
-    assert (
-        _get_identifier_from_parts(
-            tag="0.1.2", n_commits="5", commit="asdf123", long=False
-        )
-        == "0.1.2-n005.hasdf123"
-    )
-    assert (
-        _get_identifier_from_parts(
-            tag="0.1.2-alpha.1", n_commits="0", commit="asdf1234", long=True
-        )
-        == "0.1.2-alpha.1.n000.hasdf1234"
-    )
-    assert (
-        _get_identifier_from_parts(
-            tag="0.1.2-alpha.1", n_commits="0", commit="asdf1234", long=False
-        )
-        == "0.1.2-alpha.1"
-    )
-    assert (
-        _get_identifier_from_parts(
-            tag="0.1.2-alpha.1", n_commits="5", commit="asdf1234", long=False
-        )
-        == "0.1.2-alpha.1.n005.hasdf1234"
-    )
+    assert tag == expected
+    _fix_chart_version(tag, strict=True)
 
 
 def test__get_git_remote_url(monkeypatch):
@@ -147,13 +127,14 @@ def test__get_image_build_args(git_repo):
                 {
                     "LAST_COMMIT": "sha",
                     "TAG": "tag",
+                    "BRANCH": "branch",
                 },
             )
             assert name in ("testimage", "amd64only")
             if name == "testimage":
                 assert build_args == {
                     "TEST_STATIC_BUILD_ARG": "test",
-                    "TEST_DYNAMIC_BUILD_ARG": "tag-sha",
+                    "TEST_DYNAMIC_BUILD_ARG": "tag-sha-branch",
                 }
             else:
                 assert build_args == {}
@@ -169,6 +150,7 @@ def test__get_image_extra_build_command_options(git_repo):
                 {
                     "LAST_COMMIT": "sha",
                     "TAG": "tag",
+                    "BRANCH": "branch",
                 },
             )
             assert name in ("testimage", "amd64only")
@@ -176,6 +158,54 @@ def test__get_image_extra_build_command_options(git_repo):
                 assert extra_build_command_options == [
                     "--label=maintainer=octocat",
                     "--label",
-                    "ref=tag-sha",
+                    "ref=tag-sha-branch",
                     "--rm",
                 ]
+
+
+@pytest.mark.parametrize(
+    "base_version, tag, n_commits, result",
+    [
+        # OK, normal state
+        ("1.2.4-0.dev", "1.2.3", 10, "1.2.4-0.dev"),
+        # don't compare prereleases on the same tag
+        ("1.2.3-0.dev", "1.2.3-alpha.1", 10, "1.2.3-0.dev"),
+        # invalid baseVersion (not semver)
+        ("x.y.z", "1.2.3", 10, ValueError("valid semver version")),
+        # not prerelease baseVersion
+        ("1.2.4", "1.2.3", 10, "1.2.4-0.dev"),
+        # check comparison with tag
+        ("1.2.2-0.dev", "1.2.3-alpha.1", 10, ValueError("is not greater")),
+        ("1.2.3-0.dev", "1.2.3", 10, ValueError("is not greater")),
+        ("1.2.3-0.dev", "2.0.0", 10, ValueError("is not greater")),
+        ("1.2.3-0.dev", "1.2.4-alpha.1", 10, ValueError("is not greater")),
+        # don't check exactly on a tag
+        ("1.2.3-0.dev", "2.0.0", 0, "1.2.3-0.dev"),
+        # ignore invalid semver tags
+        ("1.2.3-0.dev", "x.y.z", 10, "1.2.3-0.dev"),
+        # autoincrement latest tag
+        ("major", "1.2.3", 10, "2.0.0-0.dev"),
+        ("minor", "1.2.3", 10, "1.3.0-0.dev"),
+        ("patch", "1.2.3", 10, "1.2.4-0.dev"),
+        ("patch", None, 10, "0.0.1-0.dev"),
+        (
+            "patch",
+            "x.y.z",
+            10,
+            ValueError("not valid when latest tag x.y.z is not semver"),
+        ),
+        ("patch", "1.2.3-beta.1", 10, "1.2.3-beta.1"),
+    ],
+)
+def test_check_or_get_base_version(base_version, tag, n_commits, result):
+    with mock.patch.object(
+        chartpress, "_get_latest_tag_and_count", lambda: (tag, n_commits)
+    ):
+        if isinstance(result, Exception):
+            with pytest.raises(result.__class__) as exc:
+                chartpress._check_or_get_base_version(base_version)
+            assert str(result) in str(exc)
+            assert base_version in str(exc)
+        else:
+            used_version = chartpress._check_or_get_base_version(base_version)
+            assert used_version == result

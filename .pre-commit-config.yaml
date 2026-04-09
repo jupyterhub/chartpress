@@ -9,28 +9,35 @@
 # - Register git hooks: pre-commit install --install-hooks
 #
 repos:
+  # Autoformat: Python code, syntax patterns are modernized
+  - repo: https://github.com/asottile/pyupgrade
+    rev: 75992aaa40730136014f34227e0135f63fc951b4 # frozen: v3.21.2
+    hooks:
+      - id: pyupgrade
+        args:
+          - --py37-plus
+
   # Autoformat: Python code
-  - repo: https://github.com/psf/black
-    rev: 22.3.0
+  - repo: https://github.com/psf/black-pre-commit-mirror
+    rev: fa505ab9c3e0fedafe1709fd7ac2b5f8996c670d # frozen: 26.3.1
     hooks:
       - id: black
-        args: [--target-version=py36]
+
+  # Autoformat: Python code
+  - repo: https://github.com/pycqa/isort
+    rev: a333737ed43df02b18e6c95477ea1b285b3de15a # frozen: 8.0.1
+    hooks:
+      - id: isort
 
   # Autoformat: markdown, yaml
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v2.6.2
+  - repo: https://github.com/rbubley/mirrors-prettier
+    rev: c2bc67fe8f8f549cc489e00ba8b45aa18ee713b1 # frozen: v3.8.1
     hooks:
       - id: prettier
 
-  # Autoformat: https://github.com/asottile/reorder_python_imports
-  - repo: https://github.com/asottile/reorder_python_imports
-    rev: v3.1.0
-    hooks:
-      - id: reorder-python-imports
-
   # Misc...
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.2.0
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c # frozen: v6.0.0
     # ref: https://github.com/pre-commit/pre-commit-hooks#hooks-available
     hooks:
       # Autoformat: Makes sure files end in a newline and only a newline.
@@ -48,6 +55,18 @@ repos:
 
   # Lint: Python code
   - repo: https://github.com/PyCQA/flake8
-    rev: "4.0.1"
+    rev: "d93590f5be797aabb60e3b09f2f52dddb02f349f" # frozen: 7.3.0
     hooks:
       - id: flake8
+
+  # github actions security checks
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: ea2eb407b4cbce87cf0d502f36578950494f5ac9 # frozen: v1.23.1
+    hooks:
+      - id: zizmor
+        args:
+          - --fix=all
+
+# pre-commit.ci config reference: https://pre-commit.ci/#configuration
+ci:
+  autoupdate_schedule: monthly
