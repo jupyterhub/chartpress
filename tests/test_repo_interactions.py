@@ -465,7 +465,6 @@ def test_chartpress_run_bare_minimum(git_repo_bare_minimum, capfd):
     assert f"Updating testchart/Chart.yaml: version: {tag}" in out
 
 
-@pytest.mark.skipif(os.environ.get("HELM2") == "helm2", reason="Skipping helm 2")
 def test_chartpress_run_alternative(git_repo_alternative, capfd):
     """
     Ensures that chartpress will run with an alternative configuration. This
@@ -576,7 +575,6 @@ def test_reset_exclusive(git_repo, capfd):
     assert "chartpress.yaml" not in err
 
 
-@pytest.mark.skipif(os.environ.get("HELM2") == "helm2", reason="Skipping helm 2")
 def test_chartpress_run_oci(git_repo_oci, capfd):
     """
     Ensures that chartpress will run with an alternative configuration. This
