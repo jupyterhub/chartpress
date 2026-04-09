@@ -35,7 +35,7 @@ jobs:
         # gain meaning on how job steps use them.
         include:
           - python: "3.10"
-            helm: "v3"
+            helm: "v3.20.2"
           - python: "3.11"
           - python: "3.12"
           - python: "3.13"
@@ -70,7 +70,7 @@ jobs:
       - name: Install helm
         uses: azure/setup-helm@dda3372f752e03dde6b3237bc9431cdc2f7a02a2 # v5.0.0
         with:
-          version: ${{ matrix.helm || 'v4' }} # default is latest (stable)
+          version: ${{ matrix.helm || 'v4.1.4' }} # default is latest (stable)
 
       # https://github.com/docker/setup-buildx-action
       - name: Setup docker buildx
