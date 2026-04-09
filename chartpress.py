@@ -1407,7 +1407,7 @@ def main(argv=None):
                         print(image)
                         # record image, in case the same image occurs in multiple places
                         seen_images.add(image)
-                return
+                continue
 
             # update values.yaml
             _update_values_file_with_modifications(
