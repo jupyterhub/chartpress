@@ -1,0 +1,29 @@
+charts:
+  - name: testchart
+    imagePrefix: testchart/
+    resetTag: test-reset-tag
+    resetVersion: 0.0.1-test.reset.version
+    repo:
+      oci: localhost:5000
+      prefix: testing
+      published: http://localhost:5000
+    paths:
+      - extra-chart-path.txt
+    images:
+      testimage:
+        buildArgs:
+          TEST_STATIC_BUILD_ARG: "test"
+          TEST_DYNAMIC_BUILD_ARG: "{TAG}-{LAST_COMMIT}-{BRANCH}"
+        extraBuildCommandOptions:
+          - --label=maintainer=octocat
+          - --label
+          - ref={TAG}-{LAST_COMMIT}-{BRANCH}
+          - --rm
+        contextPath: image
+        dockerfilePath: image/Dockerfile
+        valuesPath:
+          - image
+          - list.0
+          - list.1.image
+        paths:
+          - extra-image-path.txt

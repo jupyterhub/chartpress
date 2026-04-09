@@ -882,18 +882,11 @@ def publish_chart_oci(
 
     The strategy adopted to do this is:
 
-    1. Clone the Helm chart registry as found in the gh-pages branch of a git
-       reposistory.
+    1. check if it already exists with `helm show chart`
     2. If --force-publish-chart isn't specified, then verify that we won't
        overwrite an existing chart version.
     3. Create a temporary directory and `helm package` the chart into a file
        within this temporary directory now only containing the chart .tar file.
-    4. Generate a index.yaml with `helm repo index` based on charts found in the
-       temporary directory folder (a single one), and then merge in the bigger
-       and existing index.yaml from the cloned Helm chart registry using the
-       --merge flag.
-    5. Copy the new index.yaml and packaged Helm chart .tar into the gh-pages
-       branch, commit it, and push it back to the origin remote.
 
     Note that if we would add the new chart .tar file next to the other .tar
     files and use `helm repo index` we would recreate `index.yaml` and update
@@ -909,21 +902,23 @@ def publish_chart_oci(
     # clone/fetch the Helm chart repo and checkout its gh-pages branch, note the
     # use of cwd (current working directory)
 
-    chart_dir = f"{chart_path}/{chart_name}"
-    _check_call(["git", "fetch"], cwd=chart_dir, echo=True)
-
     # check if a chart with the same name and version has already been published. If
     # there is, the behaviour depends on `--force-publish-chart`
     # and chart_version and make a decision based on the --force-publish-chart
     # flag if that is the case, but always log what's done
 
+    helm_registry_args = []
+    # special-case localhost registry for testing
+    if chart_oci_repo.startswith("localhost:"):
+        helm_registry_args.append("--plain-http")
     try:
         _check_call(
             [
                 "helm",
                 "show",
                 "chart",
-                "oci://" + chart_oci_repo + "/" + chart_oci_prefix + "/" + chart_name,
+                *helm_registry_args,
+                f"oci://{chart_oci_repo}/{chart_oci_prefix}/{chart_name}",
                 "--version",
                 chart_version,
             ]
@@ -947,7 +942,7 @@ def publish_chart_oci(
             [
                 "helm",
                 "package",
-                chart_dir,
+                chart_path,
                 "--dependency-update",
                 "--destination",
                 td + "/",
@@ -958,6 +953,7 @@ def publish_chart_oci(
             [
                 "helm",
                 "push",
+                *helm_registry_args,
                 os.path.join(td, chart_name + "-" + chart_version + ".tgz"),
                 "oci://" + chart_oci_repo + "/" + chart_oci_prefix,
             ]
@@ -1210,12 +1206,12 @@ def main(argv=None):
     argparser.add_argument(
         "--publish-chart",
         action="store_true",
-        help="Package a Helm chart and publish it to a Helm chart registry constructed with a GitHub git repository and GitHub pages, but not if it would replace an existing chart version.",
+        help="Package a Helm chart and publish it to a Helm chart registry constructed with a GitHub git repository and GitHub pages or OCI registry, but not if it would replace an existing chart version.",
     )
     argparser.add_argument(
         "--force-publish-chart",
         action="store_true",
-        help="Package a Helm chart and publish it to a Helm chart registry constructed with a GitHub git repository and GitHub pages, regardless if it would replace an existing chart version",
+        help="Package a Helm chart and publish it to a Helm chart registry constructed with a GitHub git repository and GitHub pages or OCI registry, regardless if it would replace an existing chart version",
     )
     argparser.add_argument(
         "--extra-message",
