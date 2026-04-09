@@ -4,9 +4,9 @@ Automate building and publishing helm charts and associated images.
 
 This is used as part of the JupyterHub and Binder projects.
 """
+
 import argparse
 import os
-import pipes
 import re
 import shlex
 import shutil
@@ -20,7 +20,7 @@ from tempfile import TemporaryDirectory
 import docker
 from ruamel.yaml import YAML
 
-__version__ = "2.1.1.dev"
+__version__ = "2.3.1.dev"
 
 # name of the environment variable with GitHub token
 GITHUB_TOKEN_KEY = "GITHUB_TOKEN"
@@ -38,6 +38,7 @@ IMAGE_REPOSITORY_KEYS = {"name", "repository"}
 GIT_PREFIX = "git"
 # this is the _full_ prefix we add to non-prerelease versions
 PRERELEASE_PREFIX = f"0.dev.{GIT_PREFIX}"
+
 
 # Container builders
 class Builder(Enum):
@@ -66,7 +67,7 @@ def _log(message):
 def _run_cmd(call, cmd, *, echo=True, **kwargs):
     """Run a command and echo it first with censoring of GITHUB_TOKEN."""
     if echo:
-        cmd_string = " ".join(map(pipes.quote, cmd))
+        cmd_string = " ".join(map(shlex.quote, cmd))
         github_token = os.getenv(GITHUB_TOKEN_KEY)
         if github_token:
             cmd_string = cmd_string.replace(github_token, "CENSORED_GITHUB_TOKEN")
@@ -256,15 +257,33 @@ def _get_latest_commit_tagged_or_modifying_paths(*paths, **kwargs):
         return latest_commit_modifying_path
 
 
+def _get_current_branchname(**kwargs):
+    """
+    Get the current branch name from Git.
+    """
+    return (
+        _check_output(
+            [
+                "git",
+                "branch",
+                "--show-current",
+            ],
+            **kwargs,
+        )
+        .decode("utf-8")
+        .strip()
+    )
+
+
 def _get_image_build_args(image_options, ns):
     """
-    Render buildArgs from chartpress.yaml that could be templates, using
+    Render buildArgs from the config file that could be templates, using
     provided namespace that contains keys with dynamic values such as
     LAST_COMMIT or TAG.
 
     Args:
     image_options (dict):
-        The dictionary for a given image from chartpress.yaml.
+        The dictionary for a given image from the config file.
         Fields in `image_options['buildArgs']` will be rendered
         and returned, if defined.
     ns (dict): the namespace used when rendering templated arguments
@@ -277,13 +296,13 @@ def _get_image_build_args(image_options, ns):
 
 def _get_image_extra_build_command_options(image_options, ns):
     """
-    Render extraBuildCommandOptions from chartpress.yaml that could be
+    Render extraBuildCommandOptions from the config file that could be
     templates, using the provided namespace that contains keys with dynamic
     values such as LAST_COMMIT or TAG.
 
     Args:
     image_options (dict):
-        The dictionary for a given image from chartpress.yaml.
+        The dictionary for a given image from the config file.
         Strings in `image_options['extraBuildCommandOptions']` will be rendered
         and returned.
     ns (dict): the namespace used when rendering templated arguments
@@ -314,7 +333,7 @@ def _get_image_dockerfile_path(name, options):
         return os.path.join(_get_image_build_context_path(name, options), "Dockerfile")
 
 
-def _get_all_image_paths(name, options):
+def _get_all_image_paths(name, options, config_path):
     """
     Returns the unique paths that when changed should trigger a rebuild of a
     chart's image. This includes the Dockerfile itself and the context of the
@@ -324,7 +343,7 @@ def _get_all_image_paths(name, options):
     Dockerfile path, and the optional others for extra paths.
     """
     paths = []
-    paths.append("chartpress.yaml")
+    paths.append(config_path)
     if options.get("rebuildOnContextPathChanges", True):
         paths.append(_get_image_build_context_path(name, options))
     paths.append(_get_image_dockerfile_path(name, options))
@@ -343,18 +362,18 @@ def _get_chart_base_path(options):
         return ""
 
 
-def _get_all_chart_paths(options):
+def _get_all_chart_paths(options, config_path):
     """
     Returns the unique paths that when changed should trigger a version update
     of the chart. These paths includes all the chart's images' paths as well.
     """
     paths = []
-    paths.append("chartpress.yaml")
-    paths.append(options["name"])
+    paths.append(config_path)
+    paths.append(options["chartPath"])
     paths.extend(options.get("paths", []))
     if "images" in options:
         for image_name, image_config in options["images"].items():
-            paths.extend(_get_all_image_paths(image_name, image_config))
+            paths.extend(_get_all_image_paths(image_name, image_config, config_path))
     return list(set(paths))
 
 
@@ -385,7 +404,7 @@ def build_image(
         directory during the build process of the Dockerfile. This is typically
         the same folder as the Dockerfile resides in.
     dockerfile_path (str, optional):
-        Path to Dockerfile relative to chartpress.yaml's directory if not
+        Path to Dockerfile relative to the config file's directory if not
         "<context_path>/Dockerfile".
     build_args (dict, optional):
         Dictionary of docker build arguments.
@@ -595,12 +614,13 @@ def build_images(
     builder=Builder.DOCKER_BUILD,
     platforms=None,
     base_version=None,
+    config_path="chartpress.yaml",
 ):
     """Build a collection of docker images
 
     Args:
     prefix (str): the prefix to add to image names
-    images (dict): dict of image-specs from chartpress.yaml
+    images (dict): dict of image-specs from config file.
     tag (str):
         Specific tag to use instead of the last modified commit.
         If unspecified the tag for each image will be the hash of the last commit
@@ -635,12 +655,18 @@ def build_images(
     base_version (str):
         The base version string (before '.git'), used when useChartVersion is True
         instead of the tag found via `git describe`.
+    config_path (str):
+        Path to the chartpress config file (default: "chartpress.yaml").
     """
+    if platforms:
+        # for later use of set operations like .difference()
+        platforms = frozenset(platforms)
+
     values_file_modifications = {}
     for name, options in images.items():
-        # include chartpress.yaml in the image paths to inspect as
-        # chartpress.yaml can contain build args influencing the image
-        all_image_paths = _get_all_image_paths(name, options)
+        # include config file in the image paths to inspect as
+        # it can contain build args influencing the image
+        all_image_paths = _get_all_image_paths(name, options, config_path)
 
         if tag is None:
             image_tag = _get_identifier_from_paths(
@@ -667,14 +693,12 @@ def build_images(
         image_spec = f"{image_name}:{image_tag}"
 
         skip_platforms = options.get("skipPlatforms", [])
-        if platforms:
-            platforms = frozenset(platforms)
+        image_platforms = platforms
         if platforms and skip_platforms:
-            platforms = platforms.difference(skip_platforms)
-            if not platforms:
+            image_platforms = platforms.difference(skip_platforms)
+            if not image_platforms:
                 _log(f"Skipping build for {image_spec}, no matching platforms")
                 continue
-
         # build image and optionally push image
         if force_build or _image_needs_building(image_spec, platforms):
             expansion_namespace = {
@@ -682,6 +706,7 @@ def build_images(
                     *all_image_paths, echo=False
                 ),
                 "TAG": image_tag,
+                "BRANCH": _get_current_branchname(echo=False),
             }
             build_image(
                 image_spec,
@@ -693,7 +718,7 @@ def build_images(
                 ),
                 push=push or force_push,
                 builder=builder,
-                platforms=platforms,
+                platforms=image_platforms,
             )
         else:
             _log(f"Skipping build for {image_spec}, it already exists")
@@ -708,9 +733,9 @@ def build_images(
     return values_file_modifications
 
 
-def _update_values_file_with_modifications(name, modifications, base_path):
+def _update_values_file_with_modifications(chart_path, modifications):
     """
-    Update <name>/values.yaml file with a dictionary of modifications with its
+    Update <chart_path>/values.yaml file with a dictionary of modifications with its
     root level keys representing a path within the values.yaml file.
 
     Example of a modifications dictionary:
@@ -726,7 +751,7 @@ def _update_values_file_with_modifications(name, modifications, base_path):
             }
         }
     """
-    values_file = os.path.join(base_path, name, "values.yaml")
+    values_file = os.path.join(chart_path, "values.yaml")
 
     with open(values_file) as f:
         values = yaml.load(f)
@@ -804,7 +829,7 @@ def _trim_version_suffix(version):
 
 
 def build_chart(
-    name,
+    chart_path,
     version=None,
     paths=None,
     long=False,
@@ -830,7 +855,7 @@ def build_chart(
         - 0.9.0
     """
     # read Chart.yaml
-    chart_file = os.path.join(base_path, name, "Chart.yaml")
+    chart_file = os.path.join(chart_path, "Chart.yaml")
     with open(chart_file) as f:
         chart = yaml.load(f)
 
@@ -958,6 +983,7 @@ def publish_pages(
     chart_repo_url,
     extra_message="",
     force=False,
+    chart_path=None,
 ):
     """
     Update a Helm chart registry hosted in the gh-pages branch of a GitHub git
@@ -988,6 +1014,9 @@ def publish_pages(
     fresh index.yaml file with the index.yaml from the --merge flag. Due to
     this, it is as we would have a --force-publish-chart by default.
     """
+
+    if chart_path is None:
+        chart_path = chart_name
 
     # clone/fetch the Helm chart repo and checkout its gh-pages branch, note the
     # use of cwd (current working directory)
@@ -1038,7 +1067,7 @@ def publish_pages(
             [
                 "helm",
                 "package",
-                chart_name,
+                chart_path,
                 "--dependency-update",
                 "--destination",
                 td + "/",
@@ -1074,14 +1103,53 @@ def publish_pages(
     _check_call(["git", "push", "origin", "gh-pages"], cwd=checkout_dir)
 
 
-def _check_base_version(base_version):
+def _increment_semver(version, field):
+    """Increment a semver (major,minor,patch) tuple in the specified field"""
+    if field == "major":
+        return (version[0] + 1, 0, 0)
+    if field == "minor":
+        return (version[0], version[1] + 1, 0)
+    if field == "patch":
+        return (version[0], version[1], version[2] + 1)
+    raise ValueError(f"field must be one of major, minor, patch, not {field}")
+
+
+def _check_or_get_base_version(base_version):
     """Verify that a baseVersion config is valid
 
-    If specified, base version needs to:
-
-    1. be a valid semver prerelease
-    2. sort after the latest tag on the branch
+    If specified, base version needs to be either:
+      - a valid semver prerelease that sorts after the latest tag on the branch
+      - a string "major" "minor" "patch" to indicate the base version is the latest
+        tag incremented in the specified field
     """
+
+    def _version_number(groups):
+        """Return comparable semver"""
+
+        return (
+            int(groups["major"]),
+            int(groups["minor"]),
+            int(groups["patch"]),
+        )
+
+    tag, count = _get_latest_tag_and_count()
+    if tag:
+        tag_match = _semver2.fullmatch(tag.lstrip("v"))
+        if tag_match:
+            tag_version_number = _version_number(tag_match.groupdict())
+
+    if base_version in ("major", "minor", "patch"):
+        if not tag:
+            return "0.0.1-0.dev"
+        if not tag_match:
+            raise ValueError(
+                f"baseVersion {base_version} is not valid when latest tag {tag} is not semver"
+            )
+        if "-" in tag:
+            # If this is a prerelease we shouldn't need to increment anything
+            return tag
+        new_base_version = _increment_semver(tag_version_number, base_version)
+        return "{}.{}.{}-0.dev".format(*new_base_version)
 
     if "-" not in base_version:
         # config version is a stable release,
@@ -1095,24 +1163,12 @@ def _check_base_version(base_version):
         )
     base_version_groups = match.groupdict()
 
-    def _version_number(groups):
-        """Return comparable semver"""
-
-        return (
-            int(groups["major"]),
-            int(groups["minor"]),
-            int(groups["patch"]),
-        )
-
     # check ordering with latest tag
     # do not check on a tagged commit
-    tag, count = _get_latest_tag_and_count()
     if tag and count:
-        tag_match = _semver2.fullmatch(tag.lstrip("v"))
-        sort_error = f"baseVersion {base_version} is not greater than latest tag {tag}. Please update baseVersion config in chartpress.yaml."
+        sort_error = f"baseVersion {base_version} is not greater than latest tag {tag}. Please update baseVersion in config."
         if tag_match:
             base_version_number = _version_number(base_version_groups)
-            tag_version_number = _version_number(tag_match.groupdict())
             if base_version_number < tag_version_number:
                 raise ValueError(sort_error)
             elif base_version_number == tag_version_number:
@@ -1197,7 +1253,7 @@ def main(argv=None):
     argparser.add_argument(
         "--reset",
         action="store_true",
-        help="Skip image build step and reset Chart.yaml's version field and values.yaml's image tags. What it resets to can be configured in chartpress.yaml with the resetTag and resetVersion configurations.",
+        help="Skip image build step and reset Chart.yaml's version field and values.yaml's image tags. What it resets to can be configured in your config file with the resetTag and resetVersion configurations.",
     )
     skip_or_force_build_group = argparser.add_mutually_exclusive_group()
     skip_or_force_build_group.add_argument(
@@ -1236,6 +1292,14 @@ def main(argv=None):
         action="store_true",
         help="print list of images to stdout. Images will not be built.",
     )
+
+    argparser.add_argument(
+        "--config",
+        type=str,
+        default="chartpress.yaml",
+        help="Path to the configuration file",
+    )
+
     argparser.add_argument(
         "--version",
         action="version",
@@ -1246,16 +1310,21 @@ def main(argv=None):
     if args.builder == Builder.DOCKER_BUILD and args.platform:
         argparser.error(f"--platform is not supported with {Builder.DOCKER_BUILD}")
 
+    if args.config:
+        # check that config exists and is readable
+        with open(args.config):
+            pass
+
     if args.reset:
-        # reset conflicts with everything
+        # reset conflicts with everything except the configuration file
         # this could probably be clearer by using subparsers
         argv = list(argv or sys.argv[1:])
+        argv.remove("--reset")
+        argv = _remove_config_arg(argv)
         if len(argv) > 1:
-            argv = list(argv)
-            argv.remove("--reset")
-            extra_args = " ".join(shlex.quote(arg) for arg in argv if arg != "--reset")
+            extra_args = " ".join(shlex.quote(arg) for arg in argv)
             argparser.error(
-                f"`chartpress --reset` takes no additional arguments: {extra_args}"
+                f"`chartpress --reset` can only be used with `--config` and no additional arguments: {extra_args}"
             )
 
     # allow simple checks for whether publish will happen
@@ -1266,11 +1335,11 @@ def main(argv=None):
         args.no_build = True
         args.publish_chart = False
 
-    with open("chartpress.yaml") as f:
+    with open(args.config) as f:
         config = yaml.load(f)
 
     # main logic
-    # - loop through each chart listed in chartpress.yaml
+    # - loop through each chart listed in the config file
     #   - build chart.yaml (--reset)
     #   - build images (--skip-build | --reset)
     #     - push images (--push)
@@ -1279,6 +1348,9 @@ def main(argv=None):
     for chart in config["charts"]:
         forced_version = None
         base_version = None
+
+        if not chart.get("chartPath"):
+            chart["chartPath"] = chart["name"]
 
         if args.tag:
             # tag specified, use that version
@@ -1293,14 +1365,14 @@ def main(argv=None):
             # (e.g. forgetting to update after release)
             base_version = chart.get("baseVersion", None)
             if base_version:
-                base_version = _check_base_version(base_version)
+                base_version = _check_or_get_base_version(base_version)
 
         chart_base_path = _get_chart_base_path(chart)
         if not args.list_images:
             # update Chart.yaml with a version
             chart_version = build_chart(
-                chart["name"],
-                paths=_get_all_chart_paths(chart),
+                chart["chartPath"],
+                paths=_get_all_chart_paths(chart, args.config),
                 version=forced_version,
                 base_version=base_version,
                 long=args.long,
@@ -1329,6 +1401,7 @@ def main(argv=None):
                 long=args.long,
                 builder=args.builder,
                 platforms=args.platform,
+                config_path=args.config,
             )
 
             # list images
@@ -1344,7 +1417,7 @@ def main(argv=None):
 
             # update values.yaml
             _update_values_file_with_modifications(
-                chart["name"], values_file_modifications, chart_base_path
+                chart["chartPath"], values_file_modifications
             )
 
         # publish chart
@@ -1366,7 +1439,26 @@ def main(argv=None):
                     chart_repo_url=chart["repo"]["published"],
                     extra_message=args.extra_message,
                     force=args.force_publish_chart,
+                    chart_path=chart["chartPath"],
                 )
+
+
+def _remove_config_arg(argv):
+    argv = [*argv]
+
+    # get the index for --config, --config=something, or None
+    config_idx = next(
+        (i for i, arg in enumerate(argv) if arg.startswith("--config")),
+        None,
+    )
+    if config_idx is not None:
+        # remove the --config argument (and its value if passed with =)
+        argv.pop(config_idx)
+        if not argv[config_idx].startswith("--") and config_idx < len(argv):
+            # remove the value of the --config argument if it was passed separately
+            argv.pop(config_idx)
+
+    return argv
 
 
 if __name__ == "__main__":

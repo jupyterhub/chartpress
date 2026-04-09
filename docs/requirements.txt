@@ -1,0 +1,4 @@
+jupyterhub-sphinx-theme
+myst-parser
+sphinx
+sphinx-copybutton

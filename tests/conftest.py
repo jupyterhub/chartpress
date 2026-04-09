@@ -135,7 +135,7 @@ def git_repo_backport_branch(git_repo_dev_tag):
 @pytest.fixture
 def git_repo_alternative(monkeypatch, git_repo):
     """
-    This fixture modifies the default git_repo fixture to use another the
+    This fixture modifies the default git_repo fixture to use
     chartpress_alternative.yaml as chartpress.yaml.
     """
     r = git_repo
@@ -149,8 +149,8 @@ def git_repo_alternative(monkeypatch, git_repo):
 @pytest.fixture
 def git_repo_base_version(monkeypatch, git_repo):
     """
-    This fixture modifies the default git_repo fixture to use another the
-    chartpress_alternative.yaml as chartpress.yaml.
+    This fixture modifies the default git_repo fixture to use
+    chartpress_base_version.yaml as chartpress.yaml.
     """
     r = git_repo
     shutil.move("chartpress_base_version.yaml", "chartpress.yaml")
