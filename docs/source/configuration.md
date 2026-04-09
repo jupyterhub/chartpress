@@ -43,6 +43,13 @@ charts:
     repo:
       git: jupyterhub/helm-chart
       published: https://jupyterhub.github.io/helm-chart
+    # Publishing Helm charts to OCI registries (with optional prefix) is also supported,
+    # via defining an `oci` key under `repo`.
+    # For example, the following will push a chart named `binderhub` to Github's OCI registry under the path
+    # `ghcr.io/jupyterhub/helm-charts/binderhub`
+    # repo:
+    #   oci: ghcr.io/jupyterhub/helm-charts
+
     # Additional paths that when modified should lead to an updated Chart.yaml
     # version, other than the chart directory in <chart name> or any path that
     # influence the images of the chart. These paths should be set relative to

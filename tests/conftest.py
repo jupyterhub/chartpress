@@ -147,6 +147,20 @@ def git_repo_alternative(monkeypatch, git_repo):
 
 
 @pytest.fixture
+def git_repo_oci(monkeypatch, git_repo):
+    """
+    This fixture modifies the default git_repo fixture to use
+    chartpress_alternative.yaml as chartpress.yaml.
+    """
+    r = git_repo
+    shutil.move("chartpress_oci.yaml", "chartpress.yaml")
+    r.git.add(all=True)
+    r.index.commit("chartpress_oci.yaml initial commit")
+
+    yield r
+
+
+@pytest.fixture
 def git_repo_base_version(monkeypatch, git_repo):
     """
     This fixture modifies the default git_repo fixture to use
