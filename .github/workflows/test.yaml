@@ -19,6 +19,9 @@ on:
       - "pre-commit-ci-update-config"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   chart-tests:
     runs-on: ubuntu-22.04
@@ -47,14 +50,15 @@ jobs:
           - 5000:5000
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           # chartpress requires the full history
           fetch-depth: 0
+          persist-credentials: false
 
       # NOTE: actions/setup-python@v6 make use of a cache within the GitHub base
       #       environment and setup in a fraction of a second.
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
         with:
           python-version: "${{ matrix.python }}"
 
@@ -77,7 +81,7 @@ jobs:
 
       # https://github.com/docker/setup-buildx-action
       - name: Setup docker buildx
-        uses: docker/setup-buildx-action@v4
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4
         with:
           # Allows pushing to registry on localhost:5000
           driver-opts: network=host
@@ -106,4 +110,4 @@ jobs:
           HELM2: ${{ matrix.helm2 }}
 
       # GitHub action reference: https://github.com/codecov/codecov-action
-      - uses: codecov/codecov-action@v6
+      - uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6
