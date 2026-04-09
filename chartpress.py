@@ -351,17 +351,6 @@ def _get_all_image_paths(name, options, config_path):
     return list(set(paths))
 
 
-def _get_chart_base_path(options):
-    """
-    Return the basePath which will be prepended to the chart name when loading the chart directory,
-    or an empty value, meaning the chart directory is assumed to be in the same root as `chartpress.yaml`.
-    """
-    if options.get("basePath"):
-        return options["basePath"]
-    else:
-        return ""
-
-
 def _get_all_chart_paths(options, config_path):
     """
     Returns the unique paths that when changed should trigger a version update
@@ -835,7 +824,6 @@ def build_chart(
     long=False,
     strict_version=False,
     base_version=None,
-    base_path="",
 ):
     """
     Update Chart.yaml's version, using specified version or by constructing one.
@@ -884,7 +872,7 @@ def build_chart(
 def publish_chart_oci(
     chart_name,
     chart_version,
-    chart_base,
+    chart_path,
     chart_oci_repo,
     chart_oci_prefix,
     force=False,
@@ -921,7 +909,7 @@ def publish_chart_oci(
     # clone/fetch the Helm chart repo and checkout its gh-pages branch, note the
     # use of cwd (current working directory)
 
-    chart_dir = f"{chart_base}/{chart_name}"
+    chart_dir = f"{chart_path}/{chart_name}"
     _check_call(["git", "fetch"], cwd=chart_dir, echo=True)
 
     # check if a chart with the same name and version has already been published. If
@@ -1367,7 +1355,6 @@ def main(argv=None):
             if base_version:
                 base_version = _check_or_get_base_version(base_version)
 
-        chart_base_path = _get_chart_base_path(chart)
         if not args.list_images:
             # update Chart.yaml with a version
             chart_version = build_chart(
@@ -1377,7 +1364,6 @@ def main(argv=None):
                 base_version=base_version,
                 long=args.long,
                 strict_version=args.publish_chart,
-                base_path=chart_base_path,
             )
 
         if "images" in chart:
@@ -1426,7 +1412,7 @@ def main(argv=None):
                 publish_chart_oci(
                     chart_name=chart["name"],
                     chart_version=chart_version,
-                    chart_base=chart_base_path,
+                    chart_path=chart["chartPath"],
                     chart_oci_repo=chart["repo"]["oci"],
                     chart_oci_prefix=chart["repo"]["prefix"],
                     force=args.force_publish_chart,
