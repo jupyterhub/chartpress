@@ -574,3 +574,26 @@ def test_reset_exclusive(git_repo, capfd):
     out, err = capfd.readouterr()
     assert "no additional arguments" in err
     assert "chartpress.yaml" not in err
+
+
+@pytest.mark.skipif(os.environ.get("HELM2") == "helm2", reason="Skipping helm 2")
+def test_chartpress_run_oci(git_repo_oci, capfd):
+    """
+    Ensures that chartpress will run with an alternative configuration. This
+    allow us to test against more kinds of configurations than we could squeeze
+    into a single chartpress.yaml file, including:
+    - chart name != chart directory name
+    """
+
+    # verify usage of --tag with a prefix v
+    tag = "v1.0.0"
+    check_version(tag)
+
+    out = _capture_output(["--skip-build", "--tag", tag, "--publish-chart"], capfd)
+    assert f"Updating testchart/Chart.yaml: version: {tag[1:]}" in out
+    # first push:
+    assert "Pushed: localhost:5000/testing/testchart:1.0.0" in out
+    # run it again, shouldn't push
+    out = _capture_output(["--skip-build", "--tag", tag, "--publish-chart"], capfd)
+    assert "already published" in out
+    assert "Pushed" not in out
