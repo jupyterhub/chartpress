@@ -1,6 +1,7 @@
 # Unit tests for some chartpress methods
 from os import mkdir
 
+import git
 import pytest
 from ruamel.yaml import YAML
 
@@ -405,3 +406,103 @@ def test_publish_pages(git_repo, mock_check_call):
         ["git", "push", "origin", "gh-pages"],
         {"cwd": "test-chart-1.2.3"},
     )
+
+
+def test_publish_pages_firsttime(git_repo_mainonly, record_check_call):
+    chartpress.publish_pages(
+        "testchart",
+        "1.2.3",
+        "https://github.com/jupyterhub/chartpress",
+        "https://example.org/chartpress",
+        "<foo>",
+        push=False,
+    )
+
+    assert len(record_check_call.commands) == 7
+
+    assert record_check_call.commands[0] == (
+        [
+            "git",
+            "clone",
+            "--no-checkout",
+            "https://github.com/jupyterhub/chartpress",
+            "testchart-1.2.3",
+        ],
+        {"echo": True},
+    )
+    assert record_check_call.commands[1] == (
+        ["git", "checkout", "gh-pages"],
+        {"cwd": "testchart-1.2.3", "echo": True},
+    )
+
+    assert record_check_call.commands[2] == (
+        ["git", "switch", "--orphan", "gh-pages"],
+        {"cwd": "testchart-1.2.3", "echo": True},
+    )
+
+    helm_package_cmd = record_check_call.commands[3][0]
+    assert record_check_call.commands[3][1] == {}
+    # Skip the temporary directory
+    assert (helm_package_cmd[:5] + helm_package_cmd[6:]) == [
+        "helm",
+        "package",
+        "testchart",
+        "--dependency-update",
+        "--destination",
+    ]
+
+    helm_index_cmd = record_check_call.commands[4][0]
+    assert record_check_call.commands[4][1] == {}
+    # Skip the temporary directory
+    assert (helm_index_cmd[:3] + helm_index_cmd[4:]) == [
+        "helm",
+        "repo",
+        "index",
+        "--url",
+        "https://example.org/chartpress",
+        "--merge",
+        "testchart-1.2.3/index.yaml",
+    ]
+
+    assert record_check_call.commands[5] == (
+        ["git", "add", "."],
+        {"cwd": "testchart-1.2.3"},
+    )
+    assert record_check_call.commands[6] == (
+        [
+            "git",
+            "commit",
+            "-m",
+            "[testchart] Automatic update for commit 1.2.3\n\n<foo>",
+        ],
+        {"cwd": "testchart-1.2.3"},
+    )
+
+    with open("testchart-1.2.3/index.yaml") as f:
+        chart = YAML(typ="safe").load(f)
+
+    chart["entries"]["testchart"][0]["created"] = "DATETIME"
+    chart["entries"]["testchart"][0]["digest"] = "DIGEST"
+    chart["generated"] = "DATETIME"
+
+    assert chart == {
+        "apiVersion": "v1",
+        "entries": {
+            "testchart": [
+                {
+                    "apiVersion": "v1",
+                    "created": "DATETIME",
+                    "digest": "DIGEST",
+                    "name": "testchart",
+                    "urls": [
+                        "https://example.org/chartpress/testchart-0.0.1-test.reset.version.tgz"
+                    ],
+                    "version": "0.0.1-test.reset.version",
+                }
+            ]
+        },
+        "generated": "DATETIME",
+    }
+
+    r = git.Repo("./testchart-1.2.3")
+    assert sorted(b.name for b in r.branches) == ["gh-pages", "main"]
