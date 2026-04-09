@@ -874,7 +874,6 @@ def publish_chart_oci(
     chart_version,
     chart_path,
     chart_oci_repo,
-    chart_oci_prefix,
     force=False,
 ):
     """
@@ -908,6 +907,7 @@ def publish_chart_oci(
     # flag if that is the case, but always log what's done
 
     helm_registry_args = []
+    chart_oci_repo = chart_oci_repo.rstrip("/")
     # special-case localhost registry for testing
     if chart_oci_repo.startswith("localhost:"):
         helm_registry_args.append("--plain-http")
@@ -918,7 +918,7 @@ def publish_chart_oci(
                 "show",
                 "chart",
                 *helm_registry_args,
-                f"oci://{chart_oci_repo}/{chart_oci_prefix}/{chart_name}",
+                f"oci://{chart_oci_repo}/{chart_name}",
                 "--version",
                 chart_version,
             ]
@@ -955,7 +955,7 @@ def publish_chart_oci(
                 "push",
                 *helm_registry_args,
                 os.path.join(td, chart_name + "-" + chart_version + ".tgz"),
-                "oci://" + chart_oci_repo + "/" + chart_oci_prefix,
+                f"oci://{chart_oci_repo}",
             ]
         )
 
@@ -1410,7 +1410,6 @@ def main(argv=None):
                     chart_version=chart_version,
                     chart_path=chart["chartPath"],
                     chart_oci_repo=chart["repo"]["oci"],
-                    chart_oci_prefix=chart["repo"]["prefix"],
                     force=args.force_publish_chart,
                 )
             if "git" in chart["repo"]:

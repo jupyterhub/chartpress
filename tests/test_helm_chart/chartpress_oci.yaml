@@ -4,8 +4,7 @@ charts:
     resetTag: test-reset-tag
     resetVersion: 0.0.1-test.reset.version
     repo:
-      oci: localhost:5000
-      prefix: testing
+      oci: localhost:5000/testing
       published: http://localhost:5000
     paths:
       - extra-chart-path.txt
