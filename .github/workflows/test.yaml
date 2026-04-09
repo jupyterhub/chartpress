@@ -24,7 +24,7 @@ permissions:
 
 jobs:
   chart-tests:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     strategy:
       # Keep running even if one variation of the job fail
@@ -34,18 +34,17 @@ jobs:
         # specified below, these parameters have no meaning on their own and
         # gain meaning on how job steps use them.
         include:
-          - python: "3.7"
-            helm2: helm2
-          - python: "3.8"
-          - python: "3.9"
           - python: "3.10"
+            helm: "v3.20.2"
           - python: "3.11"
           - python: "3.12"
           - python: "3.13"
+            helm: latest
+          - python: "3.14"
 
     services:
       local-registry:
-        image: registry:2
+        image: registry:3
         ports:
           - 5000:5000
 
@@ -69,15 +68,9 @@ jobs:
           pip freeze
 
       - name: Install helm
-        run: |
-          if [[ "$HELM2" == "helm2" ]]; then
-              curl -L https://git.io/get_helm.sh | bash
-              helm init --client-only
-          else
-              curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
-          fi
-        env:
-          HELM2: ${{ matrix.helm2 }}
+        uses: azure/setup-helm@dda3372f752e03dde6b3237bc9431cdc2f7a02a2 # v5.0.0
+        with:
+          version: ${{ matrix.helm || 'v4.1.4' }} # default is latest (stable)
 
       # https://github.com/docker/setup-buildx-action
       - name: Setup docker buildx
@@ -90,7 +83,7 @@ jobs:
         run: |
           docker version
           docker buildx ls
-          helm version --client
+          helm version
           chartpress --version
           chartpress --help
 
@@ -106,8 +99,6 @@ jobs:
       - name: Run tests
         run: |
           pytest
-        env:
-          HELM2: ${{ matrix.helm2 }}
 
       # GitHub action reference: https://github.com/codecov/codecov-action
       - uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6

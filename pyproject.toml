@@ -19,12 +19,11 @@ authors = [
 description = "ChartPress: render and publish helm charts and images"
 keywords = ["helm", "kubernetes"]
 dynamic = ["readme"]
-license = {file = "LICENSE"}
-requires-python = ">=3.7"
+license = "BSD-3-Clause"
+requires-python = ">=3.10"
 classifiers = [
     "Intended Audience :: Developers",
     "Intended Audience :: System Administrators",
-    "License :: OSI Approved :: BSD License",
     "Operating System :: POSIX :: Linux",
     "Operating System :: MacOS :: MacOS X",
     "Programming Language :: Python",
@@ -62,6 +61,11 @@ py-modules = ["chartpress"]
 [tool.setuptools.dynamic]
 readme = { file = "README.md", content-type = "text/markdown" }
 
+# setuptools_scm warns if there's no config,
+# but empty is okay.
+# we only use it for sdist file discovery,
+# not versioning
+[tool.setuptools_scm]
 
 # black is used for autoformatting Python code
 #
