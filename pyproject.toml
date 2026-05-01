@@ -101,7 +101,7 @@ testpaths = ["tests"]
 github_url = "https://github.com/jupyterhub/chartpress"
 
 [tool.tbump.version]
-current = "2.3.1.dev"
+current = "2.4.0"
 regex = '''
     (?P<major>\d+)
     \.
