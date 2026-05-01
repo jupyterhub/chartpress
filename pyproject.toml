@@ -12,7 +12,7 @@ build-backend = "setuptools.build_meta"
 #
 [project]
 name = "chartpress"
-version = "2.3.1.dev"
+version = "2.4.1.dev"
 authors = [
     {name = "Jupyter Development Team", email = "jupyter@googlegroups.com"},
 ]
@@ -119,3 +119,6 @@ tag_template = "{new_version}"
 
 [[tool.tbump.file]]
 src = "chartpress.py"
+
+[[tool.tbump.file]]
+src = "pyproject.toml"
