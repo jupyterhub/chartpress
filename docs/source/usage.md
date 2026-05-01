@@ -1,5 +1,11 @@
 # Usage
 
+```{toctree}
+:maxdepth: 2
+
+chart-version
+```
+
 In a directory containing a `chartpress.yaml`, run:
 
     chartpress

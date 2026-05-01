@@ -16,10 +16,10 @@ Chartpress can do the following with the help of some configuration.
 ```{toctree}
 :maxdepth: 2
 
-chart-version.md
-installation.md
-usage.md
-configuration.md
-example.md
-development.md
+installation
+usage
+configuration
+example
+development
+changelog
 ```
