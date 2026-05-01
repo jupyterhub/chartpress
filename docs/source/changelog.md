@@ -1,6 +1,48 @@
-# Changelog for chartpress
+# Changelog
 
 ## Unreleased
+
+## 2.4
+
+### 2.4.0 - 2026-05-01
+
+chartpress 2.4 adds support for OCI registries and drops support for Python 3.9 and helm 2.
+
+([full changelog](https://github.com/jupyterhub/chartpress/compare/2.3.0...2.4.0))
+
+#### New features added
+
+- Add support for pushing Helm charts to OCI registries, rather than just Github Pages-based chart repos. [#187](https://github.com/jupyterhub/chartpress/pull/187) ([@bleggett](https://github.com/bleggett), [@minrk](https://github.com/minrk))
+
+#### Enhancements made
+
+- Create new empty gh-pages branch if missing [#163](https://github.com/jupyterhub/chartpress/pull/163) ([@manics](https://github.com/manics), [@consideRatio](https://github.com/consideRatio), [@minrk](https://github.com/minrk))
+
+#### Bugs fixed
+
+- list images for all charts [#274](https://github.com/jupyterhub/chartpress/pull/274) ([@minrk](https://github.com/minrk), [@consideRatio](https://github.com/consideRatio))
+- fix: resolve paths relative to config when --config is not in the CWD [#260](https://github.com/jupyterhub/chartpress/pull/260) ([@consideRatio](https://github.com/consideRatio), [@manics](https://github.com/manics), [@minrk](https://github.com/minrk), [@yuvipanda](https://github.com/yuvipanda))
+- Fix --config flag implementation detail [#259](https://github.com/jupyterhub/chartpress/pull/259) ([@consideRatio](https://github.com/consideRatio), [@manics](https://github.com/manics))
+
+#### Maintenance and upkeep improvements
+
+- update versions: require Python 3.10, helm 3 [#273](https://github.com/jupyterhub/chartpress/pull/273) ([@minrk](https://github.com/minrk), [@consideRatio](https://github.com/consideRatio))
+- group actions dependabot prs [#272](https://github.com/jupyterhub/chartpress/pull/272) ([@minrk](https://github.com/minrk))
+- Enable trusted publishing, zizmor, pre-commit freeze [#268](https://github.com/jupyterhub/chartpress/pull/268) ([@minrk](https://github.com/minrk))
+- Transition to use pyproject.toml and tbump [#247](https://github.com/jupyterhub/chartpress/pull/247) ([@consideRatio](https://github.com/consideRatio), [@minrk](https://github.com/minrk))
+
+#### Documentation improvements
+
+- Add documentation built with Sphinx [#251](https://github.com/jupyterhub/chartpress/pull/251) ([@rgaiacs](https://github.com/rgaiacs), [@manics](https://github.com/manics))
+
+#### Contributors to this release
+
+The following people contributed discussions, new ideas, code and documentation contributions, and review.
+See [our definition of contributors](https://github-activity.readthedocs.io/en/latest/use/#how-does-this-tool-define-contributions-in-the-reports).
+
+([GitHub contributors page for this release](https://github.com/jupyterhub/chartpress/graphs/contributors?from=2025-01-21&to=2026-05-01&type=c))
+
+@bleggett ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Ableggett+updated%3A2025-01-21..2026-05-01&type=Issues)) | @consideRatio ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3AconsideRatio+updated%3A2025-01-21..2026-05-01&type=Issues)) | @manics ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Amanics+updated%3A2025-01-21..2026-05-01&type=Issues)) | @minrk ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Aminrk+updated%3A2025-01-21..2026-05-01&type=Issues)) | @rgaiacs ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Argaiacs+updated%3A2025-01-21..2026-05-01&type=Issues)) | @yuvipanda ([activity](https://github.com/search?q=repo%3Ajupyterhub%2Fchartpress+involves%3Ayuvipanda+updated%3A2025-01-21..2026-05-01&type=Issues))
 
 ## 2.3
 
