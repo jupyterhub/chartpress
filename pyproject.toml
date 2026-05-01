@@ -12,7 +12,7 @@ build-backend = "setuptools.build_meta"
 #
 [project]
 name = "chartpress"
-version = "2.4.1.dev"
+version = "2.4.0"
 authors = [
     {name = "Jupyter Development Team", email = "jupyter@googlegroups.com"},
 ]
@@ -101,7 +101,7 @@ testpaths = ["tests"]
 github_url = "https://github.com/jupyterhub/chartpress"
 
 [tool.tbump.version]
-current = "2.4.1.dev"
+current = "2.4.0"
 regex = '''
     (?P<major>\d+)
     \.

@@ -21,7 +21,7 @@ from tempfile import TemporaryDirectory
 import docker
 from ruamel.yaml import YAML
 
-__version__ = "2.4.1.dev"
+__version__ = "2.4.0"
 
 # name of the environment variable with GitHub token
 GITHUB_TOKEN_KEY = "GITHUB_TOKEN"
