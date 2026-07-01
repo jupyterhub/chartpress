@@ -49,7 +49,7 @@ jobs:
           - 5000:5000
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v6
         with:
           # chartpress requires the full history
           fetch-depth: 0
@@ -57,7 +57,7 @@ jobs:
 
       # NOTE: actions/setup-python@v6 make use of a cache within the GitHub base
       #       environment and setup in a fraction of a second.
-      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "${{ matrix.python }}"
 
@@ -68,7 +68,7 @@ jobs:
           pip freeze
 
       - name: Install helm
-        uses: azure/setup-helm@dda3372f752e03dde6b3237bc9431cdc2f7a02a2 # v5.0.0
+        uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
         with:
           version: ${{ matrix.helm || 'v4.1.4' }} # default is latest (stable)
 
@@ -101,4 +101,4 @@ jobs:
           pytest
 
       # GitHub action reference: https://github.com/codecov/codecov-action
-      - uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6
+      - uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v6
