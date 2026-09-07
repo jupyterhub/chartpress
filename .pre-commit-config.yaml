@@ -19,19 +19,19 @@ repos:
 
   # Autoformat: Python code
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: fa505ab9c3e0fedafe1709fd7ac2b5f8996c670d # frozen: 26.3.1
+    rev: 4160603246a6b365d4a2af661c6d71b0a0f50478 # frozen: 26.5.1
     hooks:
       - id: black
 
   # Autoformat: Python code
   - repo: https://github.com/pycqa/isort
-    rev: a333737ed43df02b18e6c95477ea1b285b3de15a # frozen: 8.0.1
+    rev: 131f4adcd5582bfc53928ab0d740eceb8b506b6c # frozen: 9.0.1
     hooks:
       - id: isort
 
   # Autoformat: markdown, yaml
   - repo: https://github.com/rbubley/mirrors-prettier
-    rev: c2bc67fe8f8f549cc489e00ba8b45aa18ee713b1 # frozen: v3.8.1
+    rev: 0ee178619d696787ca73d210cc191d720868c631 # frozen: v3.9.6
     hooks:
       - id: prettier
 
@@ -61,7 +61,7 @@ repos:
 
   # github actions security checks
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
-    rev: ea2eb407b4cbce87cf0d502f36578950494f5ac9 # frozen: v1.23.1
+    rev: cef8b8350da46d8114c7e6b7272aebdccdf193ce # frozen: v1.30.0
     hooks:
       - id: zizmor
         args:
